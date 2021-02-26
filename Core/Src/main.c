@@ -259,14 +259,14 @@ int main(void)
 			sprintf(Buffer, "Enter Serial Number:");
 			LCD_printf(&Buffer[0], strlen(Buffer));
 
-	  	sprintf(Buffer,"Enter Serial Number: \n",GlobalTestNum);
-	  	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), 100);
+			sprintf(Buffer,"Enter Serial Number: \n",GlobalTestNum);
+	  		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 			read_keypad();
 			if (!Quit_flag) {
 				ComRep = 0x08;
 				communication_array(&ComRep,&Para[0], Paralen);
 				sprintf(Buffer,"Interogating...\n",GlobalTestNum);
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), 100);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 			} else {
   				LCD_Clear();
   				TestRig_Init();

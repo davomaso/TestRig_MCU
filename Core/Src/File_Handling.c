@@ -376,7 +376,7 @@ void  SD_FileSize (char * fileName) {
 	char data[255];
 	UINT testbyte;
     char line[100];
-    HAL_UART_Transmit(&T_UART, "\n.\n", 3, HAL_MAX_DELAY);
+    CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
     //Reenable programming prior to writing a page,
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
@@ -390,11 +390,11 @@ void  SD_FileSize (char * fileName) {
 
 	while (f_gets(line, sizeof(line), &fil)) {
         sortLine(&line[0]);
-        HAL_UART_Transmit(&T_UART, ".\n", 3, HAL_MAX_DELAY);
+        CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
     }
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 	sprintf(Buffer, "Done\n");
-    HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	f_close(&fil);
 }
 

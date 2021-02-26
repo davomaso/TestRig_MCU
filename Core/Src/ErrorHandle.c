@@ -31,40 +31,40 @@ void printLatchError(uint8 *ErrorCode){
 	if(*ErrorCode & 1)
 	{
 		sprintf(Buffer, "\n******** ERROR--PortA Pulse Width ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 	if(*ErrorCode & 2)
 	{
 		sprintf(Buffer, "\n******** ERROR--PortA Voltage ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 	if(*ErrorCode & 4)
 	{
 		sprintf(Buffer, "\n******** ERROR--PortB Pulse Width ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 	if(*ErrorCode & 8)
 	{
 		sprintf(Buffer, "\n******** ERROR--PortB Voltage ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 	if(*ErrorCode & 16)
 	{
 		sprintf(Buffer, "\n******** ERROR--Input Voltage ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 	if(*ErrorCode & 32){
 		sprintf(Buffer, "\n******** ERROR--Fuse Voltage ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 	if(*ErrorCode & 64)
 	{
 		sprintf(Buffer, "\n******** ERROR--MOSFET 1 Voltage ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 	if(*ErrorCode & 128)
 	{
 		sprintf(Buffer, "\n******** ERROR--MOSFET 2 Voltage ********\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}
 }

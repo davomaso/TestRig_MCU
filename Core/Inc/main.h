@@ -50,14 +50,16 @@ TIM_HandleTypeDef htim14;
 
 
 //Peripheral Defines
+#define D_UART huart1
 #define R_UART huart2
-#define T_UART huart3
+#define B_UART huart3
 #define SDI_UART huart6
 
 #define DAC_SPI hspi3
 
+UART_HandleTypeDef D_UART;
 UART_HandleTypeDef R_UART;
-UART_HandleTypeDef T_UART;
+UART_HandleTypeDef B_UART;
 UART_HandleTypeDef SDI_UART;
 
 SPI_HandleTypeDef DAC_SPI;

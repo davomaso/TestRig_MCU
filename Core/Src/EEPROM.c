@@ -25,5 +25,5 @@ void write_correctionFactors(){
 		HAL_Delay(5);
 	}
 	  sprintf(Buffer, "EPROM Write Complete\n");
-	  HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 }

@@ -2,12 +2,12 @@
 #include "LCD.h"
 
 void LCD_init() {
-	HAL_Delay(50);
-	HAL_GPIO_WritePin(LCD_RS_GPIO_Port, LCD_RS_Pin, GPIO_PIN_RESET);
-	HAL_Delay(2);
-	HAL_GPIO_WritePin(LCD_RS_GPIO_Port, LCD_RS_Pin, GPIO_PIN_SET);
+//	HAL_Delay(50);
+//	HAL_GPIO_WritePin(LCD_RS_GPIO_Port, LCD_RS_Pin, GPIO_PIN_RESET);
+//	HAL_Delay(2);
+//	HAL_GPIO_WritePin(LCD_RS_GPIO_Port, LCD_RS_Pin, GPIO_PIN_SET);
 	sprintf(Buffer, "\nInitialising LCD Screen...\n\n");
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	uint8 Byte = 0x0F;
 	HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
 	HAL_Delay(1);

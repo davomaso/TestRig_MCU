@@ -750,9 +750,9 @@ void ADC_MUXsel(uint8 ADCport){
 //	============================    Print Results    ================================//
 void PrintLatchResults(){
 	sprintf(Buffer, "\n\n =======================  Latch Test  =======================\n\n");
-	HAL_UART_Transmit(&T_UART, &Buffer[0] , strlen(Buffer), 100);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	sprintf(Buffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n", adc1.HighPulseWidth, adc1.LowPulseWidth);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 
 		//Port A Voltage
@@ -761,11 +761,11 @@ void PrintLatchResults(){
 	adc1.lowVoltage /= adc1.LowPulseWidth;
 	adc1.lowVoltage *= (16.17/4096);
 	sprintf(Buffer, "\n==============   Port A Voltage:   High: %f Low: %f   ==============\n\n", adc1.highVoltage, adc1.lowVoltage);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//Port B Latch Time
 	sprintf(Buffer, "==============   Port B Latch time:   High: %d  Low: %d   ==============\n", adc2.HighPulseWidth, adc2.LowPulseWidth);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//Port B Voltage
 	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;
@@ -773,28 +773,28 @@ void PrintLatchResults(){
 	adc2.lowVoltage /= adc2.LowPulseWidth;
 	adc2.lowVoltage *= (16.17/4096);
 	sprintf(Buffer, "\n==============   Port B Voltage:   High: %f Low: %f   ==============\n\n", adc2.highVoltage, adc2.lowVoltage);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//Vin Voltage
 	Vin.lowVoltage *= (16.17/4096);
 	sprintf(Buffer, "\n==============   Vin Voltage:   AVG: %f Min: %f   ==============\n", Vin.steadyState, Vin.lowVoltage);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//Fuse Voltage
 	Vfuse.lowVoltage *= (16.17/4096);
 	sprintf(Buffer, "\n==============   Fuse Voltage:   AVG: %f Min: %f   ==============\n", Vfuse.steadyState, Vfuse.lowVoltage);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//MOSFET Voltage
 	Vmos1.lowVoltage *= (16.17/4096);
 	Vmos1.highVoltage *= (16.17/4096);
 	sprintf(Buffer, "\n==============   MOSFET 1 Voltage:   High: %f Low: %f   ==============\n", Vmos1.highVoltage, Vmos1.lowVoltage);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 	Vmos2.lowVoltage *= (16.17/4096);
 	Vmos2.highVoltage *= (16.17/4096);
 	sprintf(Buffer, "\n==============   MOSFET 2 Voltage:   High: %f Low: %f   ==============\n", Vmos2.highVoltage, Vmos2.lowVoltage);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 
 	LatchCurrent.lowVoltage /= 132;
@@ -802,7 +802,7 @@ void PrintLatchResults(){
 	LatchCurrent.lowVoltage *= (16.17/4096);
 	LatchCurrent.highVoltage *= (16.17/4096);
 	sprintf(Buffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent.highVoltage, LatchCurrent.lowVoltage);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 	//Store Values
 	LatchRes.tOn = (adc1.HighPulseWidth >= adc2.LowPulseWidth) ? adc1.HighPulseWidth:adc2.LowPulseWidth;
@@ -828,11 +828,11 @@ void PrintLatchResults(){
 
 void TransmitResults(){
 		sprintf(Buffer, "==============   ADC Average Results   ==============");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 		for(int i = 0;i<LatchCountTimer;i++)
 		{
 			sprintf(Buffer, "%d,%d,%d,%d\n",i,adc1.avg_Buffer[i],adc2.avg_Buffer[i],Vfuse.avg_Buffer[i]);
-			HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 		}
 }
 //	=================================================================================//

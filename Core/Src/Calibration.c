@@ -14,9 +14,9 @@ void Calibration(){
 	DAC_set((calPort+1), DACval);
 	MUX_Sel((calPort+1), THREE_VOLT);
 	sprintf(Buffer, "==========Calibrating 1V==========\n");
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	sprintf(Buffer, "Port Calibrating: %d\n", calPort+1);
-	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 	while(calTest != Done){
 			if (KP_hash.Pressed) {
@@ -25,7 +25,7 @@ void Calibration(){
 				for(int i = 0; i < 35; i++)
 					CorrectionFactors[i] = ~(*calPtr++);
 				sprintf(Buffer, "Writing To EPROM\n");
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 				write_correctionFactors();
 				read_correctionFactors();
 				break;
@@ -52,22 +52,22 @@ void Calibration(){
 					case V_1:
 						DACval = 0x457;
 						sprintf(Buffer, "==========Calibrating 1V========== \n\n");
-						HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "    1V - Port %d     ", (calPort+1));
 						  LCD_printf(&Buffer[0], strlen(Buffer));
 						break;
 				case V_05:
 						sprintf(Buffer, "==========Calibrating 0.5V========== \n\n");
-						HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						DACval = 0x22C;
-						  LCD_setCursor(3, 0);
-						  sprintf(Buffer, "   0.5V - Port %d    ", (calPort+1));
-						  LCD_printf(&Buffer[0], strlen(Buffer));
+						LCD_setCursor(3, 0);
+						sprintf(Buffer, "   0.5V - Port %d    ", (calPort+1));
+						LCD_printf(&Buffer[0], strlen(Buffer));
 					break;
 				case V_24:
 						sprintf(Buffer, "==========Calibrating 2.4V========== \n\n");
-						HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						DACval = 0xA6B;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "   2.4V - Port %d    ", (calPort+1));
@@ -75,7 +75,7 @@ void Calibration(){
 					break;
 				case I_20:
 						sprintf(Buffer, "==========Calibrating 20mA========== \n\n");
-						HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						DACval = 0xB87;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "   20mA - Port %d    ", (calPort+1));
@@ -83,7 +83,7 @@ void Calibration(){
 					break;
 				case I_4:
 						sprintf(Buffer, "==========Calibrating 4mA========== \n\n");
-						HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						DACval = 0x24E;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "    4mA - Port %d    ", (calPort+1));
@@ -91,7 +91,7 @@ void Calibration(){
 					break;
 				case I_175:
 						sprintf(Buffer, "==========Calibrating 17.5mA========== \n\n");
-						HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						DACval = 0xA16;
 						LCD_setCursor(3, 0);
 						sprintf(Buffer, "   17.5mA - Port %d  ", (calPort+1));
@@ -99,11 +99,11 @@ void Calibration(){
 					break;
 				case Done:
 					sprintf(Buffer, "==========	Done ========== \n\n");
-					HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+					CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 					break;
 				}
 				sprintf(Buffer, "Port Calibrating: %d \n\n", (calPort+1));
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 				DACval += *calPtr;
 					//Write New Val To DAC
@@ -140,14 +140,14 @@ void Calibration(){
 						case V_1:
 							DACval = 0x457;
 							sprintf(Buffer, "==========Calibrating 1V========== \n\n");
-							HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "    1V - Port %d     ", (calPort+1));
 							  LCD_printf(&Buffer[0], strlen(Buffer));
 							break;
 					case V_05:
 							sprintf(Buffer, "==========Calibrating 0.5V========== \n\n");
-							HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 							DACval = 0x22C;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   0.5V - Port %d    ", (calPort+1));
@@ -155,7 +155,7 @@ void Calibration(){
 						break;
 					case V_24:
 							sprintf(Buffer, "==========Calibrating 2.4V========== \n\n");
-							HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 							DACval = 0xA6B;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   2.4V - Port %d    ", (calPort+1));
@@ -163,7 +163,7 @@ void Calibration(){
 						break;
 					case I_20:
 							sprintf(Buffer, "==========Calibrating 20mA========== \n\n");
-							HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 							DACval = 0xB87;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   20mA - Port %d    ", (calPort+1));
@@ -171,7 +171,7 @@ void Calibration(){
 						break;
 					case I_4:
 							sprintf(Buffer, "==========Calibrating 4mA========== \n\n");
-							HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 							DACval = 0x24E;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   4mA - Port %d    ", (calPort+1));
@@ -179,7 +179,7 @@ void Calibration(){
 						break;
 					case I_175:
 							sprintf(Buffer, "==========Calibrating 17.5mA========== \n\n");
-							HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 							DACval = 0xA16;
 							LCD_setCursor(3, 0);
 							sprintf(Buffer, "   17.5mA - Port %d  ", (calPort+1));
@@ -187,14 +187,14 @@ void Calibration(){
 						break;
 					case Done:
 						sprintf(Buffer, "==========	Done ========== \n\n");
-						HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						break;
 					}
 
 				DACval += *calPtr;
 
 				sprintf(Buffer, "Port Calibrating: %d\n", calPort+1);
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 					//Write New Val To DAC
 				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5)
 						DACval |= 0x3000;
@@ -220,7 +220,7 @@ void Calibration(){
 				DAC_set((calPort+1), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 			}
 			if (KP_8.Pressed) {
 				//Decrement CF by 1
@@ -235,7 +235,7 @@ void Calibration(){
 				DAC_set((calPort+1), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 			}
 			if (KP_3.Pressed) {
 				//Increment CF by 10
@@ -251,7 +251,7 @@ void Calibration(){
 				DAC_set((calPort+1), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 			}
 			if (KP_9.Pressed) {
 				// Decrement CF by 10
@@ -266,7 +266,7 @@ void Calibration(){
 					DACval |= 0xB000;
 				DAC_set((calPort+1), DACval);
 				sprintf(Buffer, "%d\n", *calPtr);
-				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 			}
 			if (KP_star.Pressed) {
 				KP_star.Count = KP_star.Pressed = 0;

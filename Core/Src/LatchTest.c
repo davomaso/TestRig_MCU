@@ -52,10 +52,10 @@ void runLatchTest(uint8 Test_Port){
 
 	if(!LatchState[Test_Port]){
 		sprintf(Buffer, "\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	}else{
 		sprintf(Buffer, "\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
-		HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 		}
 }
 
