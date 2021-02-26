@@ -24,12 +24,21 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "interogate_project.h"
+#include "UART_Routine.h"
+#include "Board_Config.h"
+#include "Asynchronous_pulse.h"
+#include "calibration.h"
+#include "SetVsMeasured.h"
+#include "Programming.h"
+#include "File_Handling.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+extern void reset_ALL_DAC(void);
+extern void Async_Init(void);
+extern void delay_us(int);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -82,7 +91,10 @@ static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
-
+void read_keypad(void);
+void read_correctionFactors(void);
+void write_correctionFactors(void);
+void LCD_init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -130,10 +142,17 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
+  HAL_Delay(2000);
+  _Bool addSD_DelayVariable;
   MX_FATFS_Init();
   MX_USB_DEVICE_Init();
   MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
+  HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
+  addSD_DelayVariable = true;
+  HAL_I2C_Init(&hi2c1);
+  LCD_init();
+  TestRig_Init();
 
   /* USER CODE END 2 */
 
@@ -142,7 +161,140 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  if (TestingComplete && CheckLoom)
+		  scan_loom();
 
+
+	  if (KP_9.Pressed && TestingComplete) {
+		  	KP_9.Pressed = KP_9.Count = 0;
+		  	sprintf(Buffer, "Scanning I2C bus:\r\n");
+		  	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		  	HAL_StatusTypeDef result;
+		  	uint8_t i;
+		  	for (i=1; i<128; i++) {
+		  	  result = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(i<<1), 2, 2);
+		  	  if (result != HAL_OK) {// HAL_ERROR or HAL_BUSY or HAL_TIMEOUT
+		  		  sprintf(Buffer, "."); // No ACK received at that address
+		  	  }
+		  	  if (result == HAL_OK) {
+		  		  sprintf(Buffer, "0x%X", i); // Received an ACK at that address
+		  	  }
+			  	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		  	}
+	  }
+
+	  //Calibration Routine
+	  if((KP_star.Pressed && KP_hash.Pressed) && TestingComplete){
+		  KP_star.Count = KP_star.Pressed = 0;
+		  KP_hash.Count = KP_hash.Pressed = 0;
+
+		  LCD_Clear();
+		  LCD_setCursor(1, 6);
+		  sprintf(Buffer,"Test Rig");
+		  LCD_printf(&Buffer[0], strlen(Buffer));
+
+		  LCD_setCursor(2, 0);
+		  sprintf(Buffer, "Calibrate Test Rig");
+		  LCD_printf(&Buffer[0], strlen(Buffer));
+
+		  LCD_setCursor(3, 5);
+		  sprintf(Buffer, "1V - Port 1");
+		  LCD_printf(&Buffer[0], strlen(Buffer));
+
+		  sprintf(Buffer,"\n\n==========  Calibration Routine  ==========\n");
+		  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		  Calibration();
+		  LCD_Clear();
+		  TestRig_Init();
+		  TestRig_MainMenu();
+		  sprintf(Buffer,"\n\n==========  Test Rig  ==========\n");
+		  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  }
+
+	  //Testing Functionality
+	  	if (KP_1.Pressed && TestingComplete) {
+	  		KP_1.Pressed = false;
+	  		KP_1.Count = 0;
+
+	  		// Programming Routine
+  			ComRep = 0x08;
+			communication_array(&ComRep,&Para[0], Paralen);
+			Programming = true;
+			Program_CountDown = 25;
+			HAL_TIM_Base_Start(&htim6);
+				//Find Version Currently On Board
+	  		while (Programming) {
+	  			Programming = (ComRep == 0x35) ? false : true;
+				if (UART2_ReceiveComplete)
+					communication_response(&UART2_Receive[0], UART2_RecPos);
+				else if (Comm_Ready && Programming)
+					communication_command();
+	  		}
+
+	  			//Begin Programming
+	  		ProgrammingInit();	//Set Clk to 8Mhz
+	  		scan_loom();		//Get LoomConnected
+	  		if (Find_File("/FIRMWARE", LoomConnected)) {
+	  			if (findVer(&fno.fname[0]) > Version[0]) {
+	  				char * tempDir;
+	  				tempDir = "/FIRMWARE/";
+	  				char * location = malloc(1+strlen(&fno.fname[0])+strlen(tempDir));
+	  				strcpy(location, tempDir);
+	  				strcat(location, fno.fname);
+	  				SD_FileSize(&location[0]);
+	  		} else {
+				sprintf(Buffer, "hex file not found");
+				LCD_printf(&Buffer[0], strlen(Buffer));
+	  			}
+	  		}
+	  		//Testing Procedure Initialisation
+	  		SDfileInit();
+
+
+	  		TestingComplete = false;
+			LCD_ClearLine(2);
+			LCD_ClearLine(3);
+			LCD_ClearLine(4);
+			LCD_setCursor(2, 0);
+			sprintf(Buffer, "Enter Serial Number:");
+			LCD_printf(&Buffer[0], strlen(Buffer));
+
+	  	sprintf(Buffer,"Enter Serial Number: \n",GlobalTestNum);
+	  	HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), 100);
+			read_keypad();
+			if (!Quit_flag) {
+				ComRep = 0x08;
+				communication_array(&ComRep,&Para[0], Paralen);
+				sprintf(Buffer,"Interogating...\n",GlobalTestNum);
+				HAL_UART_Transmit(&T_UART, &Buffer[0], strlen(Buffer), 100);
+			} else {
+  				LCD_Clear();
+  				TestRig_Init();
+  				TestRig_MainMenu();
+  				Quit_flag = false;
+			}
+	  	} else if (!TestingComplete){
+			if (UART2_ReceiveComplete)			//Handle Response from target board	//TODO: Implement timeout functionality, return to homescreen after 1s no response
+				communication_response(&UART2_Receive[0], UART2_RecPos);
+			else if (Comm_Ready)
+				communication_command();
+			else if (sampleUploadComplete) {
+				ComRep = 0x1B;
+				communication_command();
+			}
+	  	}
+
+	  	if (KP_star.Pressed) {
+			KP_star.Pressed = false;
+			KP_star.Count = 0;
+			QuitCount++;
+  			if (QuitCount == 5) {
+  				LCD_Clear();
+  				TestRig_Init();
+  				TestRig_MainMenu();
+  				QuitCount = 0;
+  			}
+	  	}
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -683,8 +835,8 @@ static void MX_GPIO_Init(void)
                           |ASYNC9_Pin|V12fuseLatch_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Radio_EN_Pin
-                          |RS485_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Loom_Sel_Pin
+                          |Radio_EN_Pin|RS485_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
@@ -740,10 +892,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin TB_Reset_Pin Radio_EN_Pin
-                           RS485_EN_Pin */
-  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Radio_EN_Pin
-                          |RS485_EN_Pin;
+  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin TB_Reset_Pin Loom_Sel_Pin
+                           Radio_EN_Pin RS485_EN_Pin */
+  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Loom_Sel_Pin
+                          |Radio_EN_Pin|RS485_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -765,7 +917,70 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void TestRig_Init() {
+	  sprintf(Buffer,"==========TestRig========== \n");
+	  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 
+	  LCD_setCursor(1, 0);
+	  LCD_CursorOn_Off(false);
+	  sprintf(Buffer,"      Test Rig      ");
+	  LCD_printf(&Buffer[0], strlen(Buffer));
+
+	  LoomConnected = None;
+	  LCD_setCursor(2, 0);
+	  sprintf(Buffer,"   Connect A Loom   ");
+	  LCD_printf(&Buffer[0], strlen(Buffer));
+
+	  Para[0] = 0;
+	  Paralen = 0;
+	  Length = 14 + Paralen; //length is
+	  Comlen = Length + 3; // plus 5 for the header, length and CRC
+	  ComRep = '\x08';
+	  SDIAddress = 255;
+
+	  UART2_RecPos = 0;
+	  UB1_Pressed = false;
+	  UB1_count = 0;
+	  TestingComplete = true;
+	  samplesUploading = false;
+	  sampleUploadComplete = false;
+	  GlobalTestNum = 0;
+
+	  //Set DAC to zero
+	  reset_ALL_DAC();
+
+	  Async_Port1.Active = false;
+	  Async_Port2.Active = false;
+	  Async_Port3.Active = false;
+	  Async_Port4.Active = false;
+	  Async_Port5.Active = false;
+	  Async_Port6.Active = false;
+	  Async_Port7.Active = false;
+	  Async_Port8.Active = false;
+	  Async_Port9.Active = false;
+
+	  HAL_TIM_Base_Start_IT(&htim6);
+	  HAL_TIM_Base_Start_IT(&htim7);
+	  HAL_TIM_Base_Start_IT(&htim10);
+	  HAL_TIM_Base_Start_IT(&htim14);
+
+	  LoomChecking = true;
+
+	  for (int i = 0; i < 15; i++) {
+		  TestResults[i] = true;
+	  }
+
+	  LoomState = None;
+	  PrevLoomState = None;
+	  read_correctionFactors();
+
+	  //Mount SD and check space
+	  SDfileInit();
+	  LCD_setCursor(2, 0);
+	  sprintf(Buffer, " SD card Connected  ");
+	  LCD_printf(&Buffer[0], strlen(Buffer));
+}
 /* USER CODE END 4 */
 
 /**

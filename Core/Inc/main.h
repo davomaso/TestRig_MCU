@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
+  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
   * This software component is licensed by ST under BSD 3-Clause license,
@@ -32,16 +32,82 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
+PCD_HandleTypeDef hpcd_USB_OTG_FS;
+
+I2C_HandleTypeDef hi2c1;
+
+
+
+TIM_HandleTypeDef htim6;
+TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef htim13;
+TIM_HandleTypeDef htim14;
+
+
+
+//Peripheral Defines
+#define R_UART huart2
+#define T_UART huart3
+#define SDI_UART huart6
+
+#define DAC_SPI hspi3
+
+UART_HandleTypeDef R_UART;
+UART_HandleTypeDef T_UART;
+UART_HandleTypeDef SDI_UART;
+
+SPI_HandleTypeDef DAC_SPI;
+
+
+#define EEPROM_W_ADDRESS 0x50
+#define EEPROM_R_ADDRESS 0x51
+#define LCD_ADR 0x3C
+
+//===============	 OUTPUT FUNCTIONALITY 	===============//
+#define TWO_WIRE_LATCHING 0x10	//One Pulse- Top 4 Bits, Two Wire Latching-Bottom 4 bits
+#define USART_SR_NF_Msk (1 << 2)
+#define USART_ERROR_MASK ((USART_SR_ORE_Msk) | (USART_SR_NF_Msk) | (USART_SR_FE_Msk) |(USART_SR_PE_Msk))
+
+//===============	 INPUT FUNCTIONALITY 	===============//
+//	#define UNUSED 0x00
+#define DIGITAL_OUTPUT 0x01
+#define DIGITAL_INPUT 0x02
+#define	ONE_VOLT 0x03
+#define TWOFIVE_VOLT 0x04
+#define THREE_VOLT 0x05
+#define TWENTY_AMP 0x06
+#define FIFTY_AMP 0x07
+#define PULSE_WIDTH 0x08
+#define ASYNC_PULSE 0x09
+#define SDI_TWELVE 0x0A
+#define ENVIROPRO 0x0B
+#define AQUASPY 0x0C
+#define NOTEST 0x00
+
+
+typedef unsigned char uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef unsigned char uns_ch;
+typedef _Bool bool;
+typedef signed char int8;
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+typedef enum {None = 0, b935x = 9352, b937x = 9371, b401x = 4011,  b402x = 4020, b422x = 4220, b427x = 4270}TloomConnected;
+TloomConnected LoomConnected;
+TloomConnected BoardType;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
+uint8_t GlobalTestNum;
+uns_ch Buffer[256];
 
 /* USER CODE END EC */
 
@@ -54,7 +120,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void scan_loom(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -148,6 +214,8 @@ void Error_Handler(void);
 #define RS485_4011EN_GPIO_Port GPIOA
 #define TB_Reset_Pin GPIO_PIN_0
 #define TB_Reset_GPIO_Port GPIOD
+#define Loom_Sel_Pin GPIO_PIN_1
+#define Loom_Sel_GPIO_Port GPIOD
 #define Radio_EN_Pin GPIO_PIN_4
 #define Radio_EN_GPIO_Port GPIOD
 #define RS485_EN_Pin GPIO_PIN_7
