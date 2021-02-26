@@ -757,9 +757,9 @@ void PrintLatchResults(){
 
 		//Port A Voltage
 	adc1.highVoltage = adc1.HighPulseWidth > 0 ? adc1.highVoltage/adc1.HighPulseWidth:0;
-	adc1.highVoltage *= (16.17/4096);
+	adc1.highVoltage *= (19.17/4096); //Previous value was 16.17 when resistor is set to 150
 	adc1.lowVoltage /= adc1.LowPulseWidth;
-	adc1.lowVoltage *= (16.17/4096);
+	adc1.lowVoltage *= (19.17/4096);
 	sprintf(Buffer, "\n==============   Port A Voltage:   High: %f Low: %f   ==============\n\n", adc1.highVoltage, adc1.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
@@ -769,38 +769,38 @@ void PrintLatchResults(){
 
 		//Port B Voltage
 	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;
-	adc2.highVoltage *= (16.17/4096);
+	adc2.highVoltage *= (19.17/4096);
 	adc2.lowVoltage /= adc2.LowPulseWidth;
-	adc2.lowVoltage *= (16.17/4096);
+	adc2.lowVoltage *= (19.17/4096);
 	sprintf(Buffer, "\n==============   Port B Voltage:   High: %f Low: %f   ==============\n\n", adc2.highVoltage, adc2.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//Vin Voltage
-	Vin.lowVoltage *= (16.17/4096);
+	Vin.lowVoltage *= (19.17/4096);
 	sprintf(Buffer, "\n==============   Vin Voltage:   AVG: %f Min: %f   ==============\n", Vin.steadyState, Vin.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//Fuse Voltage
-	Vfuse.lowVoltage *= (16.17/4096);
+	Vfuse.lowVoltage *= (19.17/4096);
 	sprintf(Buffer, "\n==============   Fuse Voltage:   AVG: %f Min: %f   ==============\n", Vfuse.steadyState, Vfuse.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 		//MOSFET Voltage
-	Vmos1.lowVoltage *= (16.17/4096);
-	Vmos1.highVoltage *= (16.17/4096);
+	Vmos1.lowVoltage *= (19.17/4096);
+	Vmos1.highVoltage *= (19.17/4096);
 	sprintf(Buffer, "\n==============   MOSFET 1 Voltage:   High: %f Low: %f   ==============\n", Vmos1.highVoltage, Vmos1.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
-	Vmos2.lowVoltage *= (16.17/4096);
-	Vmos2.highVoltage *= (16.17/4096);
+	Vmos2.lowVoltage *= (19.17/4096);
+	Vmos2.highVoltage *= (19.17/4096);
 	sprintf(Buffer, "\n==============   MOSFET 2 Voltage:   High: %f Low: %f   ==============\n", Vmos2.highVoltage, Vmos2.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
 
 	LatchCurrent.lowVoltage /= 132;
 	LatchCurrent.highVoltage /= 132;
-	LatchCurrent.lowVoltage *= (16.17/4096);
-	LatchCurrent.highVoltage *= (16.17/4096);
+	LatchCurrent.lowVoltage *= (19.17/4096);
+	LatchCurrent.highVoltage *= (19.17/4096);
 	sprintf(Buffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent.highVoltage, LatchCurrent.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 
