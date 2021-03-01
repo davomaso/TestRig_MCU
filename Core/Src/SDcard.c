@@ -23,6 +23,4 @@ void SDfileInit() {
 	Mount_SD("/");
 	Check_SD_Space();
 	Create_Dir("TEST_RESULTS");
-//	Scan_SD("/FIRMWARE");
-
 }

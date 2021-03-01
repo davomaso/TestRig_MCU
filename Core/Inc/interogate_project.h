@@ -200,12 +200,7 @@ bool TestingComplete;
 _Bool Quit_flag;
 
 	//Button Variables
-_Bool UB1_Pressed;
-uint8 UB1_count;
-bool UB2_Pressed;
-uint8 UB2_count;
-bool UB3_Pressed;
-uint8 UB3_count;
+
 	//Maintain userButtons for if calibration routine doesnt run off keypad variables//eg. Hidden buttons internally
 
 	//Keypad Variables
@@ -233,5 +228,8 @@ uint8 QuitCount;
 	//Serial Number variables
 int SerialNumber[9];
 uint8 SerialCount;
+uint8 BarcodeCount;
+int BarcodeBuffer[9];
+_Bool BarcodeScanned;
 
 #endif /* INC_INTEROGATE_PROJECT_H_ */

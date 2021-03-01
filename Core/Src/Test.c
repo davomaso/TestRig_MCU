@@ -376,8 +376,6 @@ void SetTestParam(TboardConfig *testParam, uint8 TestCount) {
 		TestingComplete = true;
 		Comm_Ready = false;
 		sampleUploadComplete = false;
-		UB1_Pressed = false;
-		UB1_count = 0;
 		sprintf(Buffer,"\n ========== Maximum Test Number Reached: %d ==========",GlobalTestNum);
 		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 		reset_ALL_MUX();

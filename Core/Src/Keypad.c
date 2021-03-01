@@ -1,6 +1,7 @@
 #include <main.h>
 #include "interogate_project.h"
-void read_keypad() {
+void read_serial() {
+	USART3->CR1 |= (USART_CR1_RXNEIE);
 	LCD_ClearLine(4);
 	LCD_setCursor(4,0);
 	sprintf(Buffer, " * - Esc    # - Ent ");
@@ -170,6 +171,12 @@ void read_keypad() {
 				Quit_flag = true;
 				break;
 			}
+		}
+		if (BarcodeScanned == true) {
+			BarcodeScanned = false;
+			USART3->CR1 &= ~(USART_CR1_RXNEIE);
+			LCD_ClearLine(3);
+			LCD_printf(&SerialNumber[0], strlen(SerialNumber));
 		}
 		if (SerialCount == 9) {
 			break;

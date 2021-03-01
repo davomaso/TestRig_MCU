@@ -91,7 +91,7 @@ static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
-void read_keypad(void);
+void read_serial(void);
 void read_correctionFactors(void);
 void write_correctionFactors(void);
 void LCD_init(void);
@@ -261,7 +261,7 @@ int main(void)
 
 			sprintf(Buffer,"Enter Serial Number: \n",GlobalTestNum);
 	  		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-			read_keypad();
+			read_serial();	//TODO:Scan for barcode here as well, change  function to read serial number
 			if (!Quit_flag) {
 				ComRep = 0x08;
 				communication_array(&ComRep,&Para[0], Paralen);
@@ -940,8 +940,6 @@ void TestRig_Init() {
 	  SDIAddress = 255;
 
 	  UART2_RecPos = 0;
-	  UB1_Pressed = false;
-	  UB1_count = 0;
 	  TestingComplete = true;
 	  samplesUploading = false;
 	  sampleUploadComplete = false;
