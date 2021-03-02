@@ -17,7 +17,7 @@ char Ascii2hex(char *);
 #define HIGH 1
 
 uint16 current_page(void);
-void write_flash_pages(int, uint8 *);
+void write_flash_pages(uint8 *, int);
 void spi_transaction(uint8, uint8, uint8, uint8);
 
 
@@ -34,7 +34,7 @@ uns_ch hexRecType;
 uint8 hexCheckSum;
 uint8 len;
 char ProgrammingBuffer[256];
-uint16 ProgrammingCount;
+uint8 ProgrammingCount;
 
 _Bool Programming;
 uint8 Program_CountDown;
@@ -44,7 +44,8 @@ TtbMicroController TBmicro;
 
 uint16 flashPagelen;
 uint16 eepromPagelen;
-uint16 here;
+uint16 extendedPage;
+uint8 page;
 
 
 #endif /* SRC_PROGRAMMING_H_ */

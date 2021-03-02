@@ -17,19 +17,19 @@ void sortLine(char *Line) {
 		hexRecType = Ascii2hex(Line);
 		Line += 2;
 		if (hexRecType == 0x01) {
-			write_flash_pages(ProgrammingCount, &ProgrammingBuffer[0]);
+			write_flash_pages(&ProgrammingBuffer[0], ProgrammingCount);
 		} else {
-					while(len > 0) {
-						len--;
-						ProgrammingBuffer[ProgrammingCount++] = Ascii2hex(Line);
-						Line += 2;
-						if (ProgrammingCount == 256) {
-							//Write Page
-							write_flash_pages(ProgrammingCount, &ProgrammingBuffer[0]);
-							ProgrammingCount = 0;
-					}
+				while(len > 0) {
+					len--;
+					ProgrammingBuffer[ProgrammingCount++] = Ascii2hex(Line);
+					Line += 2;
+					if (ProgrammingCount == 0xFF) {
+						//Write Page
+						write_flash_pages(&ProgrammingBuffer[0], ProgrammingCount/2);
+						ProgrammingCount = 0;
 				}
 			}
+		}
 		hexCheckSum = *Line++;
 	}
 }
@@ -120,7 +120,7 @@ void ProgrammingInit() {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
 		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_8);
-	//		int byte = SPI3->CR1;
+//		int byte = SPI3->CR1;
 		ProgrammingCount = 0;
 	}
 	// Read Fuse Bits
@@ -160,8 +160,8 @@ char Ascii2hex(char *ch) {
 	return hex;
 }
 
-void flash (uint8_t hilo, uint16 addr, uint8_t * data) {
-  spi_transaction(0x40 + 8 * hilo, 0x00, addr & 0xFF, *data);
+void loadByte (uint8_t hilo, uint8 addr, uint8_t * data) {
+  spi_transaction(0x40 + 8 * hilo, 0x00, addr, *data);
 }
 
 void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
@@ -173,44 +173,30 @@ void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
   HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
 }
 
-void write_flash_pages(int length, uint8 *buff) {
-  int x = 0;
-  uint16 page = current_page();
-  while (x < length/2) {
-    if (page != current_page()) {
-      commit(page);
-      page = current_page();
-    }
-    flash(LOW, here, buff++);
-    flash(HIGH, here, buff++);
-    here++;
-    x++;
+void write_flash_pages(uint8 *buff, int length) {
+  int adr = 0;
+  while (adr < length) {
+    loadByte(LOW, adr, buff++);
+    loadByte(HIGH, adr, buff++);
+    adr++;
   }
-  commit(page);
+  pageCommit(page);
+  page++;
 }
 
-void commit(uint16 addr) {
-  spi_transaction(0x4C, (((addr >> 8) & 0xFF)-1), 0x00, 0x00);
+void pageCommit(uint16 addr) {
+  spi_transaction(0x4C, addr , 0x00, 0x00);
   HAL_Delay(5);
 }
-
-uint16 current_page() {
-  if (flashPagelen == 32) {
-	  spi_transaction(0x4D, 0x00, (here >> 8) & 0xFF, 0x00);
-    return here & 0xFFFFFFF0;
-  }
-  if (flashPagelen == 64) {
-	  spi_transaction(0x4D, 0x00, (here >> 8) & 0xFF, 0x00);
-    return here & 0xFFFFFFE0;
-  }
-  if (flashPagelen == 128) {
-	  spi_transaction(0x4D, 0x00, (here >> 8) & 0xFF, 0x00);
-    return here & 0xFFFFFFC0;
-  }
-  if (flashPagelen == 256) {
-	  spi_transaction(0x4D, 0x00, (here >> 8) & 0xFF, 0x00);
-    return here & 0xFFFFFF00;
-  }
-
-  return here;
-}
+	//Only required if the microcontroller runs more than 64Kbytes of flash memory
+//void WriteExtendedPage() {
+//  if (flashPagelen == 32) {
+//	  spi_transaction(0x4D, 0x00, extendedPage++, 0x00);
+//  }  else if (flashPagelen == 64) {
+//	  spi_transaction(0x4D, 0x00, extendedPage++, 0x00);
+//  }  else if (flashPagelen == 128) {
+//	  spi_transaction(0x4D, 0x00, extendedPage++, 0x00);
+//  }  else if (flashPagelen == 256) {
+//	  spi_transaction(0x4D, 0x00, extendedPage++, 0x00);
+//  }
+//}

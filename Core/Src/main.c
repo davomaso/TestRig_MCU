@@ -261,7 +261,7 @@ int main(void)
 
 			sprintf(Buffer,"Enter Serial Number: \n",GlobalTestNum);
 	  		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-			read_serial();	//TODO:Scan for barcode here as well, change  function to read serial number
+			read_serial();
 			if (!Quit_flag) {
 				ComRep = 0x08;
 				communication_array(&ComRep,&Para[0], Paralen);
