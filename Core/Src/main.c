@@ -241,7 +241,7 @@ int main(void)
 	  				char * location = malloc(1+strlen(&fno.fname[0])+strlen(tempDir));
 	  				strcpy(location, tempDir);
 	  				strcat(location, fno.fname);
-	  				SD_FileSize(&location[0]);
+	  				ReadProgram(&location[0]);
 	  		} else {
 				sprintf(Buffer, "hex file not found");
 				LCD_printf(&Buffer[0], strlen(Buffer));

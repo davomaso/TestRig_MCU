@@ -7,6 +7,7 @@
 
 #include <File_Handling.h>
 #include "stm32f4xx_hal.h"
+#include "Programming.h"
 
 
 extern UART_HandleTypeDef huart3;
@@ -371,8 +372,15 @@ FRESULT Create_Dir (char *name) {
     return fresult;
 }
 
-void  SD_FileSize (char * fileName) {
+void  ReadProgram (char * fileName) {
 	f_open(&fil, fileName, FA_READ | FA_OPEN_EXISTING);
+	fileSize = f_size(&fil);
+	progressStep = fileSize / 20;
+	sprintf(Buffer, "File Size: ");
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	sprintf(Buffer,"%d", fileSize);
+	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+
 	char data[255];
 	UINT testbyte;
     char line[100];
@@ -390,6 +398,7 @@ void  SD_FileSize (char * fileName) {
 
 	while (f_gets(line, sizeof(line), &fil)) {
         sortLine(&line[0]);
+        sprintf(Buffer,".\n");
         CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
     }
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);

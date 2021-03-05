@@ -8,21 +8,37 @@
 void sortLine(char *Line) {
 	uint8 data[4];
 	if (*Line++ == ':') {
+		if (!(--fileSize % progressStep))
+			progressPercent += 5;
 		len = Ascii2hex(Line);
 		Line += 2;
+		if (!(--fileSize % progressStep))
+			progressPercent += 5;
 		hexAddress = (Ascii2hex(Line) << 8);
 		Line += 2;
+		if (!(--fileSize % progressStep))
+			progressPercent += 5;
 		hexAddress += Ascii2hex(Line);
 		Line += 2;
+		if (!(--fileSize % progressStep))
+			progressPercent += 5;
 		hexRecType = Ascii2hex(Line);
 		Line += 2;
+		if (!(--fileSize % progressStep))
+			progressPercent += 5;
+		fileSize -= 5 + len;
 		if (hexRecType == 0x01) {
-			write_flash_pages(&ProgrammingBuffer[0], ProgrammingCount);
+			write_flash_pages(&ProgrammingBuffer[0], ProgrammingCount/2);
 		} else {
 				while(len > 0) {
 					len--;
 					ProgrammingBuffer[ProgrammingCount++] = Ascii2hex(Line);
 					Line += 2;
+					if (!(--fileSize % progressStep)) {
+						progressPercent += 5;
+						sprintf(Buffer, "%d", progressPercent);
+						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+					}
 					if (ProgrammingCount == 0xFF) {
 						//Write Page
 						write_flash_pages(&ProgrammingBuffer[0], ProgrammingCount/2);
