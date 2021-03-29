@@ -3,6 +3,7 @@
 
 void scan_loom(){
 		//First Wire
+	HAL_GPIO_WritePin(Loom_Sel_GPIO_Port, Loom_Sel_Pin, GPIO_PIN_SET);
 	CheckLoom = false;
 	PrevLoomState = LoomState;
 	LoomState = 0x00;
@@ -19,6 +20,7 @@ void scan_loom(){
 		case 0:
 			sprintf(Buffer, "Connect A Loom...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			LoomConnected = None;
 			LCD_setCursor(1, 0);
 			sprintf(Buffer,"Connect A Loom");
@@ -29,6 +31,7 @@ void scan_loom(){
 			LCD_Clear();
 			sprintf(Buffer, "9352 Connected...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			LCD_setCursor(1, 0);
 			sprintf(Buffer,"9352 Loom Connected");
 			LCD_printf(&Buffer[0], strlen(Buffer));
@@ -38,6 +41,7 @@ void scan_loom(){
 			LCD_Clear();
 			LCD_setCursor(1, 0);
 			sprintf(Buffer,"9371 Loom Connected");
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			LCD_printf(&Buffer[0], strlen(Buffer));
 			sprintf(Buffer, "9371 Connected...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
@@ -50,6 +54,7 @@ void scan_loom(){
 			LCD_printf(&Buffer[0], strlen(Buffer));
 			sprintf(Buffer, "4011 Connected...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			break;
 		case 4:
 			LoomConnected = b402x;
@@ -59,6 +64,7 @@ void scan_loom(){
 			LCD_printf(&Buffer[0], strlen(Buffer));
 			sprintf(Buffer, "4021 Connected...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			break;
 		case 5:
 			LoomConnected = b427x;
@@ -68,6 +74,7 @@ void scan_loom(){
 			LCD_printf(&Buffer[0], strlen(Buffer));
 			sprintf(Buffer, "4271 Connected...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			break;
 		case 6:
 			LoomConnected = b422x;
@@ -77,11 +84,13 @@ void scan_loom(){
 			LCD_printf(&Buffer[0], strlen(Buffer));
 			sprintf(Buffer, "422x Connected...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			break;
 		default:
 			LoomConnected = None;
 			sprintf(Buffer, "Connect A Loom...\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 		}
 		  LCD_setCursor(4, 0);
@@ -90,4 +99,39 @@ void scan_loom(){
 		  LCD_printf(&Buffer[0], strlen(Buffer));
 	}
 
+}
+
+void BoardInterrogated() {
+	if(Board[0] == 0x93)
+	{
+		 if( ((Board[1] & 0xF0) == 0x50 )  && (LoomConnected == b935x) ){
+			 	BoardConnected = TestConfig935x();
+				TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+		 } else if( ((Board[1] & 0xF0) == 0x70) && (LoomConnected == b937x) ){
+				BoardConnected = TestConfig937x();
+				TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+		 }
+	}
+	else if(Board[0] == 0x40)
+	{
+		if( ((Board[1] & 0xF0) == 0x10) && (LoomConnected == b401x) ){
+			BoardConnected = TestConfig401x();
+			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+		} else if ( ((Board[1] & 0xF0) == 0x20) && (LoomConnected == b402x)){
+			BoardConnected = TestConfig402x();
+			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+		}
+	} else if (Board[0] == 0x42) {
+		if( ((Board[1] & 0xF0) == 0x20) && (LoomConnected == b422x)){
+			BoardConnected = TestConfig422x();
+			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+		} else if ( ((Board[1] & 0xF0) == 0x70) && (LoomConnected == b427x)) {
+			BoardConnected = TestConfig427x();
+			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+		}
+	} else{
+		sprintf(Buffer, "BoardConfig Error/Loom Connected Error");
+		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	}
 }

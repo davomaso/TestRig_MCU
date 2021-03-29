@@ -32,6 +32,7 @@
 #include "SetVsMeasured.h"
 #include "Programming.h"
 #include "File_Handling.h"
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -85,11 +86,11 @@ static void MX_TIM6_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void read_serial(void);
 void read_correctionFactors(void);
@@ -138,7 +139,6 @@ int main(void)
   MX_TIM7_Init();
   MX_TIM13_Init();
   MX_TIM14_Init();
-  MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
@@ -147,6 +147,7 @@ int main(void)
   MX_FATFS_Init();
   MX_USB_DEVICE_Init();
   MX_TIM10_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
   addSD_DelayVariable = true;
@@ -161,32 +162,37 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 	  if (TestingComplete && CheckLoom)
 		  scan_loom();
 
 
-	  if (KP_9.Pressed && TestingComplete) {
-		  	KP_9.Pressed = KP_9.Count = 0;
+	  if (KP_5.Pressed && TestingComplete) {
+		  	KP_5.Pressed = KP_5.Count = 0;
 		  	sprintf(Buffer, "Scanning I2C bus:\r\n");
 		  	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		  	HAL_StatusTypeDef result;
 		  	uint8_t i;
 		  	for (i=1; i<128; i++) {
 		  	  result = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(i<<1), 2, 2);
 		  	  if (result != HAL_OK) {// HAL_ERROR or HAL_BUSY or HAL_TIMEOUT
 		  		  sprintf(Buffer, "."); // No ACK received at that address
+		  		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		  	  }
 		  	  if (result == HAL_OK) {
 		  		  sprintf(Buffer, "0x%X", i); // Received an ACK at that address
 		  	  }
 			  	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+				  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		  	}
 	  }
 
 	  //Calibration Routine
-	  if((KP_star.Pressed && KP_hash.Pressed) && TestingComplete){
-		  KP_star.Count = KP_star.Pressed = 0;
-		  KP_hash.Count = KP_hash.Pressed = 0;
+	  if((KP_7.Pressed && KP_9.Pressed) && TestingComplete){
+		  KP_7.Count = KP_7.Pressed = 0;
+		  KP_9.Count = KP_9.Pressed = 0;
 
 		  LCD_Clear();
 		  LCD_setCursor(1, 6);
@@ -203,12 +209,14 @@ int main(void)
 
 		  sprintf(Buffer,"\n\n==========  Calibration Routine  ==========\n");
 		  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		  Calibration();
 		  LCD_Clear();
 		  TestRig_Init();
 		  TestRig_MainMenu();
 		  sprintf(Buffer,"\n\n==========  Test Rig  ==========\n");
 		  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 	  }
 
 	  //Testing Functionality
@@ -217,40 +225,46 @@ int main(void)
 	  		KP_1.Count = 0;
 
 	  		// Programming Routine
-  			ComRep = 0x08;
-			communication_array(&ComRep,&Para[0], Paralen);
-			Programming = true;
-			Program_CountDown = 25;
-			HAL_TIM_Base_Start(&htim6);
-				//Find Version Currently On Board
-	  		while (Programming) {
-	  			Programming = (ComRep == 0x35) ? false : true;
-				if (UART2_ReceiveComplete)
-					communication_response(&UART2_Receive[0], UART2_RecPos);
-				else if (Comm_Ready && Programming)
-					communication_command();
+//  			ComRep = 0x08;
+//			communication_array(ComRep,&Para[0], Paralen);
+//			Programming = true;
+//			Program_CountDown = 25;
+//			HAL_TIM_Base_Start(&htim6);
+//				//Find Version Currently On Board
+//	  		while (Programming) {
+//	  			Programming = (ComRep == 0x35) ? false : true;
+//				if (UART2_ReceiveComplete)
+//					communication_response(&UART2_Receive[0], UART2_RecPos);
+//				else if (Comm_Ready && Programming)
+//					communication_command();
+//	  		}
+//
+//	  			//Begin Programming
+//	  		ProgrammingInit();	//Set Clk to 8Mhz
+//	  		scan_loom();		//Get LoomConnected
+//	  		if (Find_File("/FIRMWARE", LoomConnected)) {
+//	  			if (findVer(&fno.fname[0]) > Version[0]) {
+//	  				char * tempDir;
+//	  				tempDir = "/FIRMWARE/";
+//	  				char * location = malloc(1+strlen(&fno.fname[0])+strlen(tempDir));
+//	  				strcpy(location, tempDir);
+//	  				strcat(location, fno.fname);
+//	  				ReadProgram(&location[0]);
+//	  		} else {
+//				sprintf(Buffer, "hex file not found");
+//				LCD_printf(&Buffer[0], strlen(Buffer));
+//	  			}
+//	  		}
+//	  		//Testing Procedure Initialisation
+//	  		SDfileInit();
+
+	  		uint8 CalibrateCount = 3;
+	  		while(!BoardCalibrated && CalibrateCount--) {
+	  			TargetBoardCalibration();
 	  		}
-
-	  			//Begin Programming
-	  		ProgrammingInit();	//Set Clk to 8Mhz
-	  		scan_loom();		//Get LoomConnected
-	  		if (Find_File("/FIRMWARE", LoomConnected)) {
-	  			if (findVer(&fno.fname[0]) > Version[0]) {
-	  				char * tempDir;
-	  				tempDir = "/FIRMWARE/";
-	  				char * location = malloc(1+strlen(&fno.fname[0])+strlen(tempDir));
-	  				strcpy(location, tempDir);
-	  				strcat(location, fno.fname);
-	  				ReadProgram(&location[0]);
-	  		} else {
-				sprintf(Buffer, "hex file not found");
-				LCD_printf(&Buffer[0], strlen(Buffer));
-	  			}
-	  		}
-	  		//Testing Procedure Initialisation
-	  		SDfileInit();
-
-
+	  		TargetBoardParamInit();
+	  		initialiseTargetBoard();
+			HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
 	  		TestingComplete = false;
 			LCD_ClearLine(2);
 			LCD_ClearLine(3);
@@ -261,12 +275,13 @@ int main(void)
 
 			sprintf(Buffer,"Enter Serial Number: \n",GlobalTestNum);
 	  		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  		HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			read_serial();
 			if (!Quit_flag) {
 				ComRep = 0x08;
-				communication_array(&ComRep,&Para[0], Paralen);
+				communication_array(ComRep,&Para[0], Paralen);
 				sprintf(Buffer,"Interogating...\n",GlobalTestNum);
-				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+				HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			} else {
   				LCD_Clear();
   				TestRig_Init();
@@ -282,6 +297,15 @@ int main(void)
 				ComRep = 0x1B;
 				communication_command();
 			}
+	  	} else if (TestingComplete && TestPassed) {
+	  		initialiseTargetBoard();
+	  		while(!UART2_ReceiveComplete){
+
+	  		}
+	  		communication_response(&UART2_Receive[0], UART2_RecPos);
+	  		WriteSerialNumber();
+
+	  		TestPassed = false;
 	  	}
 
 	  	if (KP_star.Pressed) {
@@ -295,7 +319,6 @@ int main(void)
   				QuitCount = 0;
   			}
 	  	}
-    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
@@ -323,7 +346,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 96;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -335,8 +358,8 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
@@ -372,10 +395,10 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -389,13 +412,29 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
+//  sConfig.Channel = ADC_CHANNEL_0;
+//  sConfig.Rank = 1;
+//  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+//  */
+//  sConfig.Channel = ADC_CHANNEL_1;
+//  sConfig.Rank = 2;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+//  */
+//  sConfig.Channel = ADC_CHANNEL_3;
+//  sConfig.Rank = 3;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
@@ -482,12 +521,12 @@ static void MX_SPI3_Init(void)
   /* SPI3 parameter configuration*/
   hspi3.Instance = SPI3;
   hspi3.Init.Mode = SPI_MODE_MASTER;
-  hspi3.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi3.Init.Direction = SPI_DIRECTION_1LINE;
+  hspi3.Init.DataSize = SPI_DATASIZE_16BIT;
   hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi3.Init.NSS = SPI_NSS_SOFT;
-  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
   hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -586,9 +625,9 @@ static void MX_TIM10_Init(void)
 
   /* USER CODE END TIM10_Init 1 */
   htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 99;
+  htim10.Init.Prescaler = 119;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 47;
+  htim10.Init.Period = 1;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
@@ -712,7 +751,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -835,7 +874,7 @@ static void MX_GPIO_Init(void)
                           |ASYNC9_Pin|V12fuseLatch_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Loom_Sel_Pin
+  HAL_GPIO_WritePin(GPIOD, ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|res_LoomSel_Pin
                           |Radio_EN_Pin|RS485_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -869,7 +908,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : KP_C1_Pin KP_C2_Pin KP_C3_Pin */
   GPIO_InitStruct.Pin = KP_C1_Pin|KP_C2_Pin|KP_C3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LED1_Pin LED2_Pin DAC_CS3_Pin DAC_CS2_Pin
@@ -892,9 +931,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin TB_Reset_Pin Loom_Sel_Pin
+  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin TB_Reset_Pin res_LoomSel_Pin
                            Radio_EN_Pin RS485_EN_Pin */
-  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Loom_Sel_Pin
+  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|res_LoomSel_Pin
                           |Radio_EN_Pin|RS485_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -908,6 +947,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RS485_4011EN_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : Loom_Sel_Pin */
+  GPIO_InitStruct.Pin = Loom_Sel_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Loom_Sel_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : SD_Det_Pin */
   GPIO_InitStruct.Pin = SD_Det_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -917,68 +962,8 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void TestRig_Init() {
-	  sprintf(Buffer,"==========TestRig========== \n");
-	  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-	  HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 
-	  LCD_setCursor(1, 0);
-	  LCD_CursorOn_Off(false);
-	  sprintf(Buffer,"      Test Rig      ");
-	  LCD_printf(&Buffer[0], strlen(Buffer));
 
-	  LoomConnected = None;
-	  LCD_setCursor(2, 0);
-	  sprintf(Buffer,"   Connect A Loom   ");
-	  LCD_printf(&Buffer[0], strlen(Buffer));
-
-	  Para[0] = 0;
-	  Paralen = 0;
-	  Length = 14 + Paralen; //length is
-	  Comlen = Length + 3; // plus 5 for the header, length and CRC
-	  ComRep = '\x08';
-	  SDIAddress = 255;
-
-	  UART2_RecPos = 0;
-	  TestingComplete = true;
-	  samplesUploading = false;
-	  sampleUploadComplete = false;
-	  GlobalTestNum = 0;
-
-	  //Set DAC to zero
-	  reset_ALL_DAC();
-
-	  Async_Port1.Active = false;
-	  Async_Port2.Active = false;
-	  Async_Port3.Active = false;
-	  Async_Port4.Active = false;
-	  Async_Port5.Active = false;
-	  Async_Port6.Active = false;
-	  Async_Port7.Active = false;
-	  Async_Port8.Active = false;
-	  Async_Port9.Active = false;
-
-	  HAL_TIM_Base_Start_IT(&htim6);
-	  HAL_TIM_Base_Start_IT(&htim7);
-	  HAL_TIM_Base_Start_IT(&htim10);
-	  HAL_TIM_Base_Start_IT(&htim14);
-
-	  LoomChecking = true;
-
-	  for (int i = 0; i < 15; i++) {
-		  TestResults[i] = true;
-	  }
-
-	  LoomState = None;
-	  PrevLoomState = None;
-	  read_correctionFactors();
-
-	  //Mount SD and check space
-	  SDfileInit();
-	  LCD_setCursor(2, 0);
-	  sprintf(Buffer, " SD card Connected  ");
-	  LCD_printf(&Buffer[0], strlen(Buffer));
-}
 /* USER CODE END 4 */
 
 /**

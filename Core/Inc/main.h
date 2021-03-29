@@ -69,6 +69,8 @@ SPI_HandleTypeDef DAC_SPI;
 #define EEPROM_R_ADDRESS 0x51
 #define LCD_ADR 0x3C
 
+#define VREF 25
+
 //===============	 OUTPUT FUNCTIONALITY 	===============//
 #define TWO_WIRE_LATCHING 0x10	//One Pulse- Top 4 Bits, Two Wire Latching-Bottom 4 bits
 #define USART_SR_NF_Msk (1 << 2)
@@ -216,14 +218,16 @@ void scan_loom(void);
 #define RS485_4011EN_GPIO_Port GPIOA
 #define TB_Reset_Pin GPIO_PIN_0
 #define TB_Reset_GPIO_Port GPIOD
-#define Loom_Sel_Pin GPIO_PIN_1
-#define Loom_Sel_GPIO_Port GPIOD
+#define res_LoomSel_Pin GPIO_PIN_1
+#define res_LoomSel_GPIO_Port GPIOD
 #define Radio_EN_Pin GPIO_PIN_4
 #define Radio_EN_GPIO_Port GPIOD
 #define RS485_EN_Pin GPIO_PIN_7
 #define RS485_EN_GPIO_Port GPIOD
 #define V12fuseLatch_Pin GPIO_PIN_9
 #define V12fuseLatch_GPIO_Port GPIOG
+#define Loom_Sel_Pin GPIO_PIN_12
+#define Loom_Sel_GPIO_Port GPIOG
 #define SD_Det_Pin GPIO_PIN_1
 #define SD_Det_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */

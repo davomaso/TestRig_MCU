@@ -1,6 +1,10 @@
 #ifndef INC_CALIBRATION_H_
 #define INC_CALIBRATION_H_
 
+#include "interogate_project.h"
+
+#define CalibrateTimerTo 10000
+
 void Calibration();
 float Current_calibration(uint8);
 float Voltage_calibration(uint8);
@@ -26,5 +30,19 @@ TcalTestConfig calTest;
 
 uint32 DACval;
 int calCount;
+bool Calibrating;
+uint16 CalibratingTimer;
+
+uint8 CalibrationCountdown;
+bool switchToCurrent;
+
+
+typedef struct {
+	uint32_t total;
+	uint16_t average;
+	uint16_t avg_Buffer[ADC_BUF_LEN];
+}TcalibrateConfig;
+
+TcalibrateConfig calibrateADCval;
 
 #endif /* INC_CALIBRATION_H_ */

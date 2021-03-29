@@ -21,9 +21,9 @@ float threeVolt(uint8, uint8);
 float asyncPulse(uint8);
 float sdiTwelve(uint8);
 //void DAC_set(uint8, int);
-void set_ALL_DAC(int);
+
 void MUX_Sel(uint8, uint8);
-void DAC_set(uint8,int);
+
 
 extern void delay_us(int);
 extern double round(double);
@@ -116,11 +116,11 @@ float twentyAmp(uint8 Test_Port) {
 		if(!Port1.lowItestComplete){
 			current = 4;
 			Port1.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port1.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port1.CalibrationFactor[I_175];
 		}
 		break;
@@ -128,11 +128,11 @@ float twentyAmp(uint8 Test_Port) {
 		if(!Port2.lowItestComplete){
 			current = 4;
 			Port2.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port2.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port2.CalibrationFactor[I_175];
 		}
 		break;
@@ -140,11 +140,11 @@ float twentyAmp(uint8 Test_Port) {
 		if(!Port3.lowItestComplete){
 			current = 4;
 			Port3.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port3.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port3.CalibrationFactor[I_175];
 		}
 		break;
@@ -152,11 +152,11 @@ float twentyAmp(uint8 Test_Port) {
 		if(!Port4.lowItestComplete){
 			current = 4;
 			Port4.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port4.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port4.CalibrationFactor[I_175];
 		}
 		break;
@@ -164,11 +164,11 @@ float twentyAmp(uint8 Test_Port) {
 		if(!Port5.lowItestComplete){
 			current = 4;
 			Port5.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port5.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port5.CalibrationFactor[I_175];
 		}
 		break;
@@ -176,11 +176,11 @@ float twentyAmp(uint8 Test_Port) {
 		if(!Port6.lowItestComplete){
 			current = 4;
 			Port6.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port6.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 27.7573);
+			randDACcurrent = round((current * 4096) / 22.9549);
 			corrected_current = randDACcurrent + Port6.CalibrationFactor[I_175];
 		}
 		break;
@@ -208,9 +208,6 @@ float threeVolt(uint8 Test_Port, uint8 TestCode) {
 			break;
 		case TWOFIVE_VOLT:
 				voltage = 2.4;
-			break;
-		case THREE_VOLT:
-				voltage = 2.5;
 			break;
 	}
 	randDACvolt = round(((voltage/ 3.6864) * 4096));
@@ -476,37 +473,37 @@ float sdiTwelve(uint8 Test_Port){
 	case 1:
 		SDI_Port1.Enabled = true;
 		SDI_Port1.Address = Test_Port + 0x30;
-		SDI_Port1.setValue = 7.0644;
+		SDI_Port1.setValue = 7.064;
 		return SDI_Port1.setValue;
 		break;
 	case 2:
 		SDI_Port2.Enabled = true;
 		SDI_Port2.Address = Test_Port + 0x30;
-		SDI_Port2.setValue = 9.5447;
+		SDI_Port2.setValue = 9.544;
 		return SDI_Port2.setValue;
 		break;
 	case 3:
 		SDI_Port3.Enabled = true;
 		SDI_Port3.Address = Test_Port + 0x30;
-		SDI_Port3.setValue = 4.4085;
+		SDI_Port3.setValue = 4.408;
 		return SDI_Port3.setValue;
 		break;
 	case 4:
 		SDI_Port4.Enabled = true;
 		SDI_Port4.Address = Test_Port + 0x30;
-		SDI_Port4.setValue = 6.5153;
+		SDI_Port4.setValue = 6.515;
 		return SDI_Port4.setValue;
 		break;
 	case 5:
 		SDI_Port5.Enabled = true;
 		SDI_Port5.Address = Test_Port + 0x30;
-		SDI_Port5.setValue = 5.8921;
+		SDI_Port5.setValue = 5.892;
 		return SDI_Port5.setValue;
 		break;
 	case 6:
 		SDI_Port6.Enabled = true;
 		SDI_Port6.Address = Test_Port + 0x30;
-		SDI_Port6.setValue = 6.9221;
+		SDI_Port6.setValue = 6.922;
 		return SDI_Port6.setValue;
 		break;
 	}
@@ -635,59 +632,7 @@ void reset_ALL_MUX() {
 //	=================================================================================//
 
 
-//	=================================    DAC    =====================================//
-void DAC_set(uint8 Test_Port, int DACvalue) {
-	switch (Test_Port) {
-	case 1:
-	case 2:
-		HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 50);
-		HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_SET);
-		break;
-	case 3:
-	case 4:
-		HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 50);
-		HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_SET);
-		break;
-	case 5:
-	case 6:
-		HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 50);
-		HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_SET);
-		break;
-	}
-}
-void reset_ALL_DAC() {
-	int DACvalue;
-	//DAC 1 Clear
-	DACvalue = 0x3000;	//OUTA Clear
-	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
-	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_SET);
-	DACvalue = 0x9000;	//OUTB Clear
-	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
-	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_SET);
-	//DAC 2 Clear
-	DACvalue = 0x3000;	//OUTA Clear
-	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
-	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_SET);
-	DACvalue = 0xB000;	//OUTB Clear
-	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
-	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_SET);
-	//DAC 3 Clear
-	DACvalue = 0x3000;	//OUTA Clear
-	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
-	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_SET);
-	DACvalue = 0xB000;	//OUTB Clear
-	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
-	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_SET);
-}
+
 //	=================================================================================//
 
 
@@ -751,58 +696,70 @@ void ADC_MUXsel(uint8 ADCport){
 void PrintLatchResults(){
 	sprintf(Buffer, "\n\n =======================  Latch Test  =======================\n\n");
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 	sprintf(Buffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n", adc1.HighPulseWidth, adc1.LowPulseWidth);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 
 		//Port A Voltage
 	adc1.highVoltage = adc1.HighPulseWidth > 0 ? adc1.highVoltage/adc1.HighPulseWidth:0;
-	adc1.highVoltage *= (19.17/4096); //Previous value was 16.17 when resistor is set to 150
+	adc1.highVoltage *= (15.0/4096); //Previous value was 16.17 when resistor is set to 150
 	adc1.lowVoltage /= adc1.LowPulseWidth;
-	adc1.lowVoltage *= (19.17/4096);
+	adc1.lowVoltage *= (15.0/4096);
 	sprintf(Buffer, "\n==============   Port A Voltage:   High: %f Low: %f   ==============\n\n", adc1.highVoltage, adc1.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 		//Port B Latch Time
 	sprintf(Buffer, "==============   Port B Latch time:   High: %d  Low: %d   ==============\n", adc2.HighPulseWidth, adc2.LowPulseWidth);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 		//Port B Voltage
 	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;
-	adc2.highVoltage *= (19.17/4096);
+	adc2.highVoltage *= (15.0/4096);
 	adc2.lowVoltage /= adc2.LowPulseWidth;
-	adc2.lowVoltage *= (19.17/4096);
+	adc2.lowVoltage *= (15.0/4096);
 	sprintf(Buffer, "\n==============   Port B Voltage:   High: %f Low: %f   ==============\n\n", adc2.highVoltage, adc2.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 		//Vin Voltage
-	Vin.lowVoltage *= (19.17/4096);
+	Vin.lowVoltage *= (15.0/4096);
+	Vin.steadyState *= (15.0/4096);
 	sprintf(Buffer, "\n==============   Vin Voltage:   AVG: %f Min: %f   ==============\n", Vin.steadyState, Vin.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 		//Fuse Voltage
-	Vfuse.lowVoltage *= (19.17/4096);
+	Vfuse.lowVoltage *= (15.0/4096);
+	Vfuse.steadyState *= (15.0/4096);
 	sprintf(Buffer, "\n==============   Fuse Voltage:   AVG: %f Min: %f   ==============\n", Vfuse.steadyState, Vfuse.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 		//MOSFET Voltage
-	Vmos1.lowVoltage *= (19.17/4096);
-	Vmos1.highVoltage *= (19.17/4096);
+	Vmos1.lowVoltage *= (15.0/4096);
+	Vmos1.highVoltage *= (15.0/4096);
 	sprintf(Buffer, "\n==============   MOSFET 1 Voltage:   High: %f Low: %f   ==============\n", Vmos1.highVoltage, Vmos1.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
-	Vmos2.lowVoltage *= (19.17/4096);
-	Vmos2.highVoltage *= (19.17/4096);
+	Vmos2.lowVoltage *= (15.0/4096);
+	Vmos2.highVoltage *= (15.0/4096);
 	sprintf(Buffer, "\n==============   MOSFET 2 Voltage:   High: %f Low: %f   ==============\n", Vmos2.highVoltage, Vmos2.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 
 	LatchCurrent.lowVoltage /= 132;
 	LatchCurrent.highVoltage /= 132;
-	LatchCurrent.lowVoltage *= (19.17/4096);
-	LatchCurrent.highVoltage *= (19.17/4096);
+	LatchCurrent.lowVoltage *= (15.0/4096);
+	LatchCurrent.highVoltage *= (15.0/4096);
 	sprintf(Buffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent.highVoltage, LatchCurrent.lowVoltage);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 	//Store Values
 	LatchRes.tOn = (adc1.HighPulseWidth >= adc2.LowPulseWidth) ? adc1.HighPulseWidth:adc2.LowPulseWidth;
@@ -829,10 +786,12 @@ void PrintLatchResults(){
 void TransmitResults(){
 		sprintf(Buffer, "==============   ADC Average Results   ==============");
 		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		for(int i = 0;i<LatchCountTimer;i++)
 		{
 			sprintf(Buffer, "%d,%d,%d,%d\n",i,adc1.avg_Buffer[i],adc2.avg_Buffer[i],Vfuse.avg_Buffer[i]);
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		}
 }
 //	=================================================================================//

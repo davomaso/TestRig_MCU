@@ -14,6 +14,7 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 {
 	sprintf(Buffer,"\n====================	Test %d	====================\n\n",GlobalTestNum);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 	LCD_setCursor(2, 0);
 	sprintf(Buffer, "       Test %d       ", GlobalTestNum);
@@ -39,6 +40,7 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 			fMeasured = !(LatchState[currResult] & 255);
 			sprintf(Buffer,"Testing Latch\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			PortTypes[currResult] = TTLatch;
 			break;
 
@@ -55,6 +57,7 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 			}
 			sprintf(Buffer,"Testing Voltage\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			PortTypes[currResult] = TTVoltage;
 			break;
 
@@ -64,6 +67,7 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 			comp_min = 0.03 * (*SetVal);
 			sprintf(Buffer,"Testing Currrent\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			PortTypes[currResult] = TTCurrent;
 			break;
 		case ASYNC_PULSE:
@@ -72,6 +76,7 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 			comp_min = 0;//(*SetVal) - 1;
 			sprintf(Buffer,"Testing Async\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			PortTypes[currResult] = TTAsync;
 			break;
 		case SDI_TWELVE:
@@ -80,6 +85,7 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 			comp_min = (*SetVal);
 			sprintf(Buffer,"Testing SDI-12\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			PortTypes[currResult] = TTSDI;
 			break;
 		case NOTEST:
@@ -93,8 +99,10 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 			//Pass
 			sprintf(Buffer,"**Port %d** PASSED\n",currResult+1);
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			sprintf(Buffer,"Measured Value: %.04f		Set Value: %.04f \n\n",fMeasured , *SetVal); //(float)
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			sprintf(Buffer, ". ");
 			LCD_printf(&Buffer[0], strlen(Buffer));
 			TresultStatus = TRpassed;
@@ -104,8 +112,10 @@ void CompareResults(int * MeasuredVal, float *SetVal,uint8  ChNum)
 			//Fail
 			sprintf(Buffer,"**Port %d** FAILED\n",currResult+1);
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			sprintf(Buffer,"Measured Value: %.04f		Set Value: %.04f \n\n",fMeasured , *SetVal); //(float)
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 			sprintf(Buffer, "X ");
 			LCD_printf(&Buffer[0], strlen(Buffer));

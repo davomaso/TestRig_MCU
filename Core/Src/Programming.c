@@ -80,7 +80,7 @@ void ProgrammingInit() {
 	while(response[2] != 0x53) {
 		data[0] = 0xAC;
 		data[1] = 0x53;
-		data[2] = 0x00;
+       		data[2] = 0x00;
 		data[3] = 0x00;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0],&response[0], 4, HAL_MAX_DELAY);
 	}

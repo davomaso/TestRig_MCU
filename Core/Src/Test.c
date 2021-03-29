@@ -83,10 +83,10 @@ TboardConfig TestConfig935x() {
 	DigitalNum = 2;
 
 	TportConfig *TestArray935x[6][5] = {
-			{ &noTest, &currentTest,&OnevoltTest, &asyncDigitalTest, &asyncDigitalTest },
-			{ &noTest, &sdi12Test, &TwovoltTest, &asyncDigitalTest, &asyncDigitalTest },
-			{ &noTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest },
-			{ &noTest, &OnevoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest },
+			{ &latchTest, &currentTest,&OnevoltTest, &asyncDigitalTest, &asyncDigitalTest },
+			{ &latchTest, &sdi12Test, &TwovoltTest, &asyncDigitalTest, &asyncDigitalTest },
+			{ &latchTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest },
+			{ &latchTest, &OnevoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest },
 			{ &latchTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest },
 			{ &latchTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest }
 	};
@@ -115,11 +115,11 @@ TboardConfig TestConfig937x() {
 	DigitalNum = 0;
 
 	TportConfig *TestArray937x[6][4] = {
-			{ &latchTest, &noTest, &asyncTest, &asyncTest },
-			{ &latchTest, &noTest, &asyncTest, &asyncTest },
-			{ &latchTest, &noTest, &asyncTest, &OnevoltTest },
+			{ &latchTest, &noTest, &sdi12Test, &asyncTest },
+			{ &noTest, &latchTest, &asyncTest, &sdi12Test },
+			{ &noTest, &noTest, &asyncTest, &OnevoltTest },
 			{ &noTest, &noTest, &OnevoltTest, &asyncTest },
-			{ &noTest, &latchTest, &asyncTest, &currentTest },
+			{ &noTest, &noTest, &asyncTest, &currentTest },
 			{ &noTest, &noTest, &TwovoltTest, &asyncTest },
 	};
 
@@ -237,7 +237,7 @@ TboardConfig TestConfig422x(){
 			{ 0xCC, 0xCD },
 	};
 
-	TboardConfig input422x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray422x, &portCodeArray422x };
+	TboardConfig input422x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray422x, &portCodeArray422x,  };
 	SetTestParam(&input422x_Test, GlobalTestNum);
 	return input422x_Test;
 }
@@ -370,7 +370,7 @@ void SetTestParam(TboardConfig *testParam, uint8 TestCount) {
 			GlobalTestNum++;
 			unsigned char ComRep;
 			ComRep = 0x56;
-			communication_array(&ComRep, &para[0], Count);
+			communication_array(ComRep, &para[0], Count);
 	}
 		else {
 		TestingComplete = true;
@@ -378,6 +378,7 @@ void SetTestParam(TboardConfig *testParam, uint8 TestCount) {
 		sampleUploadComplete = false;
 		sprintf(Buffer,"\n ========== Maximum Test Number Reached: %d ==========",GlobalTestNum);
 		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		reset_ALL_MUX();
 		reset_ALL_DAC();
 
@@ -406,11 +407,13 @@ void SetTestParam(TboardConfig *testParam, uint8 TestCount) {
 			}
 			TestResults[i] = true;
 		}
-		HAL_Delay(1000);
+		HAL_Delay(500);
 		if (Passed) {
 			LCD_setCursor(2, 0);
 			sprintf(Buffer, "    Test Passed    ");
 			LCD_printf(&Buffer[0], strlen(Buffer));
+			HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_SET);
+			TestPassed = true;
 		}
 	}
 }

@@ -1,6 +1,7 @@
 #include <main.h>
 #include "calibration.h"
 #include "interogate_project.h"
+#include "UART_Routine.h"
 
 void Calibration(){
 	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_Pin, GPIO_PIN_SET);
@@ -76,7 +77,7 @@ void Calibration(){
 				case I_20:
 						sprintf(Buffer, "==========Calibrating 20mA========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0xB87;
+						DACval = 0xDF1;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "   20mA - Port %d    ", (calPort+1));
 						  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -84,7 +85,7 @@ void Calibration(){
 				case I_4:
 						sprintf(Buffer, "==========Calibrating 4mA========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0x24E;
+						DACval = 0x2CA;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "    4mA - Port %d    ", (calPort+1));
 						  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -92,7 +93,7 @@ void Calibration(){
 				case I_175:
 						sprintf(Buffer, "==========Calibrating 17.5mA========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0xA16;
+						DACval = 0xC33;
 						LCD_setCursor(3, 0);
 						sprintf(Buffer, "   17.5mA - Port %d  ", (calPort+1));
 						LCD_printf(&Buffer[0], strlen(Buffer));
@@ -164,7 +165,7 @@ void Calibration(){
 					case I_20:
 							sprintf(Buffer, "==========Calibrating 20mA========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0xB87;
+							DACval = 0xDF1;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   20mA - Port %d    ", (calPort+1));
 							  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -172,7 +173,7 @@ void Calibration(){
 					case I_4:
 							sprintf(Buffer, "==========Calibrating 4mA========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0x24E;
+							DACval = 0x2CA;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   4mA - Port %d    ", (calPort+1));
 							  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -180,7 +181,7 @@ void Calibration(){
 					case I_175:
 							sprintf(Buffer, "==========Calibrating 17.5mA========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0xA16;
+							DACval = 0xC33;
 							LCD_setCursor(3, 0);
 							sprintf(Buffer, "   17.5mA - Port %d  ", (calPort+1));
 							LCD_printf(&Buffer[0], strlen(Buffer));
@@ -196,10 +197,14 @@ void Calibration(){
 				sprintf(Buffer, "Port Calibrating: %d\n", calPort+1);
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 					//Write New Val To DAC
-				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5)
-						DACval |= 0x3000;
-				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6)
-						DACval |= 0xB000;
+				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5) {
+					DACval &= 0x0FFF;
+					DACval |= 0x3000;
+				}
+				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6) {
+					DACval &= 0x0FFF;
+					DACval |= 0xB000;
+				}
 				DAC_set((calPort+1), DACval);
 						//Switch Multiplexer to Test being Run
 				if ((calTest == V_05) || (calTest == V_1) || (calTest == V_24))
@@ -213,10 +218,14 @@ void Calibration(){
 				(*calPtr)++;
 				DACval++;
 					//Write New Val to DAC
-				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5)
-						DACval |= 0x3000;
-				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6)
-						DACval |= 0xB000;
+				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5) {
+					DACval &= 0x0FFF;
+					DACval |= 0x3000;
+				}
+				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6) {
+					DACval &= 0x0FFF;
+					DACval |= 0xB000;
+				}
 				DAC_set((calPort+1), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
@@ -228,10 +237,14 @@ void Calibration(){
 				(*calPtr)--;
 				DACval--;
 					//Write New Val to DAC
-				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5)
-						DACval |= 0x3000;
-				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6)
-						DACval |= 0xB000;
+				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5) {
+					DACval &= 0x0FFF;
+					DACval |= 0x3000;
+				}
+				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6) {
+					DACval &= 0x0FFF;
+					DACval |= 0xB000;
+				}
 				DAC_set((calPort+1), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
@@ -244,10 +257,14 @@ void Calibration(){
 				DACval += 10;
 
 					//Write New Val to DAC
-				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5)
+				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5) {
+					DACval &= 0x0FFF;
 					DACval |= 0x3000;
-				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6)
+				}
+				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6) {
+					DACval &= 0x0FFF;
 					DACval |= 0xB000;
+				}
 				DAC_set((calPort+1), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
@@ -260,10 +277,14 @@ void Calibration(){
 				DACval -= 10;
 
 					//Write New Val to DAC
-				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5)
+				if (calPort == Port_1 || calPort == Port_3 || calPort == Port_5) {
+					DACval &= 0x0FFF;
 					DACval |= 0x3000;
-				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6)
+				}
+				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6) {
+					DACval &= 0x0FFF;
 					DACval |= 0xB000;
+				}
 				DAC_set((calPort+1), DACval);
 				sprintf(Buffer, "%d\n", *calPtr);
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
@@ -273,4 +294,92 @@ void Calibration(){
 				break;
 			}
 	}
+}
+
+
+void TargetBoardCalibration() {
+		interrogateBoard();
+
+
+			//Set Port 1
+		DACval = DAC_1volt + Port1.CalibrationFactor[V_1];
+		DACval |= 0x3000;
+		DAC_set(1, DACval);
+			//Set Port 2
+		DACval = DAC_1volt + Port2.CalibrationFactor[V_1];
+		DACval |= 0xB000;
+		DAC_set(2, DACval);
+			//Set Port 3
+		DACval = DAC_1volt + Port3.CalibrationFactor[V_1];
+		DACval |= 0x3000;
+		DAC_set(3, DACval);
+			//Set Port 4
+		DACval = DAC_1volt + Port4.CalibrationFactor[V_1];
+		DACval |= 0xB000;
+		DAC_set(4, DACval);
+			//Set Port 5
+		DACval = DAC_1volt + Port5.CalibrationFactor[V_1];
+		DACval |= 0x3000;
+		DAC_set(5, DACval);
+			//Set Port 6
+		DACval = DAC_1volt + Port6.CalibrationFactor[V_1];
+		DACval |= 0xB000;
+		DAC_set(6, DACval);
+	for (int i = 1; i <= 6; i++) {
+			MUX_Sel(i, THREE_VOLT);
+		}
+	ADC_MUXsel(0);
+	switchToCurrent = false;
+	calibrateADCval.total = calibrateADCval.average = 0;
+	Calibrating = true;
+	ComRep = 0xC0;
+	SetPara();
+	communication_array(ComRep, &Para[0], Paralen);
+	HAL_TIM_Base_Start(&htim10);
+	HAL_TIM_Base_Start_IT(&htim10);
+	while(!switchToCurrent && Calibrating) {
+
+	}
+	calibrateADCval.total = calibrateADCval.average = 0;
+	if (switchToCurrent) {
+			HAL_TIM_Base_Stop(&htim10);
+				//Set Port 1
+			DACval = DAC_20amp + Port1.CalibrationFactor[I_20];
+			DACval |= 0x3000;
+			DAC_set(1, DACval);
+				//Set Port 2
+			DACval = DAC_20amp + Port2.CalibrationFactor[I_20];
+			DACval |= 0xB000;
+			DAC_set(2, DACval);
+				//Set Port 3
+			DACval = DAC_20amp + Port3.CalibrationFactor[I_20];
+			DACval |= 0x3000;
+			DAC_set(3, DACval);
+				//Set Port 4
+			DACval = DAC_20amp + Port4.CalibrationFactor[I_20];
+			DACval |= 0xB000;
+			DAC_set(4, DACval);
+				//Set Port 5
+			DACval = DAC_20amp + Port5.CalibrationFactor[I_20];
+			DACval |= 0x3000;
+			DAC_set(5, DACval);
+				//Set Port 6
+			DACval = DAC_20amp + Port6.CalibrationFactor[I_20];
+			DACval |= 0xB000;
+			DAC_set(6, DACval);
+
+		for (int i = 1; i <= 6; i++) {
+				MUX_Sel(i, TWENTY_AMP);
+			}
+		while ( (!UART2_ReceiveComplete) && Calibrating) {
+
+		}
+		if (UART2_ReceiveComplete) {
+			communication_response(&UART2_Receive[0], UART2_RecPos);
+			sprintf(Buffer, "=====     Target Board Calibrated     =====\n");
+			HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+			Calibrating = false;
+		}
+	}
+
 }

@@ -28,6 +28,7 @@
 #include "Debounce.h"
 #include "Asynchronous_pulse.h"
 #include "Programming.h"
+#include "calibration.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,7 +63,6 @@
 
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
-extern DMA_HandleTypeDef hdma_adc1;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim10;
@@ -216,22 +216,66 @@ void SysTick_Handler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
+	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+	if (Calibrating) {
+		if (CalibratingTimer < CalibrateTimerTo) {
+			ADC_Ch0sel();
+			HAL_ADC_Start(&hadc1);
+			HAL_ADC_PollForConversion(&hadc1, 100);
+			calibrateADCval.total += HAL_ADC_GetValue(&hadc1);
+			HAL_ADC_Stop(&hadc1);
+
+			raw_adcCount++;
+
+			if ((raw_adcCount >= 5) && (!switchToCurrent)) {
+				calibrateADCval.average = calibrateADCval.total / raw_adcCount;
+				calibrateADCval.total = 0;
+				calibrateADCval.avg_Buffer[CalibratingTimer++] = calibrateADCval.average;
+				if (CalibratingTimer >= (ADC_BUF_LEN-1) )
+					memmove(&calibrateADCval.avg_Buffer[0], &calibrateADCval.avg_Buffer[1], ADC_BUF_LEN);
+				raw_adcCount = 0;
+//				CalibratingTimer++;
+				if (calibrateADCval.average <= 100) {
+					if (!(--CalibrationCountdown)) {
+						switchToCurrent = true;
+						HAL_TIM_Base_Stop(&htim10);
+						}
+				} else {
+					CalibrationCountdown = 10;
+					}
+			}
+		} else
+			Calibrating = false;
+	}
 	if (LatchSampling)
 	{
+
 		if (LatchCountTimer < latchCountTo) {
-				HAL_ADC_Start(&hadc1);
 					//ADC 1
-				HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+				ADC_Ch0sel();
+				HAL_ADC_Start(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
 				adc1.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
+				HAL_ADC_Stop(&hadc1);
+
 					//ADC 2
-				HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+				ADC_Ch1sel();
+				HAL_ADC_Start(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
 				adc2.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
-					//Vfuse
-				HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-				Vfuse.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
-					//Vin
-				HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+				HAL_ADC_Stop(&hadc1);
+//					//Vin
+				ADC_Ch2sel();
+				HAL_ADC_Start(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
 				Vin.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
+				HAL_ADC_Stop(&hadc1);
+//					//Vfuse
+				ADC_Ch3sel();
+				HAL_ADC_Start(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
+				Vfuse.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
+				HAL_ADC_Stop(&hadc1);
 
 					//ADC1
 				adc1.total += adc1.raw_Buffer[raw_adcCount];
@@ -248,8 +292,9 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					Vin.lowVoltage = Vin.raw_Buffer[raw_adcCount] < Vin.lowVoltage ? Vin.raw_Buffer[raw_adcCount]:Vin.lowVoltage;
 				}
 
-			if(raw_adcCount == 10){
+			if(raw_adcCount == 5){
 
+//				HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 				adc1.average = adc1.total / raw_adcCount;
 				adc1.avg_Buffer[LatchCountTimer] = adc1.average;
 
@@ -266,7 +311,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
 				if(stableVoltageCount)
 				{
-					if(Vfuse.average > 2750 && Vfuse.average > 0.85*Vin.average) stableVoltageCount--;
+					if(Vfuse.average > 2750 && Vfuse.average > 0.75*Vin.average) stableVoltageCount--;
 					else stableVoltageCount++;
 					LatchSampling = stableVoltageCount > 50 ? false:true;
 				}
@@ -278,10 +323,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 						Vin.steadyState += Vin.avg_Buffer[i];
 					}
 					Vfuse.steadyState /= LatchCountTimer;
-					Vfuse.steadyState *= (16.17/4096);
-
 					Vin.steadyState /= LatchCountTimer;
-					Vin.steadyState *= (16.17/4096);
 				}
 				if (LatchCountTimer > 25  && !stableVoltageCount) {
 						//Latch On Test
@@ -295,7 +337,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 							PulseCountDown = (adc1.HighPulseWidth > 45 || adc2.LowPulseWidth > 45) ? 10 : PulseCountDown;
 							}
 						}
-						if (adc2.average < 260) {
+						if (adc2.average < 500) {
 							adc2.LowPulseWidth++;
 							adc2.lowVoltage += adc2.average;
 							if (adc2.LowPulseWidth > 5 && adc2.LowPulseWidth < 45) {
@@ -304,7 +346,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 							}
 						}
 						//Latch Off Test
-						if (adc1.average < 260) {
+						if (adc1.average < 500) {
 							adc1.LowPulseWidth++;
 							adc1.lowVoltage += adc1.average;
 							if (adc1.LowPulseWidth > 5 && adc1.LowPulseWidth < 45) {
@@ -323,8 +365,8 @@ void TIM1_UP_TIM10_IRQHandler(void)
 							PulseCountDown = (adc2.HighPulseWidth > 45 || adc1.LowPulseWidth > 45) ? 10 : PulseCountDown;
 						}
 						PulseCountDown--;
-						LatchOnComplete = (adc1.HighPulseWidth > 47 && adc2.LowPulseWidth > 47) ? !PulseCountDown : false;
-						LatchOffComplete = (adc2.HighPulseWidth > 47 || adc1.LowPulseWidth > 47) ? !PulseCountDown : false;
+						LatchOnComplete = (adc1.HighPulseWidth > 47 && adc2.LowPulseWidth > 47) ? true : false;
+						LatchOffComplete = (adc2.HighPulseWidth > 47 || adc1.LowPulseWidth > 47) ? true : false;
 					}
 				adc1.total = 0;
 				adc2.total = 0;
@@ -346,58 +388,51 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
-
 /**
   * @brief This function handles USART2 global interrupt.
   */
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-	//Receive Interrupt
 	if (USART2->SR & USART_SR_RXNE) {
-		//Overflow check for Receive position, if the size of buffer is larger than 254 reset to 0
-		if (UART2_RecPos > (LRGBUFFER))
-			UART2_RecPos = 0;
-
-		//load the data from USART 2 data direction register into DATA variable
-		unsigned char data = USART2->DR;
-		//if data is equal to the header and Receive data is not active, set the flag and begin storing data.
-		//what will be allowed to pass: B2 Receive data not Active!
-		//								21 Receive data Active!
-		if ((data == 0xB2 && !UART2_Recdata)
-				|| (data == 0x21 && UART2_RecPos == 1)) {
-			//reset the position of Receive position to 0, length of buffer 254
-			if (data == 0xB2) {
+			//Overflow check for Receive position, if the size of buffer is larger than 254 reset to 0
+			if (UART2_RecPos > (LRGBUFFER))
 				UART2_RecPos = 0;
-				UART2_Length[0] = 0;
-				UART2_Recdata = true;
-			}
-			UART2_Receive[UART2_RecPos++] = data;
-		} else if (UART2_Recdata) {
-			if (UART2_RecPos == 2) {
-				UART2_Length[0] = data;
-				UART2_Receive[UART2_RecPos++] = UART2_Length[0];
-			} else
+
+			//load the data from USART 2 data direction register into DATA variable
+			unsigned char data = USART2->DR;
+			//if data is equal to the header and Receive data is not active, set the flag and begin storing data.
+			//what will be allowed to pass: B2 Receive data not Active!
+			//								21 Receive data Active!
+			if ((data == 0xB2 && !UART2_Recdata) || (data == 0x21 && UART2_RecPos == 1) || (data == 0x0F && UART2_RecPos == 1) ) {
+				//reset the position of Receive position to 0, length of buffer 254
+				if (data == 0xB2) {
+					UART2_RecPos = 0;
+					UART2_Length[0] = 0;
+					UART2_Recdata = true;
+				}
 				UART2_Receive[UART2_RecPos++] = data;
+			} else if (UART2_Recdata) {
+				if (UART2_RecPos == 2) {
+					UART2_Length[0] = data;
+					UART2_Receive[UART2_RecPos++] = UART2_Length[0];
+				} else
+					UART2_Receive[UART2_RecPos++] = data;
 
-			//while the position is less than the length copy data into the buffer
-			//else set receive data to false. to stop flow of data into the buffer
-			if (UART2_RecPos == (UART2_Length[0] + 0x03)) {
-				//UART3_transmit(&UART2_Receive[0], UART2_RecPos);
+				//while the position is less than the length copy data into the buffer
+				//else set receive data to false. to stop flow of data into the buffer
+				if (UART2_RecPos == (UART2_Length[0] + 0x03)) {
+					//UART3_transmit(&UART2_Receive[0], UART2_RecPos);
+					UART2_Recdata = false;
+					UART2_ReceiveComplete = true;
+					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+					USART2->CR1  &= ~(USART_CR1_RXNEIE);
+				}
+			} else
+				//catch all statement for anything that makes it this far.
 				UART2_Recdata = false;
-				UART2_ReceiveComplete = true;
-				HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-				USART2->CR1  &= ~(USART_CR1_RXNEIE);
-			}
-		} else
-			//catch all statement for anything that makes it this far.
-			UART2_Recdata = false;
-	}
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
+		}
 
-	//Transmit Interrupt for UART2
 	if (USART2->SR & USART_SR_TXE) {
 		if (UART2_TXpos == UART2_TXend) {
 			//disable interrupts
@@ -412,15 +447,15 @@ void USART2_IRQHandler(void)
 	if(USART2->SR & USART_SR_TC){
 		USART2->CR1 |= (USART_CR1_RE);
 		USART2->CR1 &= ~(USART_CR1_TCIE);
-		 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+
 	}
-	/* USER CODE END USART2_IRQn 0 */
-	HAL_UART_IRQHandler(&huart2);
-	/* USER CODE BEGIN USART2_IRQn 1 */
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
 
   /* USER CODE END USART2_IRQn 1 */
 }
-
 /**
   * @brief This function handles USART3 global interrupt.
   */
@@ -429,14 +464,19 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART3_IRQn 0 */
 	if (USART3->SR & USART_SR_RXNE) {
 		uns_ch data;
-		data = USART3->DR;
-		if (data == 0x0D) {
-			for (int i = 0;i < BarcodeCount;i++) {
-				SerialNumber[i] = BarcodeBuffer[i];
+		data = USART3->DR;	//TODO:buffer overrun
+		if (((data >= 0x30) && (data <= 0x39)) || (data == 0x0D)) {
+			if ( (data == 0x0D) && (BarcodeCount > 0) ) {
+				BarcodeScanned = true;
+				USART3->CR1 &= ~(USART_CR1_RXNEIE);
+			} else {
+				if (BarcodeCount >= 0x09 ) {	//Check for overrun of scan
+					memmove(&BarcodeBuffer[0], &BarcodeBuffer[1], 8);
+					BarcodeCount--;
+				}
+				BarcodeBuffer[BarcodeCount++] = data;
+
 			}
-			BarcodeScanned = true;
-		} else {
-			BarcodeBuffer[BarcodeCount++] = data;
 		}
 	}
   /* USER CODE END USART3_IRQn 0 */
@@ -735,7 +775,7 @@ void TIM6_IRQHandler(void)
 	  Programming = --Program_CountDown ? true : false;
 	  if (Program_CountDown == 10) {
 		  ComRep = 0x08;
-		  communication_array(&ComRep,&Para[0], Paralen);
+		  communication_array(ComRep,&Para[0], Paralen);
 	  }
 	}
 
@@ -858,20 +898,6 @@ void TIM7_IRQHandler(void)
 
 
   /* USER CODE END TIM7_IRQn 1 */
-}
-
-/**
-  * @brief This function handles DMA2 stream0 global interrupt.
-  */
-void DMA2_Stream0_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
-
-  /* USER CODE END DMA2_Stream0_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_adc1);
-  /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
-
-  /* USER CODE END DMA2_Stream0_IRQn 1 */
 }
 
 /**

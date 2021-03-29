@@ -17,7 +17,7 @@
 #include <time.h>
 
 //Routines
-void communication_array(unsigned char *,unsigned char*, unsigned char);
+void communication_array(uns_ch  , uns_ch*, uint8);
 void communication_response(unsigned char*, unsigned char);
 void communication_command(void);
 void SetPara(void);
@@ -28,11 +28,22 @@ void PrintLatchResults(void);
 int8_t LatchErrorCheck(void);
 void printLatchError(uint8 *);
 void ADC_MUXsel(uint8);
+uint32 ReadSerialNumber(uns_ch *, uint16);
 
 //Constant Defines
 #define LRGBUFFER 254
 #define SMLBUFFER 32
 #define XSMLBUFFER 16
+
+
+//DAC Constants
+#define DAC_1volt 0x457
+#define DAC_05volt 0x22C
+#define DAC_24volt 0xA6B
+
+#define DAC_4amp 0x2CA
+#define DAC_175amp 0xC33
+#define DAC_20amp 0xDF1
 
 int intBuffer;
 
@@ -135,7 +146,7 @@ _Bool Retransmit;
 uint8_t stableVoltageCount;
 uint16_t latchCountTo;
 
-#define ADC_BUF_LEN 4096
+#define ADC_BUF_LEN 2048
 
 typedef struct{
 	uint32_t total;
@@ -198,6 +209,8 @@ uint8_t LatchErrCheck;
 _Bool Comm_Ready;
 bool TestingComplete;
 _Bool Quit_flag;
+bool TestPassed;
+bool BoardCalibrated;
 
 	//Button Variables
 
@@ -226,10 +239,16 @@ int8 CorrectionFactors[36];
 uint8 QuitCount;
 
 	//Serial Number variables
-int SerialNumber[9];
+uint8 SerialNumber[9];
 uint8 SerialCount;
 uint8 BarcodeCount;
-int BarcodeBuffer[9];
+uint8 BarcodeBuffer[9];
 _Bool BarcodeScanned;
+
+//	Timeout functionality, Loop action until timeout is met
+bool timeOut;
+#define timeOutLimit 200
+uint8 timeOutCount;
+
 
 #endif /* INC_INTEROGATE_PROJECT_H_ */
