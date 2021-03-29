@@ -36,15 +36,6 @@ uint32 ReadSerialNumber(uns_ch *, uint16);
 #define XSMLBUFFER 16
 
 
-//DAC Constants
-#define DAC_1volt 0x457
-#define DAC_05volt 0x22C
-#define DAC_24volt 0xA6B
-
-#define DAC_4amp 0x2CA
-#define DAC_175amp 0xC33
-#define DAC_20amp 0xDF1
-
 int intBuffer;
 
 //variables for communication.c

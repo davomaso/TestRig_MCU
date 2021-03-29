@@ -268,28 +268,24 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				ADC_Ch2sel();
 				HAL_ADC_Start(&hadc1);
 				HAL_ADC_PollForConversion(&hadc1, 100);
-				Vin.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
+				Vin.total += HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 //					//Vfuse
 				ADC_Ch3sel();
 				HAL_ADC_Start(&hadc1);
 				HAL_ADC_PollForConversion(&hadc1, 100);
-				Vfuse.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
+				Vfuse.total += HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 
 					//ADC1
 				adc1.total += adc1.raw_Buffer[raw_adcCount];
 					//ADC2
 				adc2.total += adc2.raw_Buffer[raw_adcCount];
-					//Fuse Voltage
-				Vfuse.total += Vfuse.raw_Buffer[raw_adcCount];
-				//Vin Voltage
-				Vin.total += Vin.raw_Buffer[raw_adcCount];
 
 				if(LatchCountTimer > 10)
 				{
-					Vfuse.lowVoltage = Vfuse.raw_Buffer[raw_adcCount] < Vfuse.lowVoltage ? Vfuse.raw_Buffer[raw_adcCount]:Vfuse.lowVoltage;
-					Vin.lowVoltage = Vin.raw_Buffer[raw_adcCount] < Vin.lowVoltage ? Vin.raw_Buffer[raw_adcCount]:Vin.lowVoltage;
+					Vfuse.lowVoltage = Vfuse.average < Vfuse.lowVoltage ? Vfuse.average:Vfuse.lowVoltage;
+					Vin.lowVoltage = Vin.average < Vin.lowVoltage ? Vin.average:Vin.lowVoltage;
 				}
 
 			if(raw_adcCount == 5){
@@ -311,12 +307,12 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
 				if(stableVoltageCount)
 				{
-					if(Vfuse.average > 2750 && Vfuse.average > 0.75*Vin.average) stableVoltageCount--;
+					if(Vfuse.average > 3000 && Vfuse.average > 0.75*Vin.average) stableVoltageCount--;
 					else stableVoltageCount++;
-					LatchSampling = stableVoltageCount > 50 ? false:true;
+					LatchSampling = stableVoltageCount > 75 ? false:true;
 				}
 
-				if(LatchCountTimer == 25 && !stableVoltageCount){
+				if(LatchCountTimer == 50 && !stableVoltageCount){
 					for(int i = 0; i <= LatchCountTimer;i++)
 					{
 						Vfuse.steadyState += Vfuse.avg_Buffer[i];
@@ -325,7 +321,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					Vfuse.steadyState /= LatchCountTimer;
 					Vin.steadyState /= LatchCountTimer;
 				}
-				if (LatchCountTimer > 25  && !stableVoltageCount) {
+				if (LatchCountTimer > 50  && !stableVoltageCount) {
 						//Latch On Test
 						if (adc1.average > 2400) {
 							adc1.HighPulseWidth++;

@@ -104,6 +104,8 @@ void TargetBoardParamInit() {
 	for (int i = 0; i < 15; i++) {
 		TestResults[i] = true;
 	}
+	Vfuse.steadyState = 0;
+	Vin.steadyState = 0;
 }
 
 void WriteSerialNumber() {
@@ -165,3 +167,6 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 	return 0;
 }
 
+void LatchTestInit() {
+
+}

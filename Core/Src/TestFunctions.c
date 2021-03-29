@@ -14,6 +14,7 @@
 #include <time.h>
 #include "interogate_project.h"
 #include "calibration.h"
+#include "DAC_Variables.h"
 
 int twoWireLatching(uint8,bool);
 float twentyAmp(uint8);
@@ -109,88 +110,88 @@ int twoWireLatching(uint8 Test_Port,_Bool state) {
 float twentyAmp(uint8 Test_Port) {
 	float current;
 	float corrected_current;
-	int randDACcurrent;
+	uint16 DAC_Value;
 	//Correction Factor
 	switch (Test_Port) {
 	case 1:
 		if(!Port1.lowItestComplete){
 			current = 4;
 			Port1.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port1.CalibrationFactor[I_4];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port1.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port1.CalibrationFactor[I_175];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port1.CalibrationFactor[I_175];
 		}
 		break;
 	case 2:
 		if(!Port2.lowItestComplete){
 			current = 4;
 			Port2.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port2.CalibrationFactor[I_4];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port2.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port2.CalibrationFactor[I_175];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port2.CalibrationFactor[I_175];
 		}
 		break;
 	case 3:
 		if(!Port3.lowItestComplete){
 			current = 4;
 			Port3.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port3.CalibrationFactor[I_4];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port3.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port3.CalibrationFactor[I_175];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port3.CalibrationFactor[I_175];
 		}
 		break;
 	case 4:
 		if(!Port4.lowItestComplete){
 			current = 4;
 			Port4.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port4.CalibrationFactor[I_4];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port4.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port4.CalibrationFactor[I_175];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port4.CalibrationFactor[I_175];
 		}
 		break;
 	case 5:
 		if(!Port5.lowItestComplete){
 			current = 4;
 			Port5.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port5.CalibrationFactor[I_4];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port5.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port5.CalibrationFactor[I_175];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port5.CalibrationFactor[I_175];
 		}
 		break;
 	case 6:
 		if(!Port6.lowItestComplete){
 			current = 4;
 			Port6.lowItestComplete = true;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port6.CalibrationFactor[I_4];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port6.CalibrationFactor[I_4];
 		} else {
 			current = 17.5;
-			randDACcurrent = round((current * 4096) / 22.9549);
-			corrected_current = randDACcurrent + Port6.CalibrationFactor[I_175];
+			DAC_Value = round((current * 4096) / 22.9549);
+			corrected_current = DAC_Value + Port6.CalibrationFactor[I_175];
 		}
 		break;
 	}
 
 	if (Test_Port == 1 || Test_Port == 3 || Test_Port == 5)
-		randDACcurrent += 0x3000;
+		DAC_Value += 0x3000;
 	else if (Test_Port == 2 || Test_Port == 4 || Test_Port == 6)
-		randDACcurrent += 0xB000;
-	DAC_set(Test_Port, randDACcurrent);
+		DAC_Value += 0xB000;
+	DAC_set(Test_Port, DAC_Value);
 	MUX_Sel(Test_Port, TWENTY_AMP);
 	return current;
 }
@@ -200,69 +201,72 @@ float twentyAmp(uint8 Test_Port) {
 //	=================================   Three Volt   =================================	//
 float threeVolt(uint8 Test_Port, uint8 TestCode) {
 	float voltage;
-	float Corrected_voltage;
-	int randDACvolt;
+	uint16 Corrected_DACvalue;
+	uint16 DAC_Value;
 	switch (TestCode) {
 		case ONE_VOLT:
 				voltage = 0.5;
+				DAC_Value = DAC_05volt;
 			break;
 		case TWOFIVE_VOLT:
 				voltage = 2.4;
+				DAC_Value = DAC_24volt;
 			break;
 	}
-	randDACvolt = round(((voltage/ 3.6864) * 4096));
+
+//	DAC_Value = round(((voltage/ 3.6864) * 4096.0));
 	switch (Test_Port) {
 	case 1:
 		if (TestCode == ONE_VOLT) {
-			Corrected_voltage = randDACvolt + Port1.CalibrationFactor[V_05];
+			Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[V_05];
 		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_voltage = randDACvolt + Port1.CalibrationFactor[V_24];
+			Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[V_24];
 		}
 		break;
 	case 2:
 		if (TestCode == ONE_VOLT) {
-			Corrected_voltage = randDACvolt + Port2.CalibrationFactor[V_05];
+			Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[V_05];
 		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_voltage = randDACvolt + Port2.CalibrationFactor[V_24];
+			Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[V_24];
 		}
 		break;
 	case 3:
 		if (TestCode == ONE_VOLT) {
-			Corrected_voltage = randDACvolt + Port3.CalibrationFactor[V_05];
+			Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[V_05];
 		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_voltage = randDACvolt + Port3.CalibrationFactor[V_24];
+			Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[V_24];
 		}
 		break;
 	case 4:
 		if (TestCode == ONE_VOLT) {
-			Corrected_voltage = randDACvolt + Port4.CalibrationFactor[V_05];
+			Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[V_05];
 		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_voltage = randDACvolt + Port4.CalibrationFactor[V_24];
+			Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[V_24];
 		}
 		break;
 	case 5:
 		if (TestCode == ONE_VOLT) {
-			Corrected_voltage = randDACvolt + Port5.CalibrationFactor[V_05];
+			Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[V_05];
 		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_voltage = randDACvolt + Port5.CalibrationFactor[V_24];
+			Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[V_24];
 		}
 		break;
 	case 6:
 		if (TestCode == ONE_VOLT) {
-			Corrected_voltage = randDACvolt + Port6.CalibrationFactor[V_05];
+			Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[V_05];
 		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_voltage = randDACvolt + Port6.CalibrationFactor[V_24];
+			Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[V_24];
 		}
 		break;
 	}
 
 //	randDACvolt = round((Corrected_voltage * 4096 / 3.6864)); //round((voltage * 3448) / 3.014);
 	if (Test_Port == 1 || Test_Port == 3 || Test_Port == 5)
-		randDACvolt = 0x3000 + Corrected_voltage;
+		Corrected_DACvalue += 0x3000;
 	else if (Test_Port == 2 || Test_Port == 4 || Test_Port == 6)
-		randDACvolt = 0xB000 + Corrected_voltage;
+		Corrected_DACvalue += 0xB000;
 
-	DAC_set(Test_Port, randDACvolt);
+	DAC_set(Test_Port, Corrected_DACvalue);
 	MUX_Sel(Test_Port, THREE_VOLT);
 	return voltage;
 }
@@ -668,6 +672,13 @@ void ADC_Init(){
 	adc1.lowVoltage = 0;
 	adc2.highVoltage = 0;
 	adc2.lowVoltage = 0;
+
+	Vin.average = 0;
+	Vin.steadyState = 0;
+	Vin.total = 0;
+	Vfuse.average = 0;
+	Vfuse.steadyState = 0;
+	Vfuse.total = 0;
 }
 void ADC_MUXsel(uint8 ADCport){
 	switch(ADCport){

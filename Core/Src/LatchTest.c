@@ -23,7 +23,7 @@ void runLatchTest(uint8 Test_Port){
 			if(!LatchSampling)
 				break;
 		}
-		stableVoltageCount = 10;
+		stableVoltageCount = 25;
 		while(stableVoltageCount){
 			if(!LatchSampling)
 				break;
@@ -60,6 +60,8 @@ void runLatchTest(uint8 Test_Port){
 		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		}
+
+//	TransmitResults();
 }
 
 void StoreLatchResults(TlatchResults * res, uint8 currResult) {

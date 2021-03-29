@@ -2,6 +2,7 @@
 #include "calibration.h"
 #include "interogate_project.h"
 #include "UART_Routine.h"
+#include "DAC_Variables.h"
 
 void Calibration(){
 	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_Pin, GPIO_PIN_SET);
@@ -51,7 +52,7 @@ void Calibration(){
 				}
 				switch (calTest) {
 					case V_1:
-						DACval = 0x457;
+						DACval = DAC_1volt;
 						sprintf(Buffer, "==========Calibrating 1V========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 						  LCD_setCursor(3, 0);
@@ -61,7 +62,7 @@ void Calibration(){
 				case V_05:
 						sprintf(Buffer, "==========Calibrating 0.5V========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0x22C;
+						DACval = DAC_05volt;
 						LCD_setCursor(3, 0);
 						sprintf(Buffer, "   0.5V - Port %d    ", (calPort+1));
 						LCD_printf(&Buffer[0], strlen(Buffer));
@@ -69,7 +70,7 @@ void Calibration(){
 				case V_24:
 						sprintf(Buffer, "==========Calibrating 2.4V========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0xA6B;
+						DACval = DAC_24volt;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "   2.4V - Port %d    ", (calPort+1));
 						  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -77,7 +78,7 @@ void Calibration(){
 				case I_20:
 						sprintf(Buffer, "==========Calibrating 20mA========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0xDF1;
+						DACval = DAC_20amp;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "   20mA - Port %d    ", (calPort+1));
 						  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -85,7 +86,7 @@ void Calibration(){
 				case I_4:
 						sprintf(Buffer, "==========Calibrating 4mA========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0x2CA;
+						DACval = DAC_4amp;
 						  LCD_setCursor(3, 0);
 						  sprintf(Buffer, "    4mA - Port %d    ", (calPort+1));
 						  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -93,7 +94,7 @@ void Calibration(){
 				case I_175:
 						sprintf(Buffer, "==========Calibrating 17.5mA========== \n\n");
 						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						DACval = 0xC33;
+						DACval = DAC_175amp;
 						LCD_setCursor(3, 0);
 						sprintf(Buffer, "   17.5mA - Port %d  ", (calPort+1));
 						LCD_printf(&Buffer[0], strlen(Buffer));
@@ -139,7 +140,7 @@ void Calibration(){
 					}
 					switch (calTest) {
 						case V_1:
-							DACval = 0x457;
+							DACval = DAC_1volt;
 							sprintf(Buffer, "==========Calibrating 1V========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 							  LCD_setCursor(3, 0);
@@ -149,7 +150,7 @@ void Calibration(){
 					case V_05:
 							sprintf(Buffer, "==========Calibrating 0.5V========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0x22C;
+							DACval = DAC_05volt;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   0.5V - Port %d    ", (calPort+1));
 							  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -157,7 +158,7 @@ void Calibration(){
 					case V_24:
 							sprintf(Buffer, "==========Calibrating 2.4V========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0xA6B;
+							DACval = DAC_24volt;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   2.4V - Port %d    ", (calPort+1));
 							  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -165,7 +166,7 @@ void Calibration(){
 					case I_20:
 							sprintf(Buffer, "==========Calibrating 20mA========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0xDF1;
+							DACval = DAC_20amp;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   20mA - Port %d    ", (calPort+1));
 							  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -173,7 +174,7 @@ void Calibration(){
 					case I_4:
 							sprintf(Buffer, "==========Calibrating 4mA========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0x2CA;
+							DACval = DAC_4amp;
 							  LCD_setCursor(3, 0);
 							  sprintf(Buffer, "   4mA - Port %d    ", (calPort+1));
 							  LCD_printf(&Buffer[0], strlen(Buffer));
@@ -181,7 +182,7 @@ void Calibration(){
 					case I_175:
 							sprintf(Buffer, "==========Calibrating 17.5mA========== \n\n");
 							CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-							DACval = 0xC33;
+							DACval = DAC_175amp;
 							LCD_setCursor(3, 0);
 							sprintf(Buffer, "   17.5mA - Port %d  ", (calPort+1));
 							LCD_printf(&Buffer[0], strlen(Buffer));
