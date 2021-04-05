@@ -17,13 +17,13 @@ void Decompress_Channels(unsigned char *data, uint8 length) {
 		case 0x00:
 			data++;
 			for (int i = 0; i < 4; i++) {
-					Channel_value = (*data++ << 8 * i);
+					Channel_value |= (*data++ << 8 * i);
 				}
 			break;
 		case 0x01:
 			data++;
 			for (int i = 0; i < 3; i++)
-				Channel_value = (*data++ << 8 * i);
+				Channel_value |= (*data++ << 8 * i);
 			break;
 		case 0x02: //Two bytes of data when a 0x4x is returned
 			data++;
@@ -49,8 +49,7 @@ void Decompress_Channels(unsigned char *data, uint8 length) {
 			Channel_value = *data++;
 			break;
 		}
-		CH_count++;
-		measuredBuffer[GlobalTestNum][CH_count] = Channel_value;
+		measuredBuffer[GlobalTestNum][CH_count++] = Channel_value;
 	}
 	//UART3_transmit(&measuredBuffer[0], Channel_num);
 }

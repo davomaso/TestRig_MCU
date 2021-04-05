@@ -17,10 +17,10 @@
 #include <time.h>
 
 //Routines
-void communication_array(uns_ch  , uns_ch*, uint8);
-void communication_response(unsigned char*, unsigned char);
-void communication_command(void);
-void SetPara(void);
+void communication_array(uns_ch, uns_ch*, uint8);
+void communication_response(uns_ch*, uns_ch*, uint8);
+void communication_command(uns_ch *);
+void SetPara(uns_ch);
 void BoardConfig(void);
 void ADC_Init(void);
 void TransmitResults(void);
@@ -43,8 +43,8 @@ int intBuffer;
 unsigned char Comlen;
 unsigned char Com_buffer[LRGBUFFER];
 unsigned int Length;
-static unsigned char NetID[2];
-static unsigned char Module[2];
+static uint16 NetID;
+static uint16 Module;
 unsigned char ComRep;
 unsigned char Paralen;
 unsigned char Para[SMLBUFFER];
@@ -54,10 +54,10 @@ unsigned char result;
 //communication response
 unsigned int Crc_response;
 unsigned char Receive_buffer[LRGBUFFER];
-unsigned char Board[2];
-unsigned char Version[1];
+uint16 Board;
+uint8 Version;
 unsigned char Flags;
-unsigned char Subclass[1];
+uns_ch Subclass;
 unsigned char Outputs[15];
 unsigned char Inputs[15];
 
@@ -75,8 +75,8 @@ unsigned char testParam[LRGBUFFER];
 unsigned char Samplerate[2];
 
 //0x1A and 0x1B Command and Response
-uint16_t sampleTime;
-uint16_t sampleCount;
+uint16 sampleTime;
+uint16 sampleCount;
 _Bool startAsync;
 _Bool samplesUploading;
 _Bool sampleUploadComplete;

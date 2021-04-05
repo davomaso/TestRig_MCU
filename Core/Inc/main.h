@@ -106,6 +106,9 @@ typedef signed char int8;
 typedef enum {None = 0, b935x = 9352, b937x = 9371, b401x = 4011,  b402x = 4020, b422x = 4220, b427x = 4270}TloomConnected;
 TloomConnected LoomConnected;
 TloomConnected BoardType;
+
+typedef enum {Port_1 = 0, Port_2 = 1, Port_3 = 2, Port_4 = 3, Port_5 = 4, Port_6 = 5, Port_7 = 6, Port_8 = 7, Port_9 = 8}TcalPortConfig;
+TcalPortConfig calPort;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

@@ -19,9 +19,9 @@
 	#define	FLOOD_GATE 0x04
 	//===============		SENSOR VOLTAGES		===============//
 
-
-
-
+	#define MAX_TEST_ARRAY_SIZE 81
+	#define MAX_PORT_CODE_ARRAY_SIZE 64
+	#define MAX_TEST_CODE_ARRAY_SIZE 10
 
 	typedef struct {
 			//=== Port Code ===//
@@ -45,16 +45,20 @@
 
 	typedef struct {
 			TloomConnected BoardType;
-			uint8_t outputPortCount;
-			uint8_t analogInputCount;//change all channels to ports'
-			uint8_t digitalInputCout;
-			uint8_t testNum;
- 			uint8_t paramNum;
-			TportConfig *TestArray;
-			uint8_t *PortCodes;
+			uint8 latchPortCount;
+			uint8 analogInputCount;//change all channels to ports'
+			uint8 digitalInputCout;
+			uint8 testNum;
+			uint8 ArrayPtr;
+			TportConfig * TestArray[MAX_TEST_ARRAY_SIZE];	//Pointer to TportConfig
+			TportConfig * ThisTest;
+			uint8 PortCodes[MAX_PORT_CODE_ARRAY_SIZE];
+			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
 			uint32 SerialNumber;
 	}TboardConfig;
 
 	TboardConfig BoardConnected;
+	uint32 * TestArray937x[6][4];
+
 
 #endif /* INC_BOARD_CONFIG_H_ */

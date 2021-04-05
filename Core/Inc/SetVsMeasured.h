@@ -8,12 +8,14 @@
 #ifndef INC_SETVSMEASURED_H_
 #define INC_SETVSMEASURED_H_
 
-void CompareResults(int*,float*,uint8);
+#include "Board_Config.h"
+
+void CompareResults(TboardConfig *,int*,float*);
 
 float fMeasured;
 float comp_max;
 float comp_min;
-uint8 currResult;
+
 _Bool TestResults[15];
 float SetResults[10];
 float MeasuredResults[10];

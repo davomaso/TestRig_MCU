@@ -11,11 +11,11 @@
 void Decompress_Channels(unsigned char *, uint8);
 
 short CH_count;
-int Channel_value;
+uint32 Channel_value;
 
 unsigned short Compression_type;
 //unsigned short Channel_num;
-int measuredBuffer[8][16];
+uint32 measuredBuffer[8][16];
 
 
 #endif /* INC_CHANNEL_ANALYSIS_H_ */

@@ -1,6 +1,6 @@
 #include <main.h>
 #include "interogate_project.h"
-void read_serial() {
+uint32 read_serial() {
 	USART3->CR1 |= (USART_CR1_RXNEIE);
 	LCD_ClearLine(4);
 	LCD_setCursor(4,0);
@@ -10,6 +10,7 @@ void read_serial() {
 	LCD_CursorOn_Off(true);
 	SerialCount = 0;
 	uint8 tempdata;
+	uint32 tempSerialNumber = 0;
 	_Bool keyPressed;
 	while(!KP_hash.Pressed){
 		if(KP_1.Pressed && SerialCount < 9) {
@@ -115,10 +116,10 @@ void read_serial() {
 	}
 	KP_hash.Count = KP_hash.Pressed = 0;
 	if (!Quit_flag) {
-		BoardConnected.SerialNumber = 0;
+
 		int i = 0;
 		while (SerialCount != i) {
-			BoardConnected.SerialNumber = (BoardConnected.SerialNumber * 10 + (SerialNumber[i++] - 0x30) );
+			tempSerialNumber = (tempSerialNumber * 10 + (SerialNumber[i++] - 0x30) );
 		}
 		LCD_ClearLine(2);
 		LCD_ClearLine(3);
@@ -129,4 +130,5 @@ void read_serial() {
 		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 		SerialCount = 0;
 	}
+	return tempSerialNumber;
 }

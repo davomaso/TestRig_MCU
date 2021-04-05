@@ -23,7 +23,7 @@ void RTC_Set(unsigned char*,unsigned char);
 extern unsigned char OneByte_HexToAsc(unsigned char *, unsigned char);
 //extern unsigned char Decompress_Channels(unsigned char *, unsigned char);
 	//Test.c Functions
-extern TboardConfig TestConfig935x(void);
+//extern TboardConfig TestConfig935x(void);
 extern void ConfigInit(void);
 
 extern UART_HandleTypeDef huart2;
@@ -58,11 +58,11 @@ void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
  Com_buffer[0] = 0xB2;
  Com_buffer[1] = 0x21;
  Com_buffer[2] = Length;
- Com_buffer[3] = NetID[0];   //LSB first, so that user can easily input network when terminal is implemented
- Com_buffer[4] = NetID[1];
+ Com_buffer[3] = NetID;   //LSB first, so that user can easily input network when terminal is implemented
+ Com_buffer[4] = (NetID >> 8);
  Com_buffer[5] = '\x01';
- Com_buffer[6] = Module[0];
- Com_buffer[7] = Module[1];
+ Com_buffer[6] = Module;
+ Com_buffer[7] = (Module >> 8);
  for(int i = 8;i <= 13; i++)
  {
 	 Com_buffer[i] = '\x00';
@@ -102,82 +102,78 @@ void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
  USART2->CR1  |= USART_CR1_RXNEIE;
  }
 
-void communication_command()
+void communication_command(uns_ch * ComRep)
 {
-	switch (ComRep)
+	Comm_Ready = false;
+	switch (*ComRep)
 	{
 		case 0x09:
-				ComRep = 0x34;
-				SetPara();
-				communication_array(ComRep, &Para[0], Paralen);
+				*ComRep = 0x34;
+				SetPara(*ComRep);
+				communication_array(*ComRep, &Para[0], Paralen);
 			break;
 		case 0x35:
-				ComRep = 0x56;	//Set this to 0x56 when configuration command is working	//0x1A required to upload samples
-				ConfigInit();	//This are required for the 0x56 command
+				*ComRep = 0x56;	//Set this to 0x56 when configuration command is working	//0x1A required to upload samples
 				GlobalTestNum = 0; //Set to one for test count in set v measured
-				SetPara();
+				SetPara(*ComRep);
+				communication_array(*ComRep, &Para[0], Paralen);
 			break;
 		case 0x57:
 		case 0x27:
-				Comm_Ready = false;
-				ComRep = 0x1A;
-				SetPara();
-				communication_array(ComRep, &Para[0], Paralen);
+				(*ComRep) = 0x1A;
+				SetPara(*ComRep);
+				communication_array(*ComRep, &Para[0], Paralen);
 				USART6->CR1 |= (USART_CR1_RXNEIE);
 			break;
 		case 0x1B:
 				sprintf(Buffer, "Samples Uploaded\n\n");
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-				  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 				sampleUploadComplete = false;
-				ComRep = 0x18;
-				SetPara();
-				communication_array(ComRep, &Para[0], Paralen);
+				*ComRep = 0x18;
+				SetPara(*ComRep);
+				communication_array(*ComRep, &Para[0], Paralen);
 				sprintf(Buffer, "Requesting Results\n\n");
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 				  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			break;
 		case 0x19:
-				Comm_Ready = false;
-				ComRep = 0x56;
-				SetPara();
+				*ComRep = 0x56;
+				SetPara(*ComRep);
 			break;
 	}
 }
 
-void communication_response(unsigned char *data, unsigned char arraysize)
+void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 {
 	unsigned char *ptr;
 	//Stop re-entry into communication Routines
 	UART2_ReceiveComplete = false;
-	if(CRC_Check(data, arraysize))
-			{
-				//from here break the Receive Buffer array down
-					//Length
+	if (CRC_Check(data, arraysize)) {	//from here break the Receive Buffer array down
+						//Length
 					Length = *(data + 2);
-					//	C/R will determine how the system will behave following
-					ComRep = *(data + 14);
-							switch(ComRep)
+					*Response = *(data + 14);
+							switch(*Response)
 								{
 							case 0x09:
 										sprintf(Buffer,"====Interogation Complete====\n\n");
 										CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-										  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+										HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 										ptr = data + 15;
-										NetID[0] =	*ptr++;
-										NetID[1] =	*ptr++;
-										Module[0] = *ptr++;
-										Module[1] = *ptr++;
+										NetID =	*ptr++;
+										NetID += (*ptr++ << 8);
+										Module = *ptr++;
+										Module += (*ptr++ << 8);
 										Comm_Ready = true;
 
 								break;
 							case 0x35:
 										ptr = data + 15;
-										Board[1] = *ptr++;
-										Board[0] = *ptr++; //LSB board number coming in
-										Version[0] = *ptr++; //version currently installed on board
+										Board = *ptr++;
+										Board += (*ptr++ << 8); //LSB board number coming in
+										Version = *ptr++; //version currently installed on board
 										Flags = *ptr++;		//
-										Subclass[0] = *ptr++;//if a 93xx board is connected, what variety is it C, M, X, F...
+										Subclass = *ptr++;//if a 93xx board is connected, what variety is it C, M, X, F...
 
 										ptr = data + (arraysize-3);
 										Samplerate[0] = *ptr++;	//Sample rate for period of time between samples
@@ -187,30 +183,21 @@ void communication_response(unsigned char *data, unsigned char arraysize)
 										CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 										  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 											//Network
-										intBuffer = (NetID[1] << 8) + NetID[0];
-										sprintf(Buffer, "Network :	 %i \n",intBuffer);
+										sprintf(Buffer, "Network :	 %i \n",NetID);
 										CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 										  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 											//Module
-										intBuffer = (Module[1] << 8) + Module[0];
-										sprintf(Buffer, "Module :	 %i \n",intBuffer);
+										sprintf(Buffer, "Module :	 %i \n",Module);
 										  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 										CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 											//Board
-										intBuffer = (Board[0] << 8) + Board[1];
-										sprintf(Buffer, "Board :		 %x \n",intBuffer);
+										sprintf(Buffer, "Board :		 %x \n",Board);
 										CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 										  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 											//Version
-										intBuffer = Version[0];
-										sprintf(Buffer, "Version :	 %x \n",intBuffer);
+										sprintf(Buffer, "Version :	 %x \n",Version);
 										CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 										  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-
-//										LCD_setCursor(1, 0);
-//										sprintf(Buffer,"      S/N: %d  ", BoardConnected.SerialNumber);
-//										LCD_printf(&Buffer[0], strlen(Buffer));
-
 										Comm_Ready = true;
 								break;
 							case 0x57:
@@ -218,7 +205,7 @@ void communication_response(unsigned char *data, unsigned char arraysize)
 									sprintf(Buffer,"===Board Configuration Successful===\n\n");
 									CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 									  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-									TestFunction(&TestCode, BoardConnected.outputPortCount, BoardConnected.analogInputCount, BoardConnected.digitalInputCout);
+									TestFunction(&BoardConnected);
 									if(LatchPort1)
 										runLatchTest(0);
 									if(LatchPort2)
@@ -238,9 +225,7 @@ void communication_response(unsigned char *data, unsigned char arraysize)
 									Async_Port8.Active = Async_Port8.PulseCount ? true:false;
 									Async_Port9.Active = Async_Port9.PulseCount ? true:false;
 
-
-
-while(!AsyncComplete){
+									while(!AsyncComplete){
 									}
 									Comm_Ready = true;
 									break;
@@ -256,24 +241,21 @@ while(!AsyncComplete){
 									//Uploading begun
 									sprintf(Buffer,"Waitng : %.2f seconds....\n", (float)sampleTime/100 );
 									CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-									  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+									HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 									break;
 
 							case 0x19:
-
 									sprintf(Buffer,"=====Sampling Complete=====\n\n");
 									CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-									  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+									HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 									sprintf(Buffer, "Starting Test Procedure...\n\n");
 									CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-									  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+									HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 									ptr = data + 15;
-									unsigned int sampleBufferLength = 0;
-									for(sampleBufferLength = 0;sampleBufferLength < (arraysize - 17);sampleBufferLength++)
-										sampleBuffer[sampleBufferLength] = *ptr++;
-									Decompress_Channels(&sampleBuffer[0],TportCount); //Returns the ammount of channels sampled
-									CompareResults(&measuredBuffer[GlobalTestNum][1], &CHval[GlobalTestNum][0], TportCount);
+									memcpy(&sampleBuffer[0], ptr, (arraysize-17) );
+									Decompress_Channels(&sampleBuffer,TportCount); //Returns the ammount of channels sampled
+									CompareResults(&BoardConnected,&measuredBuffer[GlobalTestNum][0], &CHval[GlobalTestNum][0]);
 									Comm_Ready = true;
 								break;
 							case 0x03:
@@ -290,71 +272,87 @@ while(!AsyncComplete){
 									sprintf(Buffer, "\n=====     Board Initialised     =====\n");
 									HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 								break;
+//							case 0x11:
+//								ptr = data + 12;
+//								Board = (*ptr++ << 8);
+//								Board += *ptr++; //LSB board number coming in
+//								Version = *ptr++; //version currently installed on board
+//								Subclass = *ptr++;//if a 93xx board is connected, what variety is it C, M, X, F...
+//
+//								//Print Board Info //Transmit Info To Terminal
+//								sprintf(Buffer, "=====Board Info=====\n");
+//								CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+//								  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+//									//Board
+//								sprintf(Buffer, "Board :		 %x \n",Board);
+//								CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+//								  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+//									//Version
+//								sprintf(Buffer, "Version :	 %x \n",Version);
+//								CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+//								  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+//								break;
+//							case 0x12:
+//								break;
 				}
-			}
-	else
-		{
+			} else {
 			sprintf(Buffer, "CRC ERROR...\n\n");
 			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			UART2_RecPos = 0;
-			UART2_Length[0] = 0;
+			UART2_Length = 0;
 			UART2_ReceiveComplete = false;
 		}
-	//depending on the command/response received will determine whether another C/R is required
-	//given a s08 r09, a s34 r35 command should be used if no data is lost, else the s08 command should be run again
-
 }
 
-_Bool CRC_Check(unsigned char *input, unsigned char length)
+_Bool CRC_Check(uns_ch *input, uint8 length)
 {
 		Crc_response = uart_CalcCRC16(input,length-2);
 		Receive_buffer[0] = Crc_response;
 		Receive_buffer[1] = (Crc_response >> 8);
-		if(Receive_buffer[0] == input[length-2] && Receive_buffer[1] == input[length-1])
-		{
+		input += (length-2);
+		if(Receive_buffer[0] == *input++ && Receive_buffer[1] == *input)
 			return true;
-		}
-		else return false;
+		else
+			return false;
 }
 
-void SetPara()
+void SetPara(uns_ch Command)
 {
 			//Set parameters 00 - 0F sample inputs, command
-		switch (ComRep)
+		switch (Command)
 		{
 			case 0x34:
 				sprintf(Buffer, "Getting Board Info...\n");
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-				  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 				GlobalTestNum = 0;
 				break;
 
 			case 0x18:
-				for(unsigned char i = 0; i <= 0x0F; i++)
-					{
+				for	(uint8 i = 0; i <= 15; i++)	{
 						Para[i] = i;
 						Paralen = i+1;
 					}
 				break;
 			case 0x1A:
-				for(unsigned char i = 0; i <= 0x0F; i++)
-					{
+				for (uint8 i = 0; i <= 15; i++) {
 						Para[i] = i;
 						Paralen = i+1;
 					}
 				sprintf(Buffer,"Target Board Uploading Samples...\n");
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-				  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 				break;
 			case 0x56:
 				{
 						sprintf(Buffer, "\nConfiguring Board...\n");
-						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-						uint32 tempSN = BoardConnected.SerialNumber;
-						BoardInterrogated();
-					 	BoardConnected.SerialNumber = tempSN;
+//						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+						HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+
+						SetTestParam(&BoardConnected, GlobalTestNum, &Para[0], &Paralen);
+						TportCount = BoardConnected.latchPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+						communication_array(Command, &Para[0], Paralen);
 					 	LCD_ClearLine(1);
 						LCD_setCursor(1, 0);
 						sprintf(Buffer,"%d  S/N: %d  ", BoardConnected.BoardType, BoardConnected.SerialNumber);
@@ -374,23 +372,24 @@ void SetPara()
 
 
 void interrogateBoard() {
+	uns_ch ComRep;
 	ComRep = 0x08;
 	communication_array(ComRep,&Para[0], Paralen);
 	while(!UART2_ReceiveComplete) {
 
 	}
 	if (UART2_ReceiveComplete)
-		communication_response(&UART2_Receive[0], UART2_RecPos);
+		communication_response(&ComRep,&UART2_Receive[0], UART2_RecPos);
 	while(!Comm_Ready){
 
 	}
 	if (Comm_Ready)
-		communication_command();
+		communication_command(&ComRep);
 	while(!UART2_ReceiveComplete) {
 
 	}
 	if (UART2_ReceiveComplete)
-		communication_response(&UART2_Receive[0], UART2_RecPos);
+		communication_response(&ComRep,&UART2_Receive[0], UART2_RecPos);
 }
 
 void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewSerial)
@@ -405,22 +404,15 @@ void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewS
 	memcpy(&Com_buffer[3], &CurrentSerial, 4);
 	Com_buffer[7] = Command;
 
-	if (NewSerial > 0) {
+	if (NewSerial > 0)
 		memcpy(&Com_buffer[8], &NewSerial, 4);
- 	 	 }
 
 	Crc = uart_CalcCRC16(&Com_buffer[0], (Comlen-2));
 	Com_buffer[Comlen-2] = Crc;
 	Com_buffer[Comlen-1] = (Crc >> 8);
 
  	 	 //Switch Comms to Radio or RS485 depending on Board Connected
-//	if( (LoomConnected == b935x) || (LoomConnected == b937x) || (LoomConnected == b402x) || (LoomConnected == b427x) ){
-//		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-//	} else if ( (LoomConnected == b401x) || (LoomConnected == b422x) ) {
-//		USART2->CR1 &= ~(USART_CR1_RE);
-//		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
-//		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
-// 	}
+
 	 UART2_transmit(&Com_buffer[0], Comlen);
 	 USART2->CR1  |= USART_CR1_RXNEIE;
 }

@@ -92,7 +92,7 @@ static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-void read_serial(void);
+uint32 read_serial(void);
 void read_correctionFactors(void);
 void write_correctionFactors(void);
 void LCD_init(void);
@@ -116,7 +116,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -154,7 +154,6 @@ int main(void)
   HAL_I2C_Init(&hi2c1);
   LCD_init();
   TestRig_Init();
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -164,9 +163,12 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if (TestingComplete && CheckLoom)
+	  if (TestingComplete && CheckLoom) {
 		  scan_loom();
-
+		  checkLoomConnected();
+		  ConfigInit();
+//		  currentBoardConnected();
+	  }
 
 	  if (KP_5.Pressed && TestingComplete) {
 		  	KP_5.Pressed = KP_5.Count = 0;
@@ -190,6 +192,7 @@ int main(void)
 	  }
 
 	  //Calibration Routine
+
 	  if((KP_7.Pressed && KP_9.Pressed) && TestingComplete){
 		  KP_7.Count = KP_7.Pressed = 0;
 		  KP_9.Count = KP_9.Pressed = 0;
@@ -223,7 +226,8 @@ int main(void)
 	  	if (KP_1.Pressed && TestingComplete) {
 	  		KP_1.Pressed = false;
 	  		KP_1.Count = 0;
-
+	  		TestRig_Init();
+	  		TargetBoardParamInit();
 	  		// Programming Routine
 //  			ComRep = 0x08;
 //			communication_array(ComRep,&Para[0], Paralen);
@@ -262,8 +266,9 @@ int main(void)
 	  		while(!BoardCalibrated && CalibrateCount--) {
 	  			TargetBoardCalibration();
 	  		}
-	  		TargetBoardParamInit();
+
 	  		initialiseTargetBoard();
+	  		currentBoardConnected();
 			HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
 	  		TestingComplete = false;
 			LCD_ClearLine(2);
@@ -276,7 +281,7 @@ int main(void)
 			sprintf(Buffer,"Enter Serial Number: \n",GlobalTestNum);
 	  		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	  		HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-			read_serial();
+			BoardConnected.SerialNumber = read_serial();
 			if (!Quit_flag) {
 				ComRep = 0x08;
 				communication_array(ComRep,&Para[0], Paralen);
@@ -290,19 +295,19 @@ int main(void)
 			}
 	  	} else if (!TestingComplete){
 			if (UART2_ReceiveComplete)			//Handle Response from target board	//TODO: Implement timeout functionality, return to homescreen after 1s no response
-				communication_response(&UART2_Receive[0], UART2_RecPos);
+				communication_response(&ComRep,&UART2_Receive[0], UART2_RecPos);
 			else if (Comm_Ready)
-				communication_command();
+				communication_command(&ComRep);
 			else if (sampleUploadComplete) {
 				ComRep = 0x1B;
-				communication_command();
+				communication_command(&ComRep);
 			}
 	  	} else if (TestingComplete && TestPassed) {
 	  		initialiseTargetBoard();
 	  		while(!UART2_ReceiveComplete){
 
 	  		}
-	  		communication_response(&UART2_Receive[0], UART2_RecPos);
+	  		communication_response(&ComRep, &UART2_Receive[0], UART2_RecPos);
 	  		WriteSerialNumber();
 
 	  		TestPassed = false;
@@ -559,9 +564,9 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 4800;
+  htim6.Init.Prescaler = 4799;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 100;
+  htim6.Init.Period = 99;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {

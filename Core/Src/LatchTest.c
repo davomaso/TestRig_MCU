@@ -1,10 +1,10 @@
 #include "main.h"
 #include "interogate_project.h"
-
+#include "UART_Routine.h"
 
 void runLatchTest(uint8 Test_Port){
 //Latch On
-	unsigned char LatchCommand = 0x26;	//Turn Digital Output on or off
+	uns_ch LatchCommand = 0x26;	//Turn Digital Output on or off
 	ADC_MUXsel(Test_Port);
 	Para[0] = 0x80 + (Test_Port * 2); // 0x80 turns digital output on
 	Paralen = 1;
@@ -34,12 +34,18 @@ void runLatchTest(uint8 Test_Port){
 			if(!LatchSampling)
 				break;
 		}
-		stableVoltageCount = 10;
+		stableVoltageCount = 25;
 		while(stableVoltageCount){
 			if(!LatchSampling)
 				break;
 		}
 	}
+	uint8 Response;
+	while (!UART2_ReceiveComplete) { //Ned to include Timeout
+
+	}
+	if (UART2_ReceiveComplete)
+		communication_response(&Response, &UART2_Receive, UART2_RecPos);
 
 	HAL_TIM_Base_Stop(&htim10);
 	LatchResult = true;

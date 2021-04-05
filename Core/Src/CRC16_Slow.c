@@ -1,7 +1,7 @@
-unsigned short uart_CalcCRC16(unsigned char* ptr, unsigned char count)
-	{
-	unsigned char bit;
-	unsigned int CRC16=0xFFFF;
+#include "main.h"
+unsigned short uart_CalcCRC16(unsigned char* ptr, unsigned char count) {
+	uns_ch bit;
+	uint16 CRC16=0xFFFF;
 
 	while(count--)
 		{

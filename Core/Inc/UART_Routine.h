@@ -29,7 +29,7 @@ uint8 UART2_TXend;				//End reference point to stop transmitting, turn of interr
 uns_ch UART2_Receive[LRGBUFFER];	//Storage buffer for receiving data, before communications/other routines are called
 uint16 UART2_RecPos;				//Positioning for where in the array data is stored to
 bool UART2_Recdata;					//flag for whether data can be received
-uns_ch UART2_Length[1];			//length of the Receiving array minus the header
+uint8 UART2_Length;			//length of the Receiving array minus the header
 bool UART2_ReceiveComplete;			//Flag given once reception of data is complete
 
 //Sleep/Wake function

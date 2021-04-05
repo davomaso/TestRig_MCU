@@ -10,11 +10,12 @@ void Calibration(){
 	calTest = V_1;
 	calPort = Port_1;
 	int8 * calPtr;
+	read_correctionFactors();
 	calPtr = &CorrectionFactors[0];
 
-	DACval = 0x3000 + 0x457 + *calPtr;
-	DAC_set((calPort+1), DACval);
-	MUX_Sel((calPort+1), THREE_VOLT);
+	DACval = 0x3000 + DAC_1volt + *calPtr;
+	DAC_set((calPort), DACval);
+	MUX_Sel((calPort), THREE_VOLT);
 	sprintf(Buffer, "==========Calibrating 1V==========\n");
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	sprintf(Buffer, "Port Calibrating: %d\n", calPort+1);
@@ -113,12 +114,12 @@ void Calibration(){
 						DACval |= 0x3000;
 				else if (calPort == Port_2 || calPort == Port_4 || calPort == Port_6)
 						DACval |= 0xB000;
-				DAC_set((calPort+1), DACval);
+				DAC_set((calPort), DACval);
 
 				if (calTest < 3)
-					MUX_Sel((calPort+1), THREE_VOLT);
+					MUX_Sel((calPort), THREE_VOLT);
 				else
-					MUX_Sel((calPort+1), TWENTY_AMP);
+					MUX_Sel((calPort), TWENTY_AMP);
 
 			}
 			if (KP_6.Pressed) {
@@ -206,12 +207,12 @@ void Calibration(){
 					DACval &= 0x0FFF;
 					DACval |= 0xB000;
 				}
-				DAC_set((calPort+1), DACval);
+				DAC_set((calPort), DACval);
 						//Switch Multiplexer to Test being Run
 				if ((calTest == V_05) || (calTest == V_1) || (calTest == V_24))
-					MUX_Sel((calPort+1), THREE_VOLT);
+					MUX_Sel((calPort), THREE_VOLT);
 				else
-					MUX_Sel((calPort+1), TWENTY_AMP);
+					MUX_Sel((calPort), TWENTY_AMP);
 			}
 			if (KP_2.Pressed) {
 				//Increment CF by 1
@@ -227,7 +228,7 @@ void Calibration(){
 					DACval &= 0x0FFF;
 					DACval |= 0xB000;
 				}
-				DAC_set((calPort+1), DACval);
+				DAC_set((calPort), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
@@ -246,7 +247,7 @@ void Calibration(){
 					DACval &= 0x0FFF;
 					DACval |= 0xB000;
 				}
-				DAC_set((calPort+1), DACval);
+				DAC_set((calPort), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
@@ -266,7 +267,7 @@ void Calibration(){
 					DACval &= 0x0FFF;
 					DACval |= 0xB000;
 				}
-				DAC_set((calPort+1), DACval);
+				DAC_set((calPort), DACval);
 
 				sprintf(Buffer, "%d\n", *calPtr);
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
@@ -286,7 +287,7 @@ void Calibration(){
 					DACval &= 0x0FFF;
 					DACval |= 0xB000;
 				}
-				DAC_set((calPort+1), DACval);
+				DAC_set((calPort), DACval);
 				sprintf(Buffer, "%d\n", *calPtr);
 				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 			}
@@ -299,43 +300,44 @@ void Calibration(){
 
 
 void TargetBoardCalibration() {
+		uns_ch Command;
 		interrogateBoard();
 
 
 			//Set Port 1
 		DACval = DAC_1volt + Port1.CalibrationFactor[V_1];
 		DACval |= 0x3000;
-		DAC_set(1, DACval);
+		DAC_set(Port_1, DACval);
 			//Set Port 2
 		DACval = DAC_1volt + Port2.CalibrationFactor[V_1];
 		DACval |= 0xB000;
-		DAC_set(2, DACval);
+		DAC_set(Port_2, DACval);
 			//Set Port 3
 		DACval = DAC_1volt + Port3.CalibrationFactor[V_1];
 		DACval |= 0x3000;
-		DAC_set(3, DACval);
+		DAC_set(Port_3, DACval);
 			//Set Port 4
 		DACval = DAC_1volt + Port4.CalibrationFactor[V_1];
 		DACval |= 0xB000;
-		DAC_set(4, DACval);
+		DAC_set(Port_4, DACval);
 			//Set Port 5
 		DACval = DAC_1volt + Port5.CalibrationFactor[V_1];
 		DACval |= 0x3000;
-		DAC_set(5, DACval);
+		DAC_set(Port_5, DACval);
 			//Set Port 6
 		DACval = DAC_1volt + Port6.CalibrationFactor[V_1];
 		DACval |= 0xB000;
-		DAC_set(6, DACval);
-	for (int i = 1; i <= 6; i++) {
+		DAC_set(Port_6, DACval);
+	for (int i = 0; i < 6; i++) {
 			MUX_Sel(i, THREE_VOLT);
 		}
 	ADC_MUXsel(0);
 	switchToCurrent = false;
 	calibrateADCval.total = calibrateADCval.average = 0;
 	Calibrating = true;
-	ComRep = 0xC0;
-	SetPara();
-	communication_array(ComRep, &Para[0], Paralen);
+	Command = 0xC0;
+	SetPara(Command);
+	communication_array(Command, &Para[0], Paralen);
 	HAL_TIM_Base_Start(&htim10);
 	HAL_TIM_Base_Start_IT(&htim10);
 	while(!switchToCurrent && Calibrating) {
@@ -347,36 +349,36 @@ void TargetBoardCalibration() {
 				//Set Port 1
 			DACval = DAC_20amp + Port1.CalibrationFactor[I_20];
 			DACval |= 0x3000;
-			DAC_set(1, DACval);
+			DAC_set(Port_1, DACval);
 				//Set Port 2
 			DACval = DAC_20amp + Port2.CalibrationFactor[I_20];
 			DACval |= 0xB000;
-			DAC_set(2, DACval);
+			DAC_set(Port_2, DACval);
 				//Set Port 3
 			DACval = DAC_20amp + Port3.CalibrationFactor[I_20];
 			DACval |= 0x3000;
-			DAC_set(3, DACval);
+			DAC_set(Port_3, DACval);
 				//Set Port 4
 			DACval = DAC_20amp + Port4.CalibrationFactor[I_20];
 			DACval |= 0xB000;
-			DAC_set(4, DACval);
+			DAC_set(Port_4, DACval);
 				//Set Port 5
 			DACval = DAC_20amp + Port5.CalibrationFactor[I_20];
 			DACval |= 0x3000;
-			DAC_set(5, DACval);
+			DAC_set(Port_5, DACval);
 				//Set Port 6
 			DACval = DAC_20amp + Port6.CalibrationFactor[I_20];
 			DACval |= 0xB000;
-			DAC_set(6, DACval);
+			DAC_set(Port_6, DACval);
 
-		for (int i = 1; i <= 6; i++) {
+		for (int i = 0; i <= 5; i++) {
 				MUX_Sel(i, TWENTY_AMP);
 			}
 		while ( (!UART2_ReceiveComplete) && Calibrating) {
 
 		}
 		if (UART2_ReceiveComplete) {
-			communication_response(&UART2_Receive[0], UART2_RecPos);
+			communication_response(&Command, &UART2_Receive[0], UART2_RecPos);
 			sprintf(Buffer, "=====     Target Board Calibrated     =====\n");
 			HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			Calibrating = false;

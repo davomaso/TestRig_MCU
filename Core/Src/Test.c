@@ -5,9 +5,11 @@
 #include "interogate_project.h"
 #include "SetVsMeasured.h"
 
-void SetTestParam(TboardConfig*, uint8);
-extern TestFunction(unsigned char*, uint8, uint8, uint8);
+void SetTestParam(TboardConfig*, uint8, uns_ch *, uint8 *);
+extern TestFunction(TboardConfig *);
 extern set_ALL_DAC(int);
+
+
 
 // ==================	Global Assignment of Port Configs	================== //
 void ConfigInit() {
@@ -71,18 +73,8 @@ void ConfigInit() {
 
 
 //=====================================================  SINGLE & DUAL BOARDS  =====================================================//
-TboardConfig TestConfig935x() {
-	BoardType = b935x;
-	TestNum = 6;
-	PortNum = 5;
-	ParamNum = 4;
-
-	//Set Number of Ports by Type:
-	LatchNum = 1;
-	AnalogNum = 2;
-	DigitalNum = 2;
-
-	TportConfig *TestArray935x[6][5] = {
+void TestConfig935x(TboardConfig * Board) {
+	uint32 *TestArray935x[6][5] = {
 			{ &latchTest, &currentTest,&OnevoltTest, &asyncDigitalTest, &asyncDigitalTest },
 			{ &latchTest, &sdi12Test, &TwovoltTest, &asyncDigitalTest, &asyncDigitalTest },
 			{ &latchTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest },
@@ -90,66 +82,55 @@ TboardConfig TestConfig935x() {
 			{ &latchTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest },
 			{ &latchTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest }
 	};
-	unsigned char portCodeArray935x[5][4] = {
+	uint8 portCodeArray935x[5][4] = {
 			{ 0x80, 0x81, 0x82, 0x83 },
 			{ 0xC0, 0xC1, 0xC2, 0xC3 },
 			{ 0xD0, 0xD1, 0xD2, 0xD3 },
 			{ 0xE0, 0xE1, 0xE2, 0x00 },
 			{ 0xF0, 0xF1, 0xF2, 0x00 },
 	};
+	memcpy(&Board->PortCodes, &portCodeArray935x, sizeof(portCodeArray935x));
 
-	TboardConfig single935x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray935x, &portCodeArray935x };
-	SetTestParam(&single935x_Test, GlobalTestNum);
-	return single935x_Test;
+	Board->BoardType = b935x;
+	Board->latchPortCount = 1;
+	Board->analogInputCount = 2;
+	Board->digitalInputCout = 2;
+	Board->testNum = 6;
 }
 
-TboardConfig TestConfig937x() {
-	BoardType = b937x;
-	TestNum = 6;
-	PortNum = 4;
-	ParamNum = 4;
+void TestConfig937x(TboardConfig * Board) {
+	Board->BoardType = b937x;
+	Board->latchPortCount = 2;
+	Board->analogInputCount = 2;
+	Board->digitalInputCout = 0;
+	Board->testNum = 6;
 
-	//Set Number of Ports by Type:
-	LatchNum = 2;
-	AnalogNum = 2;
-	DigitalNum = 0;
+	TportConfig *tempTestARR[24] = {	// Array size must not exceed size of MAX_TEST_ARRAY_SIZE
+					&latchTest, &noTest, &OnevoltTest, &asyncDigitalTest,	//
+					&noTest, &latchTest, &TwovoltTest, &asyncDigitalTest,	//
+					&noTest, &noTest, &sdi12Test, &currentTest,	//
+					&noTest, &noTest, &asyncDigitalTest, &sdi12Test,	//
+					&noTest, &noTest, &currentTest, &TwovoltTest,	//
+					&noTest, &noTest, &currentTest, &OnevoltTest	//
+			};
+	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
+	Board->ArrayPtr = 0;
 
-	TportConfig *TestArray937x[6][4] = {
-			{ &latchTest, &noTest, &sdi12Test, &asyncTest },
-			{ &noTest, &latchTest, &asyncTest, &sdi12Test },
-			{ &noTest, &noTest, &asyncTest, &OnevoltTest },
-			{ &noTest, &noTest, &OnevoltTest, &asyncTest },
-			{ &noTest, &noTest, &asyncTest, &currentTest },
-			{ &noTest, &noTest, &TwovoltTest, &asyncTest },
+	 uint8 tempPcARR[16] = {	//
+			 0x80, 0x81, 0x00, 0x00 ,	//
+			 0x84, 0x85, 0x88, 0x89 ,	//
+			 0xC0, 0xC1, 0xC2, 0x00 ,	//
+			 0xD0, 0xD1, 0xD2, 0x00 ,	//
 	};
+	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
-	unsigned char portCodeArray937x[4][4] = {
-			{ 0x80, 0x81, 0x00, 0x00 },
-			{ 0x84, 0x85, 0x88, 0x89 },
-			{ 0xC0, 0xC1, 0xC2, 0x00 },
-			{ 0xD0, 0xD1, 0xD2, 0x00 },
-	};
-
-	TboardConfig dual937x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray937x, &portCodeArray937x };
-	SetTestParam(&dual937x_Test, GlobalTestNum);
-	return dual937x_Test;
 }
 //==================================================================================================================================//
 
 
 //====================================================  INPUT EXPANSION BOARDS  ====================================================//
-TboardConfig TestConfig401x(){
-	BoardType = b401x;
-	TestNum = 6;
-	PortNum = 4;
-	ParamNum = 4;
-
-	//Set Number of Ports by Type:
-	LatchNum = 0;
-	AnalogNum = 4;
-	DigitalNum = 0;
-
-	TportConfig *TestArray401x[6][4] = {
+void TestConfig401x(TboardConfig * Board){
+	uint32 *TestArray401x[6][4] = {
 			{ &sdi12Test, &OnevoltTest, &currentTest, &asyncTest },
 			{ &asyncTest, &sdi12Test, &OnevoltTest, &currentTest },
 			{ &currentTest, &asyncTest, &sdi12Test, &OnevoltTest },
@@ -158,30 +139,22 @@ TboardConfig TestConfig401x(){
 			{ &currentTest, &TwovoltTest, &currentTest, &TwovoltTest },
 	};
 
-	unsigned char portCodeArray401x[4][4] = {
+	const uint8 * portCodeArray401x[4][4] = {
 			{ 0xC0, 0xC1, 0xC2, 0xC3 },
 			{ 0xD0, 0xD1, 0xD2, 0xD3 },
 			{ 0xE0, 0xE1, 0xE2, 0xE3 },
 			{ 0xF0, 0xF1, 0xF2, 0xF3 },
 	};
-
-	TboardConfig input401x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray401x, &portCodeArray401x };
-	SetTestParam(&input401x_Test, GlobalTestNum);
-	return input401x_Test;
+	Board->BoardType = b401x;
+	Board->latchPortCount = 0;
+	Board->analogInputCount = 4;
+	Board->digitalInputCout = 0;
+	Board->testNum = 6;
+//	Board->PortCodes = portCodeArray401x;
 }
 
-TboardConfig TestConfig402x(){
-	BoardType = b402x;
-	TestNum = 7;
-	PortNum = 10;
-	ParamNum = 4;
-
-	//Set Number of Ports by Type:
-	LatchNum = 1;
-	AnalogNum = 6;
-	DigitalNum = 3;
-
-	TportConfig *TestArray402x[7][10] = {
+void TestConfig402x(TboardConfig * Board){
+	uint32 *TestArray402x[7][10] = {
 			{ &sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &currentTest, &currentTest, &asyncTest, &asyncTest, &asyncDigitalTest, &outputTest },
 			{ &currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &currentTest, &OnevoltTest, &asyncDigitalTest, &asyncTest, &asyncTest, &outputTest },
 			{ &currentTest, &TwovoltTest, &sdi12Test, &currentTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest },
@@ -191,7 +164,7 @@ TboardConfig TestConfig402x(){
 			{ &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &noTest },
 	};
 						//Watch PARAMcount on 4021 boards as config on iConfigure had 5 parameters but 0x00 in the 5th config param, may not be required but check results
-	unsigned char portCodeArray402x[10][4] = {
+	const uint8 * portCodeArray402x[10][4] = {
 			{ 0xA0, 0xA1, 0xA2, 0xA3},
 			{ 0xA8, 0xA9, 0xAA, 0xAB},
 			{ 0xB0, 0xB1, 0xB2, 0xB3},
@@ -204,63 +177,49 @@ TboardConfig TestConfig402x(){
 			{ 0xE8, 0x00, 0x00, 0x00},
 	};
 
-	TboardConfig input402x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray402x, &portCodeArray402x };
-	SetTestParam(&input402x_Test, GlobalTestNum);
-	return input402x_Test;
+	Board->BoardType = b402x;
+	Board->latchPortCount = 1;
+	Board->analogInputCount = 6;
+	Board->digitalInputCout = 3;
+	Board->testNum = 6;
+//	Board->PortCodes = portCodeArray402x;
 }
 //==================================================================================================================================//
 
 
 //====================================================  OUTPUT EXPANSION BOARDS  ====================================================//
-TboardConfig TestConfig422x(){
-	BoardType = b422x;
-	TestNum = 4;
-	PortNum = 4;
-	ParamNum = 2;
-
-	//Set Number of Ports by Type:
-	LatchNum = 4;
-	AnalogNum = 0;
-	DigitalNum = 0;
-
-	TportConfig *TestArray422x[4][4] = {
+void TestConfig422x(TboardConfig * Board){
+	uint32 *TestArray422x[4][4] = {
 			{ &latchTest, &noTest, &noTest, &noTest },
 			{ &noTest, &latchTest, &noTest, &noTest },
 			{ &noTest, &noTest, &latchTest, &noTest },
 			{ &noTest, &noTest, &noTest, &latchTest },
 	};
 
-	unsigned char portCodeArray422x[4][2] = {
+	const uint8 *  portCodeArray422x[4][2] = {
 			{ 0xC0, 0xC1 },
 			{ 0xC4, 0xC5 },
 			{ 0xC8, 0xC9 },
 			{ 0xCC, 0xCD },
 	};
 
-	TboardConfig input422x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray422x, &portCodeArray422x,  };
-	SetTestParam(&input422x_Test, GlobalTestNum);
-	return input422x_Test;
+	Board->BoardType = b422x;
+	Board->latchPortCount = 4;
+	Board->analogInputCount = 0;
+	Board->digitalInputCout = 0;
+	Board->testNum = 4;
+//	Board->PortCodes = portCodeArray422x;
 }
 
-TboardConfig TestConfig427x(){
-	BoardType = b427x;
-	TestNum = 4;
-	PortNum = 5;
-	ParamNum = 4;
-
-	//Set Number of Ports by Type:
-	LatchNum = 4;
-	AnalogNum = 1;
-	DigitalNum = 0;
-
-	TportConfig *TestArray427x[4][5] = {
+void TestConfig427x(TboardConfig * Board){
+	uint32 *TestArray427x[4][5] = {
 			{ &latchTest, &noTest, &noTest, &noTest, &OnevoltTest },
 			{ &noTest, &latchTest, &noTest, &noTest, &currentTest },
 			{ &noTest, &noTest, &latchTest, &noTest, &asyncTest },
 			{ &noTest, &noTest, &noTest, &latchTest, &sdi12Test },
 	};
 
-	unsigned char portCodeArray427x[5][4] = {
+	const uint8 * portCodeArray427x[5][4] = {
 			{ 0xC0, 0xC1, 0x00, 0x00 },
 			{ 0xC4, 0xC5, 0x00, 0x00 },
 			{ 0xC8, 0xC9, 0x00, 0x00 },
@@ -268,111 +227,97 @@ TboardConfig TestConfig427x(){
 			{ 0x90, 0x91, 0x92, 0x93 },
 	};
 
-	TboardConfig input427x_Test = { BoardType, LatchNum, AnalogNum, DigitalNum, TestNum, ParamNum, &TestArray427x, &portCodeArray427x };
-	SetTestParam(&input427x_Test, GlobalTestNum);
-	return input427x_Test;
+	Board->BoardType = b427x;
+	Board->latchPortCount = 4;
+	Board->analogInputCount = 1;
+	Board->digitalInputCout = 0;
+	Board->testNum = 4;
+//	Board->PortCodes = portCodeArray427x;
 }
 //==================================================================================================================================//
 
 
  //=====================================================  SET TEST PARAMETERS  =====================================================//
-void SetTestParam(TboardConfig *testParam, uint8 TestCount) {
-		//Pointers to the two arrays in the board struct
-		TportConfig **testPtr;
-		unsigned char *portCodesPtr;
-		TportConfig *thisTest;
-		// ====================  Set Pointers to TestArray and PortCodes  ==================== //
-		testPtr = testParam->TestArray;
-		portCodesPtr = testParam->PortCodes;
-
-		uint8 TotalPort = testParam->outputPortCount + testParam->analogInputCount + testParam->digitalInputCout;
-		if ((TestCount) < testParam->testNum) {	//Error check to ensure no overflow of test count
-			testPtr += TestCount * TotalPort;//Increment to the test that the system is up to
-
-			// ======= Variables for the SetTestParam Function  ======= //
-			unsigned char para[256];
-
-			uint8 PortCount;
-			//Sum of Input and Output Ports
-			uint8 Count = 0;
-			//Test_Port represents the counter for the first element of each port
-			Test_Port = 0;
+void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * Count) {
+		uint8 TotalPort = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;
+		if ((TestCount) < Board->testNum) {	//Error check to ensure no overflow of test count
+			*Count = 0;
 			// ======= Load Both Arrays into Para to be sent to Target Board  ======= //
+			uint8 * PCptr = &(Board->PortCodes[0]);
+			for (uint8 PortCount = 0; PortCount < TotalPort; PortCount++) {
+				Set_Test(Board, PortCount);	//Increment This test to the next testarray variable
+				if(Board->ThisTest->Code){
+					*Para = *PCptr++;
+					(*Count)++; Para++;
+					*Para = Board->ThisTest->Code;
+					(*Count)++; Para++;
 
-			for (PortCount = 0; PortCount < TotalPort; PortCount++) {
-				thisTest = *testPtr++;
+					if(*PCptr){
+						*Para = *PCptr++;
+						(*Count)++; Para++;
+						*Para = Board->ThisTest->Channels;
+						(*Count)++; Para++;
+					} else PCptr++;
 
-				if(thisTest->Code){
-					para[Count++] = *portCodesPtr++;
-					para[Count++] = thisTest->Code;
+					if ( (Board->ThisTest->Options) && *PCptr) {
+						*Para = *PCptr++;
+						(*Count)++; Para++;
+						*Para = Board->ThisTest->Options;
+						(*Count)++; Para++;
+					} else PCptr++;
 
-					if(thisTest->Channels){
-					para[Count++] = *portCodesPtr++;
-					para[Count++] = thisTest->Channels;}
-					else portCodesPtr++;
+					if ( (Board->ThisTest->GateTime) && *PCptr ) {
+						*Para = *PCptr++;
+						(*Count)++; Para++;
+						*Para = Board->ThisTest->GateTime;
+						(*Count)++; Para++;
+					} else PCptr++;
+				} else PCptr += 4;
 
-					if(thisTest->Options && *portCodesPtr){
-					para[Count++] = *portCodesPtr++;
-					para[Count++] = thisTest->Options;}
-					else portCodesPtr++;
-
-					if (thisTest->GateTime && *portCodesPtr) {
-						para[Count++] = *portCodesPtr++;
-						para[Count++] = thisTest->GateTime;
-					} else portCodesPtr++;
-					TestCode[Test_Port++] = thisTest->Code;
-				} else{
-					TestCode[Test_Port++] = thisTest->Code;
-					portCodesPtr += 4; }
-
-				if(thisTest->Code == SDI_TWELVE)
+				if(Board->ThisTest->Code == SDI_TWELVE)
 					SDIenabled = true;
-				if(thisTest->Code == 0x09){
-					switch((Test_Port-testParam->outputPortCount)){
-					case 1:
-						Async_Port1.FilterEnabled = (thisTest->Options & 0x20);
+				if(Board->ThisTest->Code == ASYNC_PULSE){
+					switch( PortCount - (Board->latchPortCount) ){
+					case Port_1:
+						Async_Port1.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 						break;
-					case 2:
-						Async_Port2.FilterEnabled = (thisTest->Options & 0x20);
+					case Port_2:
+						Async_Port2.FilterEnabled = (Board->ThisTest->Options & 0x20);
  						break;
-					case 3:
-						Async_Port3.FilterEnabled = thisTest->Options & 0x20;
+					case Port_3:
+						Async_Port3.FilterEnabled = (Board->ThisTest->Options & 0x20);
 						break;
-					case 4:
-						Async_Port4.FilterEnabled = thisTest->Options & 0x20;
+					case Port_4:
+						Async_Port4.FilterEnabled = (Board->ThisTest->Options & 0x20);
 						break;
-					case 5:
-						Async_Port5.FilterEnabled = thisTest->Options & 0x20;
+					case Port_5:
+						Async_Port5.FilterEnabled = (Board->ThisTest->Options & 0x20);
 						break;
-					case 6:
-						Async_Port6.FilterEnabled = thisTest->Options & 0x20;
+					case Port_6:
+						Async_Port6.FilterEnabled = (Board->ThisTest->Options & 0x20);
 						break;
-					case 7:
-						Async_Port7.FilterEnabled = thisTest->Options & 0x20;
+					case Port_7:
+						Async_Port7.FilterEnabled = (Board->ThisTest->Options & 0x20);
 						break;
-					case 8:
-						Async_Port8.FilterEnabled = thisTest->Options & 0x20;
+					case Port_8:
+						Async_Port8.FilterEnabled = (Board->ThisTest->Options & 0x20);
 						break;
-					case 9:
-						Async_Port9.FilterEnabled = thisTest->Options & 0x20;
+					case Port_9:
+						Async_Port9.FilterEnabled = (Board->ThisTest->Options & 0x20);
 						break;
 					}
 				}
 			}
-			if((testParam->BoardType == b935x) || (testParam->BoardType == b937x) ){
-				para[Count++] = 0xA0;
-				para[Count++] = 0x00;	//TODO: Test User Voltage
-				para[Count++] = 0xA1;
-				para[Count++] = 0x00;
-				para[Count++] = 0xA2;
-				para[Count++] = 0x01;
+			if((Board->BoardType == b935x) || (Board->BoardType == b937x) && (GlobalTestNum == 0)){
+				*Para = 0xA0; (*Count)++; Para++;
+				*Para = 0x00; (*Count)++; Para++;//TODO: Test User Voltage
+				*Para = 0xA1; (*Count)++; Para++;
+				*Para = 0x00; (*Count)++; Para++;
+				*Para = 0xA2; (*Count)++; Para++;
+				*Para = 0x01; (*Count)++; Para++;
 			}
-			GlobalTestNum++;
-			unsigned char ComRep;
-			ComRep = 0x56;
-			communication_array(ComRep, &para[0], Count);
-	}
-		else {
+
+	} else {
 		TestingComplete = true;
 		Comm_Ready = false;
 		sampleUploadComplete = false;
@@ -416,6 +361,11 @@ void SetTestParam(TboardConfig *testParam, uint8 TestCount) {
 			TestPassed = true;
 		}
 	}
+}
+
+void Set_Test(TboardConfig *Board, uint8 Port) {
+	Board->ThisTest =  Board->TestArray[Board->ArrayPtr++];
+	Board->TestCode[Port] = Board->ThisTest->Code;
 }
 //	=================================================================================//
 //	=================================================================================//

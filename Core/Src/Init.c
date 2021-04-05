@@ -20,18 +20,17 @@ void TestRig_Init() {
 	  sprintf(Buffer,"      Test Rig      ");
 	  LCD_printf(&Buffer[0], strlen(Buffer));
 
-	  LoomConnected = None;
-	  LCD_setCursor(2, 0);
-	  sprintf(Buffer,"   Connect a Loom   ");
-	  LCD_printf(&Buffer[0], strlen(Buffer));
-	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+//	  LoomConnected = None;
+//	  LCD_setCursor(2, 0);
+//	  sprintf(Buffer,"   Connect a Loom   ");
+//	  LCD_printf(&Buffer[0], strlen(Buffer));
+//	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 
 	  Para[0] = 0;
 	  Paralen = 0;
 	  Length = 14 + Paralen; //length is
 	  Comlen = Length + 3; // plus 5 for the header, length and CRC
-	  ComRep = '\x08';
 	  SDIAddress = 255;
 
 	  UART2_RecPos = 0;
@@ -74,18 +73,19 @@ void TestRig_Init() {
 
 
 	  //Mount SD and check space
-	  SDfileInit();
-	  LCD_setCursor(2, 0);
-	  sprintf(Buffer, " SD card Connected  ");
-	  LCD_printf(&Buffer[0], strlen(Buffer));
+//	  SDfileInit();
+//	  LCD_setCursor(2, 0);
+//	  sprintf(Buffer, " SD card Connected  ");
+//	  LCD_printf(&Buffer[0], strlen(Buffer));
       HAL_GPIO_WritePin(V12fuseEN_GPIO_Port, V12fuseEN_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin(V12fuseLatch_GPIO_Port, V12fuseLatch_Pin, GPIO_PIN_RESET);
 }
 
 void initialiseTargetBoard() {
-		ComRep = 0xCC;
-		SetPara();
-		communication_array(ComRep, &Para[0], Paralen);
+		uns_ch Command;
+		Command = 0xCC;
+		SetPara(Command);
+		communication_array(Command, &Para[0], Paralen);
 		while(!UART2_ReceiveComplete) {
 
 		}
@@ -96,8 +96,7 @@ void TargetBoardParamInit() {
 	BoardConnected.SerialNumber = 0;
 	BoardConnected.analogInputCount = 0;
 	BoardConnected.digitalInputCout = 0;
-	BoardConnected.outputPortCount = 0;
-	BoardConnected.paramNum = 0;
+	BoardConnected.latchPortCount = 0;
 	BoardConnected.testNum = 0;
 	TestPassed = false;
 	BoardCalibrated = false;
@@ -109,7 +108,7 @@ void TargetBoardParamInit() {
 }
 
 void WriteSerialNumber() {
-	ComRep = 0x10;
+	uns_ch Command = 0x10;
 
 	uint32 CurrentSerial;
 	uint32 NewSerial;
@@ -118,7 +117,7 @@ void WriteSerialNumber() {
 
 		//Read Current Serial Number
 	CurrentSerial = NewSerial = 0;
-	communication_arraySerial(ComRep, CurrentSerial, NewSerial);
+	communication_arraySerial(Command, CurrentSerial, NewSerial);
 	while (!UART2_ReceiveComplete) {
 	}
 	tempSerial = ReadSerialNumber(&UART2_Receive[0], UART2_RecPos);
@@ -128,8 +127,8 @@ void WriteSerialNumber() {
 		//Write New Serial Number
 	memcpy(&NewSerial, &(BoardConnected.SerialNumber), 4);
 
-	ComRep = 0x12;
-	communication_arraySerial(ComRep, CurrentSerial, NewSerial);
+	Command = 0x12;
+	communication_arraySerial(Command, CurrentSerial, NewSerial);
 	while (!UART2_ReceiveComplete) {
 	}
 		//Confirm Serial Number
@@ -145,7 +144,8 @@ void WriteSerialNumber() {
 }
 
 uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
-	unsigned char *ptr;
+	uns_ch *ptr;
+	uns_ch Response;
 	uint32 SerialNumberRead = 0;
 	//Stop re-entry into communication Routines
 	UART2_ReceiveComplete = false;
@@ -154,9 +154,9 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 		//Length
 		Length = *(data + 2);
 		//	C/R will determine how the system will behave following
-		ComRep = *(data + 7);
+		Response = *(data + 7);
 		ptr = data + 8;
-		switch (ComRep) {
+		switch (Response) {
 		case 0x11:
 		case 0x13:
 				memcpy(&SerialNumberRead, ptr, 4);

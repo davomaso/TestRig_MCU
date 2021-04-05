@@ -14,12 +14,12 @@ typedef unsigned short uint16;
 #include "Board_Config.h"
 #include "stdbool.h"
 
-TboardConfig TestConfig935x();
-TboardConfig TestConfig937x();
-TboardConfig TestConfig401x();
-TboardConfig TestConfig402x();
-TboardConfig TestConfig422x();
-TboardConfig TestConfig427x();
+void TestConfig935x(TboardConfig *);
+void TestConfig937x(TboardConfig *);
+void TestConfig401x(TboardConfig *);
+void TestConfig402x(TboardConfig *);
+void TestConfig422x(TboardConfig *);
+void TestConfig427x(TboardConfig *);
 
 
 	//Test Quantities to pass to the SetTestParam function
@@ -39,6 +39,6 @@ _Bool input_port;
 _Bool SDIenabled;
 
 unsigned char TestCode[SML_BUFFER];
-uint8 Test_Port;
+
 
 #endif /* INC_TEST_H_ */

@@ -4,14 +4,14 @@
 #include "SDcard.h"
 
 void WriteSDresults(TtestType *Code, float *Set, float *Measured) {
-	PortCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
+	PortCount = BoardConnected.latchPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
 	Open_Afile(&FILEname[0]);
 	for (int i = 0; i < PortCount;i++) {
-		if (i < BoardConnected.outputPortCount) {
+		if (i < BoardConnected.latchPortCount) {
 			sprintf(Buffer, "%d,%d,L%d,%d,%.3f,%.3f\n", BoardConnected.BoardType,GlobalTestNum, (i+1) ,*Code++,*Set++,*Measured++);
 			Update_File(&FILEname[0], &Buffer[0]);
 		} else {
-			sprintf(Buffer, "%d,%d,%d,%d,%.3f,%.3f\n", BoardConnected.BoardType,GlobalTestNum, ((i+1)-BoardConnected.outputPortCount) ,*Code++,*Set++,*Measured++);
+			sprintf(Buffer, "%d,%d,%d,%d,%.3f,%.3f\n", BoardConnected.BoardType,GlobalTestNum, ((i+1)-BoardConnected.latchPortCount) ,*Code++,*Set++,*Measured++);
 			Update_File(&FILEname[0], &Buffer[0]);
 		}
 		HAL_Delay(50);
