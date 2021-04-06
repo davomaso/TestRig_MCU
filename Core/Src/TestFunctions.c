@@ -36,10 +36,10 @@ void TestFunction(TboardConfig *Board) {
 	for (currPort = 0; currPort < Board->latchPortCount; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 				case TWO_WIRE_LATCHING:
-					CHval[GlobalTestNum][totalPortCount++] = twoWireLatching(currPort,1);
+					CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(currPort,1);
 					break;
 				case NOTEST:
-					CHval[GlobalTestNum][totalPortCount++] = twoWireLatching(currPort,0);
+					CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(currPort,0);
 					break;
 		}
 	}
@@ -47,23 +47,23 @@ void TestFunction(TboardConfig *Board) {
 	for (currPort = 0; currPort < Board->analogInputCount; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case TWENTY_AMP:
-			CHval[GlobalTestNum][totalPortCount++] = twentyAmp(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = twentyAmp(currPort);
 //			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
 			break;
 		case THREE_VOLT:
-			CHval[GlobalTestNum][totalPortCount++] = threeVolt(currPort, THREE_VOLT);
+			CHval[Board->GlobalTestNum][totalPortCount++] = threeVolt(currPort, THREE_VOLT);
 			break;
 		case TWOFIVE_VOLT:
-			CHval[GlobalTestNum][totalPortCount++] = threeVolt(currPort, TWOFIVE_VOLT);
+			CHval[Board->GlobalTestNum][totalPortCount++] = threeVolt(currPort, TWOFIVE_VOLT);
 			break;
 		case ONE_VOLT:
-			CHval[GlobalTestNum][totalPortCount++] = threeVolt(currPort, ONE_VOLT);
+			CHval[Board->GlobalTestNum][totalPortCount++] = threeVolt(currPort, ONE_VOLT);
 			break;
 		case ASYNC_PULSE:
-			CHval[GlobalTestNum][totalPortCount++] = asyncPulse(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(currPort);
 			break;
 		case SDI_TWELVE:
-			CHval[GlobalTestNum][totalPortCount++] = sdiTwelve(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = sdiTwelve(currPort);
 			break;
 		}
 	}
@@ -71,7 +71,7 @@ void TestFunction(TboardConfig *Board) {
 	for (currPort = 7; currPort < Board->digitalInputCout+7; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case ASYNC_PULSE:
-			CHval[GlobalTestNum][totalPortCount++] = asyncPulse(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(currPort);
 			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
 			break;
 		}
@@ -271,7 +271,7 @@ float asyncPulse(uint8 Test_Port) {
 	switch (Test_Port) {
 	//Port 2
 	case Port_1:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port1.PulseCount = 12;
@@ -292,7 +292,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 		//Port 3
 	case Port_2:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port2.PulseCount = 5;
@@ -313,7 +313,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 		//Port 4
 	case Port_3:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port3.PulseCount = 8;
@@ -334,7 +334,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 		//Port 5
 	case Port_4:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port4.PulseCount = 10;
@@ -354,7 +354,7 @@ float asyncPulse(uint8 Test_Port) {
 		return (float) Async_Port4.FilterEnabled ?  Async_Port4.PulseCount : (11*Async_Port4.PulseCount);
 		break;
 	case Port_5:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port5.PulseCount = 10;
@@ -375,7 +375,7 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 
 	case Port_6:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port6.PulseCount = 10;
@@ -396,7 +396,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 
 	case 6:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port7.PulseCount = 5;
@@ -417,7 +417,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 
 	case 7:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port8.PulseCount = 7;
@@ -437,7 +437,7 @@ float asyncPulse(uint8 Test_Port) {
 		return (float) Async_Port8.PulseCount;
 		break;
 	case 8:
-		switch (GlobalTestNum) {
+		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port9.PulseCount = 7;

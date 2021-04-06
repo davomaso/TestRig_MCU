@@ -7,6 +7,7 @@
 
 void SetTestParam(TboardConfig*, uint8, uns_ch *, uint8 *);
 extern TestFunction(TboardConfig *);
+
 extern set_ALL_DAC(int);
 
 
@@ -239,8 +240,7 @@ void TestConfig427x(TboardConfig * Board){
 
  //=====================================================  SET TEST PARAMETERS  =====================================================//
 void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * Count) {
-		uint8 TotalPort = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;
-		if ((TestCount) < Board->testNum) {	//Error check to ensure no overflow of test count
+		uint8 TotalPort = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;	//Error check to ensure no overflow of test count
 			*Count = 0;
 			// ======= Load Both Arrays into Para to be sent to Target Board  ======= //
 			uint8 * PCptr = &(Board->PortCodes[0]);
@@ -308,7 +308,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 					}
 				}
 			}
-			if((Board->BoardType == b935x) || (Board->BoardType == b937x) && (GlobalTestNum == 0)){
+			if((Board->BoardType == b935x) || (Board->BoardType == b937x) && (Board->GlobalTestNum == 0)){
 				*Para = 0xA0; (*Count)++; Para++;
 				*Para = 0x00; (*Count)++; Para++;//TODO: Test User Voltage
 				*Para = 0xA1; (*Count)++; Para++;
@@ -317,11 +317,19 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 				*Para = 0x01; (*Count)++; Para++;
 			}
 
-	} else {
+	}
+
+void Set_Test(TboardConfig *Board, uint8 Port) {
+	Board->ThisTest =  Board->TestArray[Board->ArrayPtr++];
+	Board->TestCode[Port] = Board->ThisTest->Code;
+}
+
+void CheckTestNumber(uint8 Test, uint8 maxTest) {
+	if (Test == maxTest) {
+		TestPassed = true;
 		TestingComplete = true;
-		Comm_Ready = false;
-		sampleUploadComplete = false;
-		sprintf(Buffer,"\n ========== Maximum Test Number Reached: %d ==========",GlobalTestNum);
+
+		sprintf(Buffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
 		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 		HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 		reset_ALL_MUX();
@@ -336,12 +344,12 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 		LCD_setCursor(2, 0);
 		sprintf(Buffer, "    Test Results    ");
 		LCD_printf(&Buffer[0], strlen(Buffer));
-		uint8 spacing = (20 - (GlobalTestNum) - (GlobalTestNum-1));
+		uint8 spacing = (20 - (Test) - (Test-1));
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
 		_Bool Passed = true;
-		for (int i = 1; i <= GlobalTestNum; i++) {
+		for (int i = 1; i <= Test; i++) {
 			if (TestResults[i] == false) {
 				sprintf(Buffer, "X ");
 				LCD_printf(&Buffer[0], strlen(Buffer));
@@ -353,19 +361,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 			TestResults[i] = true;
 		}
 		HAL_Delay(500);
-		if (Passed) {
-			LCD_setCursor(2, 0);
-			sprintf(Buffer, "    Test Passed    ");
-			LCD_printf(&Buffer[0], strlen(Buffer));
-			HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_SET);
-			TestPassed = true;
-		}
 	}
-}
-
-void Set_Test(TboardConfig *Board, uint8 Port) {
-	Board->ThisTest =  Board->TestArray[Board->ArrayPtr++];
-	Board->TestCode[Port] = Board->ThisTest->Code;
 }
 //	=================================================================================//
 //	=================================================================================//

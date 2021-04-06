@@ -156,9 +156,9 @@ void currentBoardConnected() {
 					TestConfig427x(&BoardConnected);
 					return;
 			} else{
-			sprintf(Buffer, "BoardConfig Error/Loom Connected Error");
-			CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+				sprintf(Buffer, "BoardConfig Error/Loom Connected Error");
+				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+				HAL_UART_Transmit(&D_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 			}
 			return;
 }

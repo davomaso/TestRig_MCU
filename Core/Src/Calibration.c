@@ -301,9 +301,6 @@ void Calibration(){
 
 void TargetBoardCalibration() {
 		uns_ch Command;
-		interrogateBoard();
-
-
 			//Set Port 1
 		DACval = DAC_1volt + Port1.CalibrationFactor[V_1];
 		DACval |= 0x3000;
@@ -338,6 +335,7 @@ void TargetBoardCalibration() {
 	Command = 0xC0;
 	SetPara(Command);
 	communication_array(Command, &Para[0], Paralen);
+	CalibratingTimer = 0;
 	HAL_TIM_Base_Start(&htim10);
 	HAL_TIM_Base_Start_IT(&htim10);
 	while(!switchToCurrent && Calibrating) {

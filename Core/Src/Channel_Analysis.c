@@ -49,7 +49,7 @@ void Decompress_Channels(unsigned char *data, uint8 length) {
 			Channel_value = *data++;
 			break;
 		}
-		measuredBuffer[GlobalTestNum][CH_count++] = Channel_value;
+		measuredBuffer[BoardConnected.GlobalTestNum][CH_count++] = Channel_value;
 	}
 	//UART3_transmit(&measuredBuffer[0], Channel_num);
 }

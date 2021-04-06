@@ -230,11 +230,13 @@ void TIM1_UP_TIM10_IRQHandler(void)
 			if ((raw_adcCount >= 5) && (!switchToCurrent)) {
 				calibrateADCval.average = calibrateADCval.total / raw_adcCount;
 				calibrateADCval.total = 0;
-				calibrateADCval.avg_Buffer[CalibratingTimer++] = calibrateADCval.average;
-				if (CalibratingTimer >= (ADC_BUF_LEN-1) )
-					memmove(&calibrateADCval.avg_Buffer[0], &calibrateADCval.avg_Buffer[1], ADC_BUF_LEN);
+//				if (CalibratingTimer >= (ADC_BUF_LEN) ) {
+//					memmove(&calibrateADCval.avg_Buffer[0], &calibrateADCval.avg_Buffer[1], ADC_BUF_LEN-1);
+//					CalibratingTimer = ADC_BUF_LEN-1;
+//				}
+//				calibrateADCval.avg_Buffer[CalibratingTimer++] = calibrateADCval.average;
+
 				raw_adcCount = 0;
-//				CalibratingTimer++;
 				if (calibrateADCval.average <= 100) {
 					if (!(--CalibrationCountdown)) {
 						switchToCurrent = true;
@@ -421,12 +423,12 @@ void USART2_IRQHandler(void)
 					//UART3_transmit(&UART2_Receive[0], UART2_RecPos);
 					UART2_Recdata = false;
 					UART2_ReceiveComplete = true;
+					ProcessState = Complete;
 					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 					USART2->CR1  &= ~(USART_CR1_RXNEIE);
 				}
 			} else
-				//catch all statement for anything that makes it this far.
-				UART2_Recdata = false;
+				UART2_Recdata = false;				//catch all statement for anything that makes it this far.
 		}
 
 	if (USART2->SR & USART_SR_TXE) {
@@ -788,7 +790,8 @@ void TIM6_IRQHandler(void) {
 	  if(sampleCount == sampleTime)
 	  {
 		  samplesUploading = false;
-		  sampleUploadComplete = true;
+		  ProcessState = Complete;
+		  sampleCount = 0;
 	  }	else
 		  sampleCount++;
 

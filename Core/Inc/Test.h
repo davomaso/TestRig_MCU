@@ -14,6 +14,8 @@ typedef unsigned short uint16;
 #include "Board_Config.h"
 #include "stdbool.h"
 
+void CheckTestNumber(uint8, uint8);
+
 void TestConfig935x(TboardConfig *);
 void TestConfig937x(TboardConfig *);
 void TestConfig401x(TboardConfig *);
@@ -38,7 +40,6 @@ _Bool input_port;
 
 _Bool SDIenabled;
 
-unsigned char TestCode[SML_BUFFER];
 
 
 #endif /* INC_TEST_H_ */

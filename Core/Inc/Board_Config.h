@@ -55,6 +55,7 @@
 			uint8 PortCodes[MAX_PORT_CODE_ARRAY_SIZE];
 			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
 			uint32 SerialNumber;
+			uint8 GlobalTestNum;
 	}TboardConfig;
 
 	TboardConfig BoardConnected;

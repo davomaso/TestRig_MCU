@@ -109,11 +109,17 @@ TloomConnected BoardType;
 
 typedef enum {Port_1 = 0, Port_2 = 1, Port_3 = 2, Port_4 = 3, Port_5 = 4, Port_6 = 5, Port_7 = 6, Port_8 = 7, Port_9 = 8}TcalPortConfig;
 TcalPortConfig calPort;
+
+typedef enum {IDLE = 0, Initialising = 1, Interogating = 2, Configuring = 3, Sampling = 4, Uploading = 5, SortResults = 6}TcurrentState;
+TcurrentState CurrentState;
+
+typedef enum {Failed = 0, Waiting = 1, Complete = 2}TprocessState;
+TprocessState ProcessState;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-uint8_t GlobalTestNum;
 uns_ch Buffer[256];
 
 /* USER CODE END EC */

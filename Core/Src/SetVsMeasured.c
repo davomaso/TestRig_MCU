@@ -16,12 +16,12 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 	uint8 currResult;
 	uint8 spacing;
 
-	sprintf(Buffer,"\n====================	Test %d	====================\n\n",GlobalTestNum+1);
+	sprintf(Buffer,"\n====================	Test %d	====================\n\n",Board->GlobalTestNum+1);
 	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
 	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
 
 	LCD_setCursor(2, 0);
-	sprintf(Buffer, "       Test %d       ", GlobalTestNum+1);
+	sprintf(Buffer, "       Test %d       ", Board->GlobalTestNum+1);
 	LCD_printf(&Buffer[0], strlen(Buffer));
 	LCD_ClearLine(3);
 	LCD_setCursor(3, 0);
@@ -31,7 +31,7 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 	spacing /= 2;
 	LCD_setCursor(3, spacing);
  	LCD_setCursor(3, spacing);
-	sprintf(FILEname, "/TEST_RESULTS/%d.CSV",BoardConnected.SerialNumber);
+	sprintf(FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
 	Create_File(&FILEname[0]);
 	sprintf(Buffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
 	Write_File(&FILEname[0], &Buffer[0]);
@@ -53,9 +53,9 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 		case THREE_VOLT:
 			if (Board->TestCode[currResult] == ONE_VOLT)
 				comp_max = comp_min = (1*0.01) + (0.005 * *SetVal);
-			else if (TestCode[currResult] == TWOFIVE_VOLT)
+			else if (Board->TestCode[currResult] == TWOFIVE_VOLT)
 				comp_max = comp_min = (2.5*0.01) + (0.005 * *SetVal);
-			else if (TestCode[currResult] == THREE_VOLT)
+			else if (Board->TestCode[currResult] == THREE_VOLT)
 				comp_max = comp_min = (3*0.01) + (0.005 * *SetVal);
 			fMeasured = (float) *MeasuredVal++ / 1000;
 			sprintf(Buffer,"Testing Voltage\n");
@@ -121,13 +121,13 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 
 			sprintf(Buffer, "X ");
 			LCD_printf(&Buffer[0], strlen(Buffer));
-			TestResults[GlobalTestNum] = false;
+			TestResults[Board->GlobalTestNum] = false;
 			TresultStatus = TRfailed;
 		}
-		if ((currResult < BoardConnected.latchPortCount) && (PortTypes[currResult] == TTLatch)) {
+		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {
 			sprintf(Buffer,
 					"%d,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",
-					BoardConnected.BoardType, GlobalTestNum,
+					Board->BoardType, Board->GlobalTestNum,
 					(currResult + 1),
 					PortTypes[currResult], TresultStatus, LatchRes.tOn,
 					LatchRes.tOff, LatchRes.PortAhighVoltage,
@@ -137,12 +137,12 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 					LatchRes.FuseLowVoltage, LatchRes.MOSonHigh,
 					LatchRes.MOSonLow, LatchRes.MOSoffHigh, LatchRes.MOSoffLow);
 		} else if ((PortTypes[currResult] != TTNo)){
-			sprintf(Buffer, "%d,%d,%d,%c,%c,%f,%f\r\n", BoardConnected.BoardType, GlobalTestNum, (currResult+1)-BoardConnected.latchPortCount, PortTypes[currResult], TresultStatus,*SetVal,fMeasured);
+			sprintf(Buffer, "%d,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,*SetVal,fMeasured);
 		}
 		Update_File(&FILEname[0], Buffer);
 		*SetVal++;
 	}
 	Close_File(&FILEname[0]);
 //	WriteSDresults(&PortTypes[0] ,&SetResults[0], &MeasuredResults[0]);
-	GlobalTestNum++;
+	Board->GlobalTestNum++;
 }

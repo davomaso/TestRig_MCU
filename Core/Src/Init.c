@@ -34,10 +34,12 @@ void TestRig_Init() {
 	  SDIAddress = 255;
 
 	  UART2_RecPos = 0;
+	  CurrentState = IDLE;
+	  ProcessState = Waiting;
+	  TestPassed = false;
 	  TestingComplete = true;
 	  samplesUploading = false;
 	  sampleUploadComplete = false;
-	  GlobalTestNum = 0;
 	  HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
 	  //Set DAC to zero
 	  reset_ALL_DAC();
@@ -86,9 +88,8 @@ void initialiseTargetBoard() {
 		Command = 0xCC;
 		SetPara(Command);
 		communication_array(Command, &Para[0], Paralen);
-		while(!UART2_ReceiveComplete) {
-
-		}
+		CurrentState = Initialising;
+		ProcessState = Waiting;
 }
 
 void TargetBoardParamInit() {
