@@ -36,7 +36,7 @@ uint8 len;
 char ProgrammingBuffer[256];
 uint8 ProgrammingCount;
 
-_Bool Programming;
+//_Bool Programming;
 uint8 Program_CountDown;
 typedef enum {Tatmega644 = 644, Tatmega644p = 645, Tnone = 0}TtbMicroController;
 

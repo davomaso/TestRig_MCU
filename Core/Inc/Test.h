@@ -14,7 +14,7 @@ typedef unsigned short uint16;
 #include "Board_Config.h"
 #include "stdbool.h"
 
-void CheckTestNumber(uint8, uint8);
+_Bool CheckTestNumber(uint8, uint8);
 
 void TestConfig935x(TboardConfig *);
 void TestConfig937x(TboardConfig *);
@@ -23,20 +23,9 @@ void TestConfig402x(TboardConfig *);
 void TestConfig422x(TboardConfig *);
 void TestConfig427x(TboardConfig *);
 
-
-	//Test Quantities to pass to the SetTestParam function
-uint8 TestNum;
-uint8 ParamNum;
-uint8 PortNum;
-uint8 LatchNum;
-uint8 AnalogNum;
-uint8 DigitalNum;
-
 uint8 LatchState[4];
 
-uint8 currPort;		//Current Port to be set
 float CHval[10][16];
-_Bool input_port;
 
 _Bool SDIenabled;
 

@@ -2,7 +2,7 @@
 #include "interogate_project.h"
 
 int8_t LatchErrorCheck(){
-	LatchErrCheck = 0x00;
+	uint8 LatchErrCheck = 0;
 		//ADC1 Check
 	if((adc1.HighPulseWidth > 52 || adc1.HighPulseWidth < 48) || (adc1.LowPulseWidth > 52 || adc1.LowPulseWidth < 48) )
 		LatchErrCheck |= 1;
@@ -30,49 +30,49 @@ int8_t LatchErrorCheck(){
 void printLatchError(uint8 *ErrorCode){
 	if(*ErrorCode & 1)
 	{
-		sprintf(Buffer, "\n******** ERROR--PortA Pulse Width ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--PortA Pulse Width ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 	if(*ErrorCode & 2)
 	{
-		sprintf(Buffer, "\n******** ERROR--PortA Voltage ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--PortA Voltage ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 	if(*ErrorCode & 4)
 	{
-		sprintf(Buffer, "\n******** ERROR--PortB Pulse Width ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--PortB Pulse Width ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 	if(*ErrorCode & 8)
 	{
-		sprintf(Buffer, "\n******** ERROR--PortB Voltage ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--PortB Voltage ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 	if(*ErrorCode & 16)
 	{
-		sprintf(Buffer, "\n******** ERROR--Input Voltage ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--Input Voltage ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 	if(*ErrorCode & 32){
-		sprintf(Buffer, "\n******** ERROR--Fuse Voltage ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--Fuse Voltage ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 	if(*ErrorCode & 64)
 	{
-		sprintf(Buffer, "\n******** ERROR--MOSFET 1 Voltage ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--MOSFET 1 Voltage ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 	if(*ErrorCode & 128)
 	{
-		sprintf(Buffer, "\n******** ERROR--MOSFET 2 Voltage ********\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n******** ERROR--MOSFET 2 Voltage ********\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
 }

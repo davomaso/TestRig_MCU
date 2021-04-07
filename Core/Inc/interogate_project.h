@@ -40,26 +40,20 @@ int intBuffer;
 
 //variables for communication.c
 //variables for communication array/command
-unsigned char Comlen;
-unsigned char Com_buffer[LRGBUFFER];
-unsigned int Length;
+uns_ch Comlen;
+uns_ch Com_buffer[LRGBUFFER];
+uint16 Length;
 static uint16 NetID;
 static uint16 Module;
-unsigned char ComRep;
-unsigned char Paralen;
-unsigned char Para[SMLBUFFER];
-unsigned int Crc;
-unsigned char result;
+uint8 Paralen;
+uns_ch Para[SMLBUFFER];
+uint16 Crc;
 
 //communication response
-unsigned int Crc_response;
-unsigned char Receive_buffer[LRGBUFFER];
 uint16 Board;
 uint8 Version;
-unsigned char Flags;
+uns_ch Flags;
 uns_ch Subclass;
-unsigned char Outputs[15];
-unsigned char Inputs[15];
 
 //Loom Variables
 _Bool CheckLoom;
@@ -70,18 +64,13 @@ uint8 LoomState;
 uint8 PrevLoomState;
 
 //Test Parameters Returned
-uint8 Count;
-unsigned char testParam[LRGBUFFER];
-unsigned char Samplerate[2];
+uint16 Samplerate;
 
 //0x1A and 0x1B Command and Response
 uint16 sampleTime;
 uint16 sampleCount;
-_Bool startAsync;
 _Bool samplesUploading;
-_Bool sampleUploadComplete;
 unsigned char sampleBuffer[256];
-uint8 TportCount;
 
 //Async Variables
 typedef struct{
@@ -133,7 +122,6 @@ _Bool LatchPort3;
 _Bool LatchPort4;
 uint16_t LatchCountTimer;
 _Bool LatchSampling;
-_Bool Retransmit;
 uint8_t stableVoltageCount;
 uint16_t latchCountTo;
 
@@ -193,19 +181,7 @@ _Bool LatchOnComplete;
 _Bool LatchOffComplete;
 uint8_t PulseCountDown;
 
-_Bool LatchResult;
 uint8_t LatchErrCheck;
-
-//Communication Command Variables
-_Bool Comm_Ready;
-bool TestingComplete;
-_Bool Quit_flag;
-bool TestPassed;
-bool BoardCalibrated;
-
-	//Button Variables
-
-	//Maintain userButtons for if calibration routine doesnt run off keypad variables//eg. Hidden buttons internally
 
 	//Keypad Variables
 typedef struct {
@@ -237,8 +213,6 @@ uint8 BarcodeBuffer[9];
 _Bool BarcodeScanned;
 
 //	Timeout functionality, Loop action until timeout is met
-bool timeOut;
-#define timeOutLimit 200
 uint8 timeOutCount;
 
 

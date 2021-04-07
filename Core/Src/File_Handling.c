@@ -376,15 +376,15 @@ void  ReadProgram (char * fileName) {
 	f_open(&fil, fileName, FA_READ | FA_OPEN_EXISTING);
 	fileSize = f_size(&fil);
 	progressStep = fileSize / 20;
-	sprintf(Buffer, "File Size: ");
-	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-	sprintf(Buffer,"%d", fileSize);
-	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	sprintf(debugTransmitBuffer, "File Size: ");
+	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	sprintf(debugTransmitBuffer,"%d", fileSize);
+	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
 	char data[255];
 	UINT testbyte;
     char line[100];
-    CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+    CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
     //Reenable programming prior to writing a page,
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
@@ -398,12 +398,12 @@ void  ReadProgram (char * fileName) {
 
 	while (f_gets(line, sizeof(line), &fil)) {
         sortLine(&line[0]);
-        sprintf(Buffer,".\n");
-        CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+        sprintf(debugTransmitBuffer,".\n");
+        CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
     }
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-	sprintf(Buffer, "Done\n");
-	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	sprintf(debugTransmitBuffer, "Done\n");
+	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	f_close(&fil);
 }
 
@@ -424,7 +424,7 @@ void Check_SD_Space (void)
     free(buf);
     free_space /= 1000;
     LCD_setCursor(3, 0);
-    sprintf (Buffer, "%d mb Free", free_space);
-    LCD_printf(&Buffer[0], strlen(Buffer));
+    sprintf (debugTransmitBuffer, "%d mb Free", free_space);
+    LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 }
 

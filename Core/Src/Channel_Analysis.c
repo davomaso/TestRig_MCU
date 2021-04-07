@@ -7,12 +7,16 @@
 #include "Channel_Analysis.h"
 #include "interogate_project.h"
 
-void Decompress_Channels(unsigned char *data, uint8 length) {
-	CH_count = 0;
+void Decompress_Channels(uns_ch *data, TboardConfig * Board) {
+	uint8 CH_count = 0;
+	uint32 Channel_value;
+	uint8 Compression_type;
+	uint8 length = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;
 	while (CH_count <= length) {
+		Compression_type = 0;
 		Compression_type = (*data & 0xE0);
 		Compression_type >>= 5;
-//		Channel_num = (*data & 0x1F) + 1;
+
 		switch (Compression_type) {
 		case 0x00:
 			data++;
@@ -51,5 +55,4 @@ void Decompress_Channels(unsigned char *data, uint8 length) {
 		}
 		measuredBuffer[BoardConnected.GlobalTestNum][CH_count++] = Channel_value;
 	}
-	//UART3_transmit(&measuredBuffer[0], Channel_num);
 }

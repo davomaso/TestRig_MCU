@@ -56,6 +56,8 @@
 			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
+			bool BoardCalibrated;
+			bool TestResult;
 	}TboardConfig;
 
 	TboardConfig BoardConnected;

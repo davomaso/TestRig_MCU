@@ -10,43 +10,27 @@
 #include "UART_Routine.h"
 
 void TestRig_Init() {
-	  sprintf(Buffer,"==========TestRig========== \n");
-	  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  sprintf(debugTransmitBuffer,"==========TestRig========== \n");
+	  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 	  LCD_setCursor(1, 0);
 	  LCD_CursorOn_Off(false);
-	  sprintf(Buffer,"      Test Rig      ");
-	  LCD_printf(&Buffer[0], strlen(Buffer));
-
-//	  LoomConnected = None;
-//	  LCD_setCursor(2, 0);
-//	  sprintf(Buffer,"   Connect a Loom   ");
-//	  LCD_printf(&Buffer[0], strlen(Buffer));
-//	  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-
+	  sprintf(debugTransmitBuffer,"      Test Rig      ");
+	  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
 	  Para[0] = 0;
 	  Paralen = 0;
-	  Length = 14 + Paralen; //length is
-	  Comlen = Length + 3; // plus 5 for the header, length and CRC
-	  SDIAddress = 255;
 
 	  UART2_RecPos = 0;
-	  CurrentState = IDLE;
-	  ProcessState = Waiting;
-	  TestPassed = false;
-	  TestingComplete = true;
 	  samplesUploading = false;
-	  sampleUploadComplete = false;
 	  HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
 	  //Set DAC to zero
 	  reset_ALL_DAC();
 	  HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_GPIO_Port, GPIO_PIN_SET);
 	  HAL_GPIO_WritePin(MUX_EN_GPIO_Port, MUX_EN_Pin, GPIO_PIN_SET);
 	  reset_ALL_MUX();
-
 
 	  Async_Port1.Active = false;
 	  Async_Port2.Active = false;
@@ -60,7 +44,6 @@ void TestRig_Init() {
 
 	  HAL_TIM_Base_Start_IT(&htim6);
 	  HAL_TIM_Base_Start_IT(&htim7);
-//	  HAL_TIM_Base_Start_IT(&htim10);
 	  HAL_TIM_Base_Start_IT(&htim14);
 
 	  LoomChecking = true;
@@ -69,8 +52,8 @@ void TestRig_Init() {
 		  TestResults[i] = true;
 	  }
 
-	  LoomState = None;
-	  PrevLoomState = None;
+	  LoomState = bNone;
+	  PrevLoomState = bNone;
 	  read_correctionFactors();
 
 
@@ -88,60 +71,22 @@ void initialiseTargetBoard() {
 		Command = 0xCC;
 		SetPara(Command);
 		communication_array(Command, &Para[0], Paralen);
-		CurrentState = Initialising;
-		ProcessState = Waiting;
 }
 
 void TargetBoardParamInit() {
-	BoardConnected.BoardType = 0;
+		//Dont Clear BoardType, can only be accessed from scanLoom()
 	BoardConnected.SerialNumber = 0;
 	BoardConnected.analogInputCount = 0;
 	BoardConnected.digitalInputCout = 0;
 	BoardConnected.latchPortCount = 0;
 	BoardConnected.testNum = 0;
-	TestPassed = false;
-	BoardCalibrated = false;
+	BoardConnected.TestResult = false;
+	BoardConnected.BoardCalibrated = false;
 	for (int i = 0; i < 15; i++) {
 		TestResults[i] = true;
 	}
 	Vfuse.steadyState = 0;
 	Vin.steadyState = 0;
-}
-
-void WriteSerialNumber() {
-	uns_ch Command = 0x10;
-
-	uint32 CurrentSerial;
-	uint32 NewSerial;
-	uint8 SerialLength;
-	uint32 tempSerial;
-
-		//Read Current Serial Number
-	CurrentSerial = NewSerial = 0;
-	communication_arraySerial(Command, CurrentSerial, NewSerial);
-	while (!UART2_ReceiveComplete) {
-	}
-	tempSerial = ReadSerialNumber(&UART2_Receive[0], UART2_RecPos);
-		//Load Current Serial Number
-	memcpy(&CurrentSerial, &tempSerial, 4);
-
-		//Write New Serial Number
-	memcpy(&NewSerial, &(BoardConnected.SerialNumber), 4);
-
-	Command = 0x12;
-	communication_arraySerial(Command, CurrentSerial, NewSerial);
-	while (!UART2_ReceiveComplete) {
-	}
-		//Confirm Serial Number
-	tempSerial = ReadSerialNumber(&UART2_Receive[0], UART2_RecPos);
-	if(tempSerial != BoardConnected.SerialNumber) {
-		WriteSerialNumber();
-	} else {
-		sprintf(Buffer, "=====     Board Serialised     =====\n");
-		HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-		sprintf(Buffer, "Serial number %u loaded into board\n", BoardConnected.SerialNumber);
-		HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-	}
 }
 
 uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
@@ -166,6 +111,10 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 		}
 	}
 	return 0;
+}
+
+void setTimeOut(uint16 wait) {
+	timeOutCount = wait;
 }
 
 void LatchTestInit() {

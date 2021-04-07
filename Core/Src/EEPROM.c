@@ -24,6 +24,6 @@ void write_correctionFactors(){
 		HAL_I2C_Mem_Write(&hi2c1, (0x51 << 1) , i, 0x01, &CorrectionFactors[i], 0x01, HAL_MAX_DELAY);
 		HAL_Delay(5);
 	}
-	  sprintf(Buffer, "EPROM Write Complete\n");
-	  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+	  sprintf(debugTransmitBuffer, "EPROM Write Complete\n");
+	  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 }

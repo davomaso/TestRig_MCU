@@ -100,7 +100,6 @@ void TestConfig935x(TboardConfig * Board) {
 }
 
 void TestConfig937x(TboardConfig * Board) {
-	Board->BoardType = b937x;
 	Board->latchPortCount = 2;
 	Board->analogInputCount = 2;
 	Board->digitalInputCout = 0;
@@ -324,14 +323,11 @@ void Set_Test(TboardConfig *Board, uint8 Port) {
 	Board->TestCode[Port] = Board->ThisTest->Code;
 }
 
-void CheckTestNumber(uint8 Test, uint8 maxTest) {
+_Bool CheckTestNumber(uint8 Test, uint8 maxTest) {
 	if (Test == maxTest) {
-		TestPassed = true;
-		TestingComplete = true;
-
-		sprintf(Buffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 		reset_ALL_MUX();
 		reset_ALL_DAC();
 
@@ -342,26 +338,28 @@ void CheckTestNumber(uint8 Test, uint8 maxTest) {
 		LCD_ClearLine(3);
 		LCD_ClearLine(4);
 		LCD_setCursor(2, 0);
-		sprintf(Buffer, "    Test Results    ");
-		LCD_printf(&Buffer[0], strlen(Buffer));
+		sprintf(debugTransmitBuffer, "    Test Results    ");
+		LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		uint8 spacing = (20 - (Test) - (Test-1));
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
-		_Bool Passed = true;
+		BoardConnected.TestResult = true;
 		for (int i = 1; i <= Test; i++) {
 			if (TestResults[i] == false) {
-				sprintf(Buffer, "X ");
-				LCD_printf(&Buffer[0], strlen(Buffer));
-				Passed = false;
+				sprintf(debugTransmitBuffer, "X ");
+				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				BoardConnected.TestResult = false;
 			} else {
-				sprintf(Buffer, ". ");
-				LCD_printf(&Buffer[0], strlen(Buffer));
+				sprintf(debugTransmitBuffer, ". ");
+				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
 			TestResults[i] = true;
 		}
+		return false;
 		HAL_Delay(500);
 	}
+	return true;
 }
 //	=================================================================================//
 //	=================================================================================//

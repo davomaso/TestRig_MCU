@@ -34,12 +34,8 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
-
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
-
 I2C_HandleTypeDef hi2c1;
-
-
 
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
@@ -47,37 +43,33 @@ TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 
-
-
 //Peripheral Defines
-#define D_UART huart1
-#define R_UART huart2
-#define B_UART huart3
-#define SDI_UART huart6
-
-#define DAC_SPI hspi3
+#define D_UART huart1	//Debug UART
+#define R_UART huart2	//Radio UART
+#define B_UART huart3	//Board Comms UART
+#define SDI_UART huart6 //SDI-12/RS485 UART
+#define USART_ERROR_MASK ((USART_SR_ORE_Msk) | (USART_SR_NE_Msk) | (USART_SR_FE_Msk) |(USART_SR_PE_Msk))
 
 UART_HandleTypeDef D_UART;
 UART_HandleTypeDef R_UART;
 UART_HandleTypeDef B_UART;
 UART_HandleTypeDef SDI_UART;
 
+#define DAC_SPI hspi3	//DAC SPI
 SPI_HandleTypeDef DAC_SPI;
 
+#define EEPROM_W_ADDRESS 0x50 //EEPROM I2C Write Address
+#define EEPROM_R_ADDRESS 0x51 //EEPROM I2C Read Address
+#define LCD_ADR 0x3C	//LCD I2C Address
 
-#define EEPROM_W_ADDRESS 0x50
-#define EEPROM_R_ADDRESS 0x51
-#define LCD_ADR 0x3C
-
-#define VREF 25
+#define Include(set, element) set|=element
+#define Exclude(set, element) set&=~element
+#define IsSet(set, element) set&element
 
 //===============	 OUTPUT FUNCTIONALITY 	===============//
 #define TWO_WIRE_LATCHING 0x10	//One Pulse- Top 4 Bits, Two Wire Latching-Bottom 4 bits
-#define USART_SR_NF_Msk (1 << 2)
-#define USART_ERROR_MASK ((USART_SR_ORE_Msk) | (USART_SR_NF_Msk) | (USART_SR_FE_Msk) |(USART_SR_PE_Msk))
 
 //===============	 INPUT FUNCTIONALITY 	===============//
-//	#define UNUSED 0x00
 #define DIGITAL_OUTPUT 0x01
 #define DIGITAL_INPUT 0x02
 #define	ONE_VOLT 0x03
@@ -93,7 +85,7 @@ SPI_HandleTypeDef DAC_SPI;
 #define NOTEST 0x00
 
 
-typedef unsigned char uint8;
+typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef unsigned char uns_ch;
@@ -103,24 +95,22 @@ typedef signed char int8;
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-typedef enum {None = 0, b935x = 9352, b937x = 9371, b401x = 4011,  b402x = 4020, b422x = 4220, b427x = 4270}TloomConnected;
-TloomConnected LoomConnected;
-TloomConnected BoardType;
+typedef enum {bNone = 0, b935x = 9350, b937x = 9370, b401x = 4011,  b402x = 4020, b422x = 4220, b427x = 4270}TloomConnected;
 
 typedef enum {Port_1 = 0, Port_2 = 1, Port_3 = 2, Port_4 = 3, Port_5 = 4, Port_6 = 5, Port_7 = 6, Port_8 = 7, Port_9 = 8}TcalPortConfig;
 TcalPortConfig calPort;
 
-typedef enum {IDLE = 0, Initialising = 1, Interogating = 2, Configuring = 3, Sampling = 4, Uploading = 5, SortResults = 6}TcurrentState;
+typedef enum {csIDLE = 0, csInitialising = 1, csProgramming = 2, csCalibrating = 3, csInterogating = 4, csConfiguring = 5, csSampling = 6, csUploading = 7, csSortResults = 8, csSerialise = 9}TcurrentState;
 TcurrentState CurrentState;
 
-typedef enum {Failed = 0, Waiting = 1, Complete = 2}TprocessState;
+typedef enum {psFailed = 0, psWaiting = 1, psComplete = 2}TprocessState;
 TprocessState ProcessState;
 
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-uns_ch Buffer[256];
+uns_ch debugTransmitBuffer[256];
 
 /* USER CODE END EC */
 
@@ -133,7 +123,6 @@ uns_ch Buffer[256];
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void scan_loom(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

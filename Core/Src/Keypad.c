@@ -4,14 +4,15 @@ uint32 read_serial() {
 	USART3->CR1 |= (USART_CR1_RXNEIE);
 	LCD_ClearLine(4);
 	LCD_setCursor(4,0);
-	sprintf(Buffer, " * - Esc    # - Ent ");
-	LCD_printf(&Buffer[0], strlen(Buffer));
+	sprintf(debugTransmitBuffer, " * - Esc    # - Ent ");
+	LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	LCD_setCursor(3, 0);
 	LCD_CursorOn_Off(true);
 	SerialCount = 0;
 	uint8 tempdata;
 	uint32 tempSerialNumber = 0;
 	_Bool keyPressed;
+	_Bool Quit_flag;
 	while(!KP_hash.Pressed){
 		if(KP_1.Pressed && SerialCount < 9) {
 			KP_1.Count = KP_1.Pressed = 0;
@@ -71,8 +72,8 @@ uint32 read_serial() {
 			} else if (SerialCount) {
 				LCD_ClearLine(4);
 				LCD_setCursor(4,0);
-				sprintf(Buffer, " * - Bspc   # - Ent");
-				LCD_printf(&Buffer[0], strlen(Buffer));
+				sprintf(debugTransmitBuffer, " * - Bspc   # - Ent");
+				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
 			LCD_ClearLine(3);
 			LCD_setCursor(3, 0);
@@ -84,16 +85,16 @@ uint32 read_serial() {
 			if (SerialCount) {
 				SerialNumber[SerialCount--] = 0x08;
 				LCD_setCursor(3, SerialCount+1);
-				sprintf(Buffer, "  ");
-				LCD_printf(&Buffer[0], strlen(Buffer));
+				sprintf(debugTransmitBuffer, "  ");
+				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 				LCD_setCursor(3, SerialCount+1);
-				sprintf(Buffer, "\x8 \x8");
-				CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+				sprintf(debugTransmitBuffer, "\x8 \x8");
+				CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 				if (SerialCount == 0) {
 					LCD_ClearLine(4);
 					LCD_setCursor(4,0);
-					sprintf(Buffer, " * - Esc    # - Ent");
-					LCD_printf(&Buffer[0], strlen(Buffer));
+					sprintf(debugTransmitBuffer, " * - Esc    # - Ent");
+					LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					LCD_setCursor(3,SerialCount+1);
 				}
 			} else {
@@ -126,8 +127,8 @@ uint32 read_serial() {
 		LCD_ClearLine(4);
 		LCD_CursorOn_Off(false);
 		USART3->CR1 &= ~(USART_CR1_RXNEIE);
-		sprintf(Buffer, "\n\n\n", 1);
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+		sprintf(debugTransmitBuffer, "\n\n\n", 1);
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		SerialCount = 0;
 	}
 	return tempSerialNumber;

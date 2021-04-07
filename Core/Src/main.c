@@ -27,12 +27,12 @@
 #include "interogate_project.h"
 #include "UART_Routine.h"
 #include "Board_Config.h"
-#include "Asynchronous_pulse.h"
 #include "calibration.h"
 #include "SetVsMeasured.h"
 #include "Programming.h"
 #include "File_Handling.h"
 #include "usbd_cdc_if.h"
+#include "DAC_Variables.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -154,6 +154,8 @@ int main(void)
   HAL_I2C_Init(&hi2c1);
   LCD_init();
   TestRig_Init();
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -163,82 +165,29 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if ((CurrentState == IDLE) && (ProcessState == Waiting) && CheckLoom) {
-		  scan_loom();
-		  checkLoomConnected();
+	  if ((CurrentState == csIDLE) && (ProcessState == psWaiting) && CheckLoom) {
+		  scanLoom(&BoardConnected);
+		  checkLoomConnected(&BoardConnected);
 		  ConfigInit();
-//		  currentBoardConnected();
 	  }
 
-	  if (KP_5.Pressed && (CurrentState == IDLE) && (ProcessState == Waiting)) {
-		  	KP_5.Pressed = KP_5.Count = 0;
-		  	sprintf(Buffer, "Scanning I2C bus:\r\n");
-		  	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-			  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-		  	HAL_StatusTypeDef result;
-		  	uint8_t i;
-		  	for (i=1; i<128; i++) {
-		  	  result = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(i<<1), 2, 2);
-		  	  if (result != HAL_OK) {// HAL_ERROR or HAL_BUSY or HAL_TIMEOUT
-		  		  sprintf(Buffer, "."); // No ACK received at that address
-		  		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-		  	  }
-		  	  if (result == HAL_OK) {
-		  		  sprintf(Buffer, "0x%X", i); // Received an ACK at that address
-		  	  }
-			  	CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-				  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-		  	}
-	  }
-
-	  //Calibration Routine
-
-	  if((KP_7.Pressed && KP_9.Pressed) && (CurrentState == IDLE) && (ProcessState == Waiting)){
-		  KP_7.Count = KP_7.Pressed = 0;
-		  KP_9.Count = KP_9.Pressed = 0;
-
-		  LCD_Clear();
-		  LCD_setCursor(1, 6);
-		  sprintf(Buffer,"Test Rig");
-		  LCD_printf(&Buffer[0], strlen(Buffer));
-
-		  LCD_setCursor(2, 0);
-		  sprintf(Buffer, "Calibrate Test Rig");
-		  LCD_printf(&Buffer[0], strlen(Buffer));
-
-		  LCD_setCursor(3, 5);
-		  sprintf(Buffer, "1V - Port 1");
-		  LCD_printf(&Buffer[0], strlen(Buffer));
-
-		  sprintf(Buffer,"\n\n==========  Calibration Routine  ==========\n");
-		  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&D_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-		  Calibration();
-		  LCD_Clear();
-		  TestRig_Init();
-		  TestRig_MainMenu();
-		  sprintf(Buffer,"\n\n==========  Test Rig  ==========\n");
-		  CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&D_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-	  }
-
-	  //Testing Functionality
-	  	if (KP_1.Pressed && (CurrentState == IDLE) && (ProcessState == Waiting)) {
+	  	  //Testing Functionality
+	  if (KP_1.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
 	  		KP_1.Pressed = false;
 	  		KP_1.Count = 0;
-//	  		TestRig_Init();
+	  		TestRig_Init();
 	  		TargetBoardParamInit();
 	  		HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
 	  		LCD_ClearLine(4);
 	  		LCD_ClearLine(3);
 	  		LCD_setCursor(2, 1);
-	  		sprintf(Buffer, "    Calibrating    ");
-	  		LCD_printf(&Buffer, strlen(Buffer));
+	  		sprintf(debugTransmitBuffer, "    Programming    ");
+	  		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  		uns_ch Command = 0x08;
 	  		SetPara(Command);
 	  		communication_array(Command, &Para, Paralen);
-	  		CurrentState = Interogating;
-	  		ProcessState = Waiting;
+	  		CurrentState = csInterogating;
+	  		ProcessState = psWaiting;
 	  		// Programming Routine
 //  			ComRep = 0x08;
 //			communication_array(ComRep,&Para[0], Paralen);
@@ -277,128 +226,187 @@ int main(void)
 
 
 //=================================================================================================================//
-	  	if (ProcessState == Complete) {
+	  	if (ProcessState == psComplete) {
 	  		uns_ch Response;
 	  		uns_ch Command;
 	  	    switch(CurrentState) {
-	  	    	case Initialising:	// 0xCC/0xC0 ????
-	  	    		if (TestPassed) {
+	  	    	case csInitialising:	// 0xCC/0xC0 ????
+	  	    		if (BoardConnected.TestResult) {
 	  	    			communication_response(&Response, &UART2_Receive, UART2_RecPos);
-	  	    			WriteSerialNumber();
-	  	    			CurrentState = IDLE;
-	  	    			ProcessState = Waiting;
+	  	    			Command = 0x10;
+	  	    			communication_arraySerial(Command, 0, 0);
+	  	    			CurrentState = csSerialise;
+	  	    			ProcessState = psWaiting;
 					} else {
-						currentBoardConnected();
+						currentBoardConnected(&BoardConnected);
 
+							//Refresh LCD screen
 						LCD_ClearLine(2);
 						LCD_ClearLine(3);
 						LCD_ClearLine(4);
 						LCD_setCursor(2, 0);
-						sprintf(Buffer, "Enter Serial Number:");
-						LCD_printf(&Buffer[0], strlen(Buffer));
+						sprintf(debugTransmitBuffer, "Enter Serial Number:");
+						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
-						sprintf(Buffer,"Enter Serial Number: \n");
-						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						HAL_UART_Transmit(&D_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+						sprintf(debugTransmitBuffer,"Enter Serial Number: \n");
+						CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 						BoardConnected.SerialNumber = read_serial();
-						if (!Quit_flag) {
+						if (BoardConnected.SerialNumber) {
 							Command = 0x08;
 							SetPara(Command);
-							communication_array(Command,&Para[0], Paralen);
-							sprintf(Buffer,"Interogating...\n");
-							HAL_UART_Transmit(&D_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-							CurrentState = Interogating;
-							ProcessState = Waiting;
+							communication_array(Command,&Para, Paralen);
+							sprintf(debugTransmitBuffer,"Interogating...\n");
+							HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+							CurrentState = csInterogating;
+							ProcessState = psWaiting;
 						} else {
 							LCD_Clear();
 							TestRig_Init();
 							TestRig_MainMenu();
-							Quit_flag = false;
+							CurrentState = csIDLE;
+							ProcessState = psWaiting;
 						}
 					}
 	  	    		break;
-	  	        case Interogating: //0x09 & 0x35
+	  	    	case csCalibrating:
+	  	    		//TODO: Implement calibration counter here for if the calibration fails, retry 3 times,
+	  	    		communication_response(&Response, &UART2_Receive, UART2_RecPos);
+	  	    		if (Response == 0xC1)
+  	            		initialiseTargetBoard();
+	  	    		CurrentState = csInitialising;
+	  	    		ProcessState = psWaiting;
+	  	    		break;
+	  	        case csInterogating: //0x09 & 0x35
 	  	        	communication_response(&Response, &UART2_Receive, UART2_RecPos);
 	  	            if (Response == 0x09) {
 	  	            	communication_command(&Response);
 	  	                Command = 0x34;
-	  	                ProcessState = Waiting;
+	  	                ProcessState = psWaiting;
 	  	                SetPara(Command);
 	  	                communication_array(Command,&Para, Paralen);
 	  	            } else if (Response == 0x35) {
-	  	            	if (BoardCalibrated == true) {	//Check if board has been calibrated yet
+	  	            	if (BoardConnected.BoardCalibrated == true) {	//Check if board has been calibrated yet
 		  	                Command = 0x56;
-		  	                ProcessState = Waiting;
-		  	                CurrentState = Configuring;
 		  	                SetPara(Command);
 		  	                communication_array(Command,&Para, Paralen);
+		  	                ProcessState = psWaiting;
+		  	                CurrentState = csConfiguring;
 	  	            	} else {
-	  	            		uint8 CalibrateCount = 3;
-	  	            		while(!BoardCalibrated && CalibrateCount--) {
-	  	            			TargetBoardCalibration();
-	  	            		}
-	  	            		initialiseTargetBoard();
+	  	            		switchToCurrent = false;
+	  	            		TargetBoardCalibration();
+	  	            		CurrentState = csCalibrating;
+	  	            		ProcessState = psWaiting;
 	  	            	}
 
 	  	            }
 	  	            break;
-	  	        case Configuring: // 0x57
+	  	        case csConfiguring: // 0x57
 						communication_response(&Response, &UART2_Receive, UART2_RecPos);
 						if (Response == 0x57) {
 							communication_command(&Response);
 							Command = 0x1A;
-							ProcessState = Waiting;
-							CurrentState = Sampling;
 							SetPara(Command);
 							communication_array(Command,&Para, Paralen);
+							ProcessState = psWaiting;
+							CurrentState = csSampling;
 						}
 	  	            break;
-	  	        case Sampling: // 0x1B
+	  	        case csSampling: // 0x1B
 						communication_response(&Response, &UART2_Receive, UART2_RecPos);
 						communication_command(&Response);
-						ProcessState = Waiting;
-						CurrentState = Uploading;
+						ProcessState = psWaiting;
+						CurrentState = csUploading;
 	  	            break;
-	  	        case Uploading: // 0x19
+	  	        case csUploading: // 0x19
 						Command = 0x18;
 						SetPara(Command);
 						communication_array(Command,&Para, Paralen);
-						ProcessState = Waiting;
-						CurrentState = SortResults;
+						ProcessState = psWaiting;
+						CurrentState = csSortResults;
 	  	            break;
-	  	        case SortResults:
+	  	        case csSortResults:
 						communication_response(&Response, &UART2_Receive, UART2_RecPos);
 						if (BoardConnected.GlobalTestNum <= BoardConnected.testNum) {
-							ProcessState = Waiting;
-							CurrentState = Configuring;
-							CheckTestNumber(BoardConnected.GlobalTestNum, BoardConnected.testNum);
-							if (!TestPassed) {
+							if( CheckTestNumber(BoardConnected.GlobalTestNum, BoardConnected.testNum) ) {
 								Command = 0x56;
+								ProcessState = psWaiting;
+								CurrentState = csConfiguring;
 								SetPara(Command);
 								communication_array(Command,&Para, Paralen);
 							} else {
+							if(BoardConnected.TestResult) {
 								LCD_setCursor(2, 0);
-								sprintf(Buffer, "    Test Passed    ");
-								LCD_printf(&Buffer[0], strlen(Buffer));
+								sprintf(debugTransmitBuffer, "    Test Passed    ");
+								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_SET);
-								TestPassed = true;
-								ProcessState = Complete;
-								CurrentState = IDLE;
-							}
-						} else {
-							ProcessState = Waiting;
-							CurrentState = IDLE;
+								ProcessState = psComplete;
+								CurrentState = csIDLE;
+							} else {
+								LCD_setCursor(2, 0);
+								sprintf(debugTransmitBuffer, "    Test Failed    ");
+								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
+								ProcessState = psWaiting;
+								CurrentState = csIDLE;
+									}
+								}
 						}
 	  	        	break;
-	  	        case IDLE:
+	  	        case csSerialise:
+					if (Command == 0x10) {
+						uint32 tempSerial;
+						uint32 CurrentSerial;
+						uint32 NewSerial;
+						tempSerial = ReadSerialNumber(&UART2_Receive[0], UART2_RecPos);
+							//Load Current Serial Number
+						memcpy(&CurrentSerial, &tempSerial, 4);
+							//Write New Serial Number
+						memcpy(&NewSerial, &(BoardConnected.SerialNumber), 4);
+						Command = 0x12;
+						communication_arraySerial(Command, CurrentSerial, NewSerial);
+						ProcessState = psWaiting;
+					} else if (Command == 0x12) {
+						uint32 tempSerial;
+						tempSerial = ReadSerialNumber(&UART2_Receive[0], UART2_RecPos);
+						if(tempSerial != BoardConnected.SerialNumber) {
+							Command = 0x10;
+							communication_arraySerial(Command, 0, 0);
+							ProcessState = psWaiting;
+						} else {
+							sprintf(debugTransmitBuffer, "=====     Board Serialised     =====\n");
+							HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+							sprintf(debugTransmitBuffer, "Serial number %u loaded into board\n", BoardConnected.SerialNumber);
+							HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+							ProcessState = psWaiting;
+							CurrentState = csIDLE;
+						}
+					}
+	  	        	break;
+	  	        case csIDLE:
 	  	        		  initialiseTargetBoard();
+	  	        		  CurrentState = csInitialising;
+	  	        		  ProcessState = psWaiting;
 	  	        	break;
 
 	  	    }
-	  	} else if (ProcessState == Failed) {
-  	  }
+	  	} else if (ProcessState == psFailed) {
+	  		sprintf(debugTransmitBuffer, "=========     Timeout Failure     =========\n");
+			HAL_UART_Transmit(&D_UART, &debugTransmitBuffer, strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			switch (CurrentState) {
+				case csInterogating:
+					initialiseTargetBoard();
+					CurrentState = csInitialising;
+					ProcessState = psWaiting;
+					break;
+				default:
+					CurrentState = csIDLE;
+					ProcessState = psWaiting;
+					break;
+			}
+	  	}
 
-
+	  		// Quit
 	  	if (KP_star.Pressed) {
 			KP_star.Pressed = false;
 			KP_star.Count = 0;
@@ -410,6 +418,56 @@ int main(void)
   				QuitCount = 0;
   			}
 	  	}
+	  			// Scan I2C
+		  if (KP_5.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
+			  	KP_5.Pressed = KP_5.Count = 0;
+			  	sprintf(debugTransmitBuffer, "Scanning I2C bus:\r\n");
+			  	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			  	HAL_StatusTypeDef result;
+			  	uint8_t i;
+			  	for (i=1; i<128; i++) {
+			  	  result = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(i<<1), 2, 2);
+			  	  if (result != HAL_OK) {// HAL_ERROR or HAL_BUSY or HAL_TIMEOUT
+			  		  sprintf(debugTransmitBuffer, "."); // No ACK received at that address
+			  		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			  	  }
+			  	  if (result == HAL_OK) {
+			  		  sprintf(debugTransmitBuffer, "0x%X", i); // Received an ACK at that address
+			  	  }
+				  	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+					  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			  	}
+		  }
+		  	  //Calibration Routine
+		  if((KP_7.Pressed && KP_9.Pressed) && (CurrentState == csIDLE) && (ProcessState == psWaiting)){
+			  KP_7.Count = KP_7.Pressed = 0;
+			  KP_9.Count = KP_9.Pressed = 0;
+
+			  LCD_Clear();
+			  LCD_setCursor(1, 6);
+			  sprintf(debugTransmitBuffer,"Test Rig");
+			  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+
+			  LCD_setCursor(2, 0);
+			  sprintf(debugTransmitBuffer, "Calibrate Test Rig");
+			  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+
+			  LCD_setCursor(3, 5);
+			  sprintf(debugTransmitBuffer, "1V - Port 1");
+			  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+
+			  sprintf(debugTransmitBuffer,"\n\n==========  Calibration Routine  ==========\n");
+			  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			  HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			  Calibration();
+			  LCD_Clear();
+			  TestRig_Init();
+			  TestRig_MainMenu();
+			  sprintf(debugTransmitBuffer,"\n\n==========  Test Rig  ==========\n");
+			  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			  HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+		  }
   }
   /* USER CODE END 3 */
 }

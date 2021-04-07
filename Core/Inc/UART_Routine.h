@@ -18,13 +18,12 @@
 #define XSMLBUFFER 16
 
 //Routines
-void UART2_transmit(uns_ch*, uns_ch);	//Transmit function for transmitting out UART2
-void UART3_transmit(uns_ch*, uns_ch);	//Transmit function for transmitting out UART2
+void UART2_transmit(uns_ch*, uns_ch);	//Transmit function for transmitting out UART2	//Transmit function for transmitting out UART2
 
 //Variables for UART2 Transmit
 uns_ch UART2_TXbuffer[LRGBUFFER]; //Buffer for transmitting data to UART2
 uint8 UART2_TXpos;				//Position of the array when transmitting
-uint8 UART2_TXend;				//End reference point to stop transmitting, turn of interrupts
+uint8 UART2_TXcount;				//End reference point to stop transmitting, turn of interrupts
 //Variables for UART2 Receive
 uns_ch UART2_Receive[LRGBUFFER];	//Storage buffer for receiving data, before communications/other routines are called
 uint16 UART2_RecPos;				//Positioning for where in the array data is stored to

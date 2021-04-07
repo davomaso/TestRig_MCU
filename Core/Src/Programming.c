@@ -36,8 +36,8 @@ void sortLine(char *Line) {
 					Line += 2;
 					if (!(--fileSize % progressStep)) {
 						progressPercent += 5;
-						sprintf(Buffer, "%d", progressPercent);
-						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
+						sprintf(debugTransmitBuffer, "%d", progressPercent);
+						CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					}
 					if (ProgrammingCount == 0xFF) {
 						//Write Page

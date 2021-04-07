@@ -48,7 +48,6 @@ void runLatchTest(uint8 Test_Port){
 		communication_response(&Response, &UART2_Receive, UART2_RecPos);
 
 	HAL_TIM_Base_Stop(&htim10);
-	LatchResult = true;
 
 		//Print Results & Error Messages
 //	TransmitResults();
@@ -58,13 +57,13 @@ void runLatchTest(uint8 Test_Port){
 		printLatchError(&LatchState[Test_Port]);
 
 	if(!LatchState[Test_Port]){
-		sprintf(Buffer, "\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}else{
-		sprintf(Buffer, "\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
-		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+		sprintf(debugTransmitBuffer, "\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
+		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 		}
 
 //	TransmitResults();

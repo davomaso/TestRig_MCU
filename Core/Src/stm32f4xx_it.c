@@ -25,8 +25,6 @@
 /* USER CODE BEGIN Includes */
 #include "interogate_project.h"
 #include "UART_Routine.h"
-#include "Debounce.h"
-#include "Asynchronous_pulse.h"
 #include "Programming.h"
 #include "calibration.h"
 /* USER CODE END Includes */
@@ -216,8 +214,7 @@ void SysTick_Handler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
-	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-	if (Calibrating) {
+	if (CurrentState == csCalibrating) {
 		if (CalibratingTimer < CalibrateTimerTo) {
 			ADC_Ch0sel();
 			HAL_ADC_Start(&hadc1);
@@ -227,28 +224,26 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
 			raw_adcCount++;
 
-			if ((raw_adcCount >= 5) && (!switchToCurrent)) {
+			if ( raw_adcCount >= 5 ) {
 				calibrateADCval.average = calibrateADCval.total / raw_adcCount;
 				calibrateADCval.total = 0;
-//				if (CalibratingTimer >= (ADC_BUF_LEN) ) {
-//					memmove(&calibrateADCval.avg_Buffer[0], &calibrateADCval.avg_Buffer[1], ADC_BUF_LEN-1);
-//					CalibratingTimer = ADC_BUF_LEN-1;
-//				}
-//				calibrateADCval.avg_Buffer[CalibratingTimer++] = calibrateADCval.average;
-
 				raw_adcCount = 0;
+
 				if (calibrateADCval.average <= 100) {
 					if (!(--CalibrationCountdown)) {
 						switchToCurrent = true;
-						HAL_TIM_Base_Stop(&htim10);
+						TargetBoardCalibration();
+
 						}
 				} else {
 					CalibrationCountdown = 10;
 					}
 			}
 		} else
-			Calibrating = false;
+			ProcessState = psFailed;
 	}
+
+
 	if (LatchSampling)
 	{
 
@@ -423,7 +418,7 @@ void USART2_IRQHandler(void)
 					//UART3_transmit(&UART2_Receive[0], UART2_RecPos);
 					UART2_Recdata = false;
 					UART2_ReceiveComplete = true;
-					ProcessState = Complete;
+					ProcessState = psComplete;
 					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 					USART2->CR1  &= ~(USART_CR1_RXNEIE);
 				}
@@ -432,12 +427,13 @@ void USART2_IRQHandler(void)
 		}
 
 	if (USART2->SR & USART_SR_TXE) {
-		if (UART2_TXpos == UART2_TXend) {
+		if (UART2_TXpos == UART2_TXcount) {
 			//disable interrupts
-			if( (LoomConnected != (b935x || b937x)) && (UART2_TXend > 0) )
+			if (UART2_TXcount > 0)
 				USART2->CR1 |= (USART_CR1_TCIE);
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
-			UART2_TXend = UART2_TXpos = 0;
+			UART2_TXcount = UART2_TXpos = 0;
+			setTimeOut(200);
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
 		}
@@ -768,13 +764,13 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
   */
 void TIM6_IRQHandler(void) {
   /* USER CODE BEGIN TIM6_IRQn 0 */
-  if (Programming) {
-	  Programming = --Program_CountDown ? true : false;
-	  if (Program_CountDown == 10) {
-		  ComRep = 0x08;
-		  communication_array(ComRep,&Para[0], Paralen);
-	  }
-	}
+//  if (Programming) {
+//	  Programming = --Program_CountDown ? true : false;
+//	  if (Program_CountDown == 10) {
+//		  ComRep = 0x08;
+//		  communication_array(ComRep,&Para[0], Paralen);
+//	  }
+//	}
 
   if(LoomChecking){
 	  if(LoomCheckCount == 200){
@@ -790,11 +786,17 @@ void TIM6_IRQHandler(void) {
 	  if(sampleCount == sampleTime)
 	  {
 		  samplesUploading = false;
-		  ProcessState = Complete;
+		  ProcessState = psComplete;
 		  sampleCount = 0;
 	  }	else
 		  sampleCount++;
 
+  }
+
+	  if(timeOutCount) {
+		 if (--timeOutCount == 0) {
+			 ProcessState = psFailed;
+	  }
   }
   /* USER CODE END TIM6_IRQn 1 */
 }
@@ -968,8 +970,8 @@ void USART6_IRQHandler(void)
 						SDIMeasurement = SDI_Port6.setValue;
 					}
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_RESET);
-					sprintf(Buffer,"%d\x0D\x0A", (SDIAddress));
-					HAL_UART_Transmit(&SDI_UART, &Buffer[0], strlen(Buffer), 10);
+					sprintf(debugTransmitBuffer,"%d\x0D\x0A", (SDIAddress));
+					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), 10);
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
 					USART6->CR1 |= (USART_CR1_RE);
 					SDSstate = SDSundef;
@@ -977,15 +979,15 @@ void USART6_IRQHandler(void)
 					USART6->CR1 &= ~(USART_CR1_RE); //					Return Time till sample
 					uns_ch *SDIrqMeasurements = "00001";
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_RESET);
-					sprintf(Buffer, "%d%s\x0D\x0A", (SDIAddress),SDIrqMeasurements);
-					HAL_UART_Transmit(&SDI_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+					sprintf(debugTransmitBuffer, "%d%s\x0D\x0A", (SDIAddress),SDIrqMeasurements);
+					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_SET);
 					USART6->CR1 |= (USART_CR1_RE);
 				} else if ( SDSstate == SDSd ) {
 					USART6->CR1 &= ~(USART_CR1_RE);//					Return Time till sample
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_RESET);
-					sprintf(Buffer, "%d+%f\x0D\x0A", (SDIAddress), SDIMeasurement);
-					HAL_UART_Transmit(&SDI_UART, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
+					sprintf(debugTransmitBuffer, "%d+%f\x0D\x0A", (SDIAddress), SDIMeasurement);
+					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_SET);
 					USART6->CR1 |= (USART_CR1_RE);
 				} else

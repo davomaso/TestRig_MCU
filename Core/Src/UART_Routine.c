@@ -19,20 +19,20 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 		while (i < 4) {
 			while (i < 2) {
 				//0x55 55 @ start of communication to ensure target board is awake
-				UART2_TXbuffer[UART2_TXend++] = '\x55';
+				UART2_TXbuffer[UART2_TXcount++] = '\x55';
 				i++;
 			}
-			UART2_TXbuffer[UART2_TXend++] = '\x00';
+			UART2_TXbuffer[UART2_TXcount++] = '\x00';
 			i++;
 		}
 	}
 	//if system has not been woken, send 2 bytes of 0x55 and 14 bytes of 0x00
 	while (arraysize-- > 0)
-		UART2_TXbuffer[UART2_TXend++] = *data++;
+		UART2_TXbuffer[UART2_TXcount++] = *data++;
 	//Return system to sleep state
 	if (Sleepstate) {
 		for (unsigned char i = 0; i < 2; i++) {
-			UART2_TXbuffer[UART2_TXend++] = '\x55';
+			UART2_TXbuffer[UART2_TXcount++] = '\x55';
 		}
 		Sleepstate = 0;
 	}
