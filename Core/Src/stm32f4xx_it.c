@@ -242,8 +242,11 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		} else
 			ProcessState = psFailed;
 	}
-
-
+	  if(timeOutEn) {
+		 if (--timeOutCount == 0) {
+			 ProcessState = psFailed;
+	  }
+	 }
 	if (LatchSampling)
 	{
 
@@ -326,7 +329,6 @@ void TIM1_UP_TIM10_IRQHandler(void)
 							if (adc1.HighPulseWidth > 5 && adc1.HighPulseWidth < 45) {
 								Vmos1.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc1.avg_Buffer[LatchCountTimer];
 								Vmos1.highVoltage = Vmos1.highVoltage < Vmos1.avg_Buffer[LatchCountTimer] ? Vmos1.avg_Buffer[LatchCountTimer] : Vmos1.highVoltage;
-								LatchCurrent.highVoltage += adc1.average - adc2.average;
 							PulseCountDown = (adc1.HighPulseWidth > 45 || adc2.LowPulseWidth > 45) ? 10 : PulseCountDown;
 							}
 						}
@@ -353,7 +355,6 @@ void TIM1_UP_TIM10_IRQHandler(void)
 							if (adc2.HighPulseWidth > 5 && adc2.HighPulseWidth < 45) {
 								Vmos2.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc2.avg_Buffer[LatchCountTimer];
 								Vmos2.highVoltage = Vmos2.highVoltage < Vmos2.avg_Buffer[LatchCountTimer] ? Vmos2.avg_Buffer[LatchCountTimer] : Vmos2.highVoltage;
-								LatchCurrent.lowVoltage += adc2.average - adc1.average;
 							}
 							PulseCountDown = (adc2.HighPulseWidth > 45 || adc1.LowPulseWidth > 45) ? 10 : PulseCountDown;
 						}
@@ -403,6 +404,7 @@ void USART2_IRQHandler(void)
 					UART2_RecPos = 0;
 					UART2_Length = 0;
 					UART2_Recdata = true;
+					timeOutEn = false;
 				}
 				UART2_Receive[UART2_RecPos++] = data;
 			} else if (UART2_Recdata) {
@@ -433,7 +435,7 @@ void USART2_IRQHandler(void)
 				USART2->CR1 |= (USART_CR1_TCIE);
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
-			setTimeOut(200);
+			setTimeOut(400);
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
 		}
@@ -791,12 +793,6 @@ void TIM6_IRQHandler(void) {
 	  }	else
 		  sampleCount++;
 
-  }
-
-	  if(timeOutCount) {
-		 if (--timeOutCount == 0) {
-			 ProcessState = psFailed;
-	  }
   }
   /* USER CODE END TIM6_IRQn 1 */
 }

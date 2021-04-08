@@ -42,12 +42,8 @@ int intBuffer;
 //variables for communication array/command
 uns_ch Comlen;
 uns_ch Com_buffer[LRGBUFFER];
-uint16 Length;
-static uint16 NetID;
-static uint16 Module;
 uint8 Paralen;
 uns_ch Para[SMLBUFFER];
-uint16 Crc;
 
 //communication response
 uint16 Board;
@@ -150,7 +146,6 @@ TADCconfig Vfuse;
 TADCconfig Vmos1;
 TADCconfig Vmos2;
 TADCconfig Vin;
-TADCconfig LatchCurrent;
 
 typedef struct{
 	// Latch Pulse Widths and Voltages
@@ -213,6 +208,7 @@ uint8 BarcodeBuffer[9];
 _Bool BarcodeScanned;
 
 //	Timeout functionality, Loop action until timeout is met
+bool timeOutEn;
 uint8 timeOutCount;
 
 

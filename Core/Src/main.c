@@ -155,7 +155,6 @@ int main(void)
   LCD_init();
   TestRig_Init();
 
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -183,9 +182,9 @@ int main(void)
 	  		LCD_setCursor(2, 1);
 	  		sprintf(debugTransmitBuffer, "    Programming    ");
 	  		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-	  		uns_ch Command = 0x08;
-	  		SetPara(Command);
-	  		communication_array(Command, &Para, Paralen);
+	  		uns_ch Command = 0x10;
+//	  		SetPara(Command);
+	  		communication_arraySerial(Command, 0, 0);
 	  		CurrentState = csInterogating;
 	  		ProcessState = psWaiting;
 	  		// Programming Routine
@@ -231,30 +230,38 @@ int main(void)
 	  		uns_ch Command;
 	  	    switch(CurrentState) {
 	  	    	case csInitialising:	// 0xCC/0xC0 ????
-	  	    		if (BoardConnected.TestResult) {
+	  	    		if (READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
+	  	    			SET_BIT( BoardConnected.BSR, BOARD_INITIALISED );
 	  	    			communication_response(&Response, &UART2_Receive, UART2_RecPos);
-	  	    			Command = 0x10;
-	  	    			communication_arraySerial(Command, 0, 0);
-	  	    			CurrentState = csSerialise;
-	  	    			ProcessState = psWaiting;
+	  	    			if (!READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {
+							Command = 0x10;
+							communication_arraySerial(Command, 0, 0);
+							CurrentState = csSerialise;
+							ProcessState = psWaiting;
+	  	    			} else {
+	  	    				CurrentState = csIDLE;
+	  	    				ProcessState = psWaiting;
+	  	    			}
 					} else {
 						currentBoardConnected(&BoardConnected);
-
 							//Refresh LCD screen
-						LCD_ClearLine(2);
-						LCD_ClearLine(3);
-						LCD_ClearLine(4);
-						LCD_setCursor(2, 0);
-						sprintf(debugTransmitBuffer, "Enter Serial Number:");
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {
+							LCD_ClearLine(2);
+							LCD_ClearLine(3);
+							LCD_ClearLine(4);
+							LCD_setCursor(2, 0);
+							sprintf(debugTransmitBuffer, "Enter Serial Number:");
+							LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
-						sprintf(debugTransmitBuffer,"Enter Serial Number: \n");
-						CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-						HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-						BoardConnected.SerialNumber = read_serial();
+							sprintf(debugTransmitBuffer,"Enter Serial Number: \n");
+							CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+							BoardConnected.SerialNumber = read_serial();
+						}
 						if (BoardConnected.SerialNumber) {
 							Command = 0x08;
 							SetPara(Command);
+							HAL_Delay(50);
 							communication_array(Command,&Para, Paralen);
 							sprintf(debugTransmitBuffer,"Interogating...\n");
 							HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
@@ -272,21 +279,17 @@ int main(void)
 	  	    	case csCalibrating:
 	  	    		//TODO: Implement calibration counter here for if the calibration fails, retry 3 times,
 	  	    		communication_response(&Response, &UART2_Receive, UART2_RecPos);
-	  	    		if (Response == 0xC1)
+	  	    		if ( Response == 0xC1 ) {
   	            		initialiseTargetBoard();
-	  	    		CurrentState = csInitialising;
-	  	    		ProcessState = psWaiting;
+  	            		CurrentState = csInitialising;
+	  	    			ProcessState = psWaiting;
+	  	    		}
 	  	    		break;
 	  	        case csInterogating: //0x09 & 0x35
 	  	        	communication_response(&Response, &UART2_Receive, UART2_RecPos);
 	  	            if (Response == 0x09) {
 	  	            	communication_command(&Response);
-	  	                Command = 0x34;
-	  	                ProcessState = psWaiting;
-	  	                SetPara(Command);
-	  	                communication_array(Command,&Para, Paralen);
-	  	            } else if (Response == 0x35) {
-	  	            	if (BoardConnected.BoardCalibrated == true) {	//Check if board has been calibrated yet
+	  	            	if (READ_BIT( BoardConnected.BSR, BOARD_CALIBRATED)) {	//Check if board has been calibrated yet
 		  	                Command = 0x56;
 		  	                SetPara(Command);
 		  	                communication_array(Command,&Para, Paralen);
@@ -298,7 +301,21 @@ int main(void)
 	  	            		CurrentState = csCalibrating;
 	  	            		ProcessState = psWaiting;
 	  	            	}
-
+	  	            } else if (Response == 0x11) {
+	  	            	if (~BoardConnected.SerialNumber) {
+	  	            		ContinueWithCurrentSerial();
+	  	            		LCD_ClearLine(4);
+	  	            	}
+	  	            	if (BoardConnected.Version < getCurrentVersion(BoardConnected.BoardType) ) {
+	  	            		CurrentState = csProgramming;
+	  	            		ProcessState = psWaiting;
+	  	            	} else {
+	  	            	Command = 0x08;
+	  	            	SetPara(Command);
+	  	            	communication_array(Command, &Para, Paralen);
+  	            		CurrentState = csInterogating;
+  	            		ProcessState = psWaiting;
+	  	            	}
 	  	            }
 	  	            break;
 	  	        case csConfiguring: // 0x57
@@ -328,14 +345,14 @@ int main(void)
 	  	        case csSortResults:
 						communication_response(&Response, &UART2_Receive, UART2_RecPos);
 						if (BoardConnected.GlobalTestNum <= BoardConnected.testNum) {
-							if( CheckTestNumber(BoardConnected.GlobalTestNum, BoardConnected.testNum) ) {
+							if( CheckTestNumber(&BoardConnected)) {
 								Command = 0x56;
 								ProcessState = psWaiting;
 								CurrentState = csConfiguring;
 								SetPara(Command);
 								communication_array(Command,&Para, Paralen);
 							} else {
-							if(BoardConnected.TestResult) {
+							if(READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
 								LCD_setCursor(2, 0);
 								sprintf(debugTransmitBuffer, "    Test Passed    ");
 								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
@@ -374,6 +391,7 @@ int main(void)
 							communication_arraySerial(Command, 0, 0);
 							ProcessState = psWaiting;
 						} else {
+							SET_BIT( BoardConnected.BSR, BOARD_SERIALISED );
 							sprintf(debugTransmitBuffer, "=====     Board Serialised     =====\n");
 							HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 							sprintf(debugTransmitBuffer, "Serial number %u loaded into board\n", BoardConnected.SerialNumber);
@@ -393,11 +411,18 @@ int main(void)
 	  	} else if (ProcessState == psFailed) {
 	  		sprintf(debugTransmitBuffer, "=========     Timeout Failure     =========\n");
 			HAL_UART_Transmit(&D_UART, &debugTransmitBuffer, strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			uns_ch Command;
 			switch (CurrentState) {
 				case csInterogating:
-					initialiseTargetBoard();
-					CurrentState = csInitialising;
-					ProcessState = psWaiting;
+					if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED) ) {
+						Command = 0x08;
+						SetPara(Command);
+						communication_array(Command, &Para, Paralen);
+						ProcessState = psWaiting;
+					} else {
+						CurrentState = csIDLE;
+						ProcessState = psWaiting;
+					}
 					break;
 				default:
 					CurrentState = csIDLE;

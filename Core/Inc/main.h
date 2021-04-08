@@ -62,9 +62,13 @@ SPI_HandleTypeDef DAC_SPI;
 #define EEPROM_R_ADDRESS 0x51 //EEPROM I2C Read Address
 #define LCD_ADR 0x3C	//LCD I2C Address
 
-#define Include(set, element) set|=element
-#define Exclude(set, element) set&=~element
-#define IsSet(set, element) set&element
+//==============	 CURRENT BOARD VERSIONS 	==============//
+#define BOARD_935x 0x51
+#define BOARD_937x 0x51
+#define BOARD_401x 0x51
+#define BOARD_402x 0x51
+#define BOARD_422x 0x51
+#define BOARD_427x 0x51
 
 //===============	 OUTPUT FUNCTIONALITY 	===============//
 #define TWO_WIRE_LATCHING 0x10	//One Pulse- Top 4 Bits, Two Wire Latching-Bottom 4 bits
@@ -84,7 +88,6 @@ SPI_HandleTypeDef DAC_SPI;
 #define AQUASPY 0x0C
 #define NOTEST 0x00
 
-
 typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
@@ -95,7 +98,7 @@ typedef signed char int8;
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-typedef enum {bNone = 0, b935x = 9350, b937x = 9370, b401x = 4011,  b402x = 4020, b422x = 4220, b427x = 4270}TloomConnected;
+typedef enum {bNone = 0, b935x = 0x9350, b937x = 0x9370, b401x = 0x4011,  b402x = 0x4020, b422x = 0x4220, b427x = 0x4270}TloomConnected;
 
 typedef enum {Port_1 = 0, Port_2 = 1, Port_3 = 2, Port_4 = 3, Port_5 = 4, Port_6 = 5, Port_7 = 6, Port_8 = 7, Port_9 = 8}TcalPortConfig;
 TcalPortConfig calPort;
@@ -111,6 +114,7 @@ TprocessState ProcessState;
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 uns_ch debugTransmitBuffer[256];
+uns_ch lcdBuffer[80];
 
 /* USER CODE END EC */
 

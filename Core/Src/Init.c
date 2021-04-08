@@ -47,11 +47,6 @@ void TestRig_Init() {
 	  HAL_TIM_Base_Start_IT(&htim14);
 
 	  LoomChecking = true;
-
-	  for (int i = 0; i < 15; i++) {
-		  TestResults[i] = true;
-	  }
-
 	  LoomState = bNone;
 	  PrevLoomState = bNone;
 	  read_correctionFactors();
@@ -80,8 +75,8 @@ void TargetBoardParamInit() {
 	BoardConnected.digitalInputCout = 0;
 	BoardConnected.latchPortCount = 0;
 	BoardConnected.testNum = 0;
-	BoardConnected.TestResult = false;
-	BoardConnected.BoardCalibrated = false;
+	BoardConnected.GlobalTestNum = 0;
+	BoardConnected.BSR = 0;
 	for (int i = 0; i < 15; i++) {
 		TestResults[i] = true;
 	}
@@ -93,6 +88,7 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 	uns_ch *ptr;
 	uns_ch Response;
 	uint32 SerialNumberRead = 0;
+	uint16 Length;
 	//Stop re-entry into communication Routines
 	UART2_ReceiveComplete = false;
 	if (CRC_Check(data, length)) {
@@ -114,9 +110,34 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 }
 
 void setTimeOut(uint16 wait) {
+	timeOutEn = true;
 	timeOutCount = wait;
 }
 
 void LatchTestInit() {
 
+}
+
+uint8 getCurrentVersion(TloomConnected Board) {
+		switch (Board) {
+			case b935x:
+					return BOARD_935x;
+				break;
+			case b937x:
+					return BOARD_937x;
+				break;
+			case b401x:
+					return BOARD_401x;
+				break;
+			case b402x:
+				return BOARD_402x;
+				break;
+			case b422x:
+				return BOARD_422x;
+				break;
+			case b427x:
+				return BOARD_427x;
+				break;
+		}
+	return 255;
 }

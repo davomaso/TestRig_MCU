@@ -323,7 +323,9 @@ void Set_Test(TboardConfig *Board, uint8 Port) {
 	Board->TestCode[Port] = Board->ThisTest->Code;
 }
 
-_Bool CheckTestNumber(uint8 Test, uint8 maxTest) {
+_Bool CheckTestNumber(TboardConfig * Board) {
+	uint8 Test = Board->GlobalTestNum;
+	uint8 maxTest = Board->testNum;
 	if (Test == maxTest) {
 		sprintf(debugTransmitBuffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
@@ -344,17 +346,16 @@ _Bool CheckTestNumber(uint8 Test, uint8 maxTest) {
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
-		BoardConnected.TestResult = true;
+		SET_BIT( Board->BSR, BOARD_TEST_PASSED );
 		for (int i = 1; i <= Test; i++) {
 			if (TestResults[i] == false) {
 				sprintf(debugTransmitBuffer, "X ");
 				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-				BoardConnected.TestResult = false;
+				CLEAR_BIT( Board->BSR, BOARD_TEST_PASSED );
 			} else {
 				sprintf(debugTransmitBuffer, ". ");
 				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
-			TestResults[i] = true;
 		}
 		return false;
 		HAL_Delay(500);

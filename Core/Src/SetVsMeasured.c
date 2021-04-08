@@ -125,6 +125,7 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 			sprintf(debugTransmitBuffer, "X ");
 			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			TestResults[Board->GlobalTestNum] = false;
+			CLEAR_BIT( Board->BSR, BOARD_TEST_PASSED );
 			TresultStatus = TRfailed;
 		}
 		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {

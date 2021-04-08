@@ -14,6 +14,7 @@
 #include <time.h>
 #include "interogate_project.h"
 #include "calibration.h"
+#include "ADC_Variables.h"
 #include "DAC_Variables.h"
 
 int twoWireLatching(uint8,bool);
@@ -698,6 +699,8 @@ void ADC_MUXsel(uint8 ADCport){
 
 //	============================    Print Results    ================================//
 void PrintLatchResults(){
+	float LatchCurrent1;
+	float LatchCurrent2;
 	sprintf(debugTransmitBuffer, "\n\n =======================  Latch Test  =======================\n\n");
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
@@ -708,9 +711,9 @@ void PrintLatchResults(){
 
 		//Port A Voltage
 	adc1.highVoltage = adc1.HighPulseWidth > 0 ? adc1.highVoltage/adc1.HighPulseWidth:0;
-	adc1.highVoltage *= (15.0/4096); //Previous value was 16.17 when resistor is set to 150
+	adc1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION); //Previous value was 16.17 when resistor is set to 150
 	adc1.lowVoltage /= adc1.LowPulseWidth;
-	adc1.lowVoltage *= (15.0/4096);
+	adc1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   Port A Voltage:   High: %f Low: %f   ==============\n\n", adc1.highVoltage, adc1.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
@@ -722,46 +725,48 @@ void PrintLatchResults(){
 
 		//Port B Voltage
 	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;
-	adc2.highVoltage *= (15.0/4096);
+	adc2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	adc2.lowVoltage /= adc2.LowPulseWidth;
-	adc2.lowVoltage *= (15.0/4096);
+	adc2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   Port B Voltage:   High: %f Low: %f   ==============\n\n", adc2.highVoltage, adc2.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 		//Vin Voltage
-	Vin.lowVoltage *= (15.0/4096);
-	Vin.steadyState *= (15.0/4096);
+	Vin.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vin.steadyState *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %f Min: %f   ==============\n", Vin.steadyState, Vin.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 		//Fuse Voltage
-	Vfuse.lowVoltage *= (15.0/4096);
-	Vfuse.steadyState *= (15.0/4096);
+	Vfuse.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vfuse.steadyState *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %f Min: %f   ==============\n", Vfuse.steadyState, Vfuse.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 		//MOSFET Voltage
-	Vmos1.lowVoltage *= (15.0/4096);
-	Vmos1.highVoltage *= (15.0/4096);
+	Vmos1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vmos1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   MOSFET 1 Voltage:   High: %f Low: %f   ==============\n", Vmos1.highVoltage, Vmos1.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
-	Vmos2.lowVoltage *= (15.0/4096);
-	Vmos2.highVoltage *= (15.0/4096);
+	Vmos2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vmos2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   MOSFET 2 Voltage:   High: %f Low: %f   ==============\n", Vmos2.highVoltage, Vmos2.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 
-	LatchCurrent.lowVoltage /= 132;
-	LatchCurrent.highVoltage /= 132;
-	LatchCurrent.lowVoltage *= (15.0/4096);
-	LatchCurrent.highVoltage *= (15.0/4096);
-	sprintf(debugTransmitBuffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent.highVoltage, LatchCurrent.lowVoltage);
+	  LatchCurrent2 = adc2.highVoltage - adc1.lowVoltage;
+	  LatchCurrent1 = adc1.highVoltage - adc2.lowVoltage;
+	  LatchCurrent1 /= ADC_Rcurrent;
+	  LatchCurrent2 /= ADC_Rcurrent;
+
+
+	sprintf(debugTransmitBuffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent1, LatchCurrent2);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 

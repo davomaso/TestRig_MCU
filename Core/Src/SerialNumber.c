@@ -133,3 +133,32 @@ uint32 read_serial() {
 	}
 	return tempSerialNumber;
 }
+
+void ContinueWithCurrentSerial() {
+	LCD_ClearLine(2);
+	sprintf(lcdBuffer, "    S/N Detected    ");
+	LCD_setCursor(2, 0);
+	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+
+	LCD_ClearLine(3);
+	sprintf(lcdBuffer, "      %d",BoardConnected.SerialNumber);
+	LCD_setCursor(3, 0);
+	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+
+	LCD_ClearLine(4);
+	sprintf(lcdBuffer, "*-Keep       #-Renew");
+	LCD_setCursor(4, 0);
+	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	while(1) {
+		if(KP_hash.Pressed){
+			KP_hash.Count = KP_hash.Pressed = 0;
+			CLEAR_BIT( BoardConnected.BSR, BOARD_SERIALISED );
+			break;
+		}
+		if(KP_star.Pressed){
+			KP_star.Count = KP_star.Pressed = 0;
+			SET_BIT( BoardConnected.BSR, BOARD_SERIALISED );
+			break;
+		}
+	}
+}

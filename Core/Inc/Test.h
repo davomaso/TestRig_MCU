@@ -14,8 +14,6 @@ typedef unsigned short uint16;
 #include "Board_Config.h"
 #include "stdbool.h"
 
-_Bool CheckTestNumber(uint8, uint8);
-
 void TestConfig935x(TboardConfig *);
 void TestConfig937x(TboardConfig *);
 void TestConfig401x(TboardConfig *);

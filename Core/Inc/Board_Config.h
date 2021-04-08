@@ -23,6 +23,13 @@
 	#define MAX_PORT_CODE_ARRAY_SIZE 64
 	#define MAX_TEST_CODE_ARRAY_SIZE 10
 
+	//============		BOARD STATUS VARIABLES		===========//
+	#define BOARD_TEST_PASSED 	(1 << 0)
+	#define BOARD_INITIALISED 	(1 << 1)
+	#define BOARD_CALIBRATED 	(1 << 2)
+	#define BOARD_PROGRAMMED	(1 << 3)
+	#define BOARD_SERIALISED	(1 << 4)
+
 	typedef struct {
 			//=== Port Code ===//
 			unsigned char Code;
@@ -45,8 +52,11 @@
 
 	typedef struct {
 			TloomConnected BoardType;
+			uint16 Module;
+			uint16 Network;
+			uint8 Version;
 			uint8 latchPortCount;
-			uint8 analogInputCount;//change all channels to ports'
+			uint8 analogInputCount;
 			uint8 digitalInputCout;
 			uint8 testNum;
 			uint8 ArrayPtr;
@@ -56,8 +66,7 @@
 			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
-			bool BoardCalibrated;
-			bool TestResult;
+			uint8 BSR; //Board Status Register
 	}TboardConfig;
 
 	TboardConfig BoardConnected;
