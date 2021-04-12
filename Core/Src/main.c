@@ -63,7 +63,6 @@ SPI_HandleTypeDef hspi3;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
-TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 
@@ -92,7 +91,6 @@ static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_TIM11_Init(void);
 /* USER CODE BEGIN PFP */
 uint32 read_serial(void);
 void read_correctionFactors(void);
@@ -118,7 +116,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -150,7 +148,6 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM10_Init();
   MX_USART1_UART_Init();
-  MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
   addSD_DelayVariable = true;
@@ -283,7 +280,7 @@ int main(void)
 	  	    	case csCalibrating:
 	  	    		//TODO: Implement calibration counter here for if the calibration fails, retry 3 times,
 	  	    		communication_response(&Response, &UART2_Receive, UART2_RecPos);
-	  	    		if ( (Response == 0xC1) ) {
+	  	    		if ( Response == 0xC1 ) {
   	            		initialiseTargetBoard();
   	            		CurrentState = csInitialising;
 	  	    			ProcessState = psWaiting;
@@ -737,9 +734,9 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 4800;
+  htim6.Init.Prescaler = 4799;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 100;
+  htim6.Init.Period = 99;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -815,37 +812,6 @@ static void MX_TIM10_Init(void)
   /* USER CODE BEGIN TIM10_Init 2 */
 
   /* USER CODE END TIM10_Init 2 */
-
-}
-
-/**
-  * @brief TIM11 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM11_Init(void)
-{
-
-  /* USER CODE BEGIN TIM11_Init 0 */
-
-  /* USER CODE END TIM11_Init 0 */
-
-  /* USER CODE BEGIN TIM11_Init 1 */
-
-  /* USER CODE END TIM11_Init 1 */
-  htim11.Instance = TIM11;
-  htim11.Init.Prescaler = 47;
-  htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim11.Init.Period = 999;
-  htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM11_Init 2 */
-
-  /* USER CODE END TIM11_Init 2 */
 
 }
 

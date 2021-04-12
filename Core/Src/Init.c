@@ -8,7 +8,6 @@
 #include "interogate_project.h"
 #include "SetVsMeasured.h"
 #include "UART_Routine.h"
-extern TIM_HandleTypeDef htim11;
 
 void TestRig_Init() {
 	  sprintf(debugTransmitBuffer,"==========TestRig========== \n");
@@ -51,8 +50,7 @@ void TestRig_Init() {
 	  LoomState = bNone;
 	  PrevLoomState = bNone;
 	  read_correctionFactors();
-	  CurrentState = csIDLE;
-	  ProcessState = psWaiting;
+
 
 	  //Mount SD and check space
 //	  SDfileInit();
@@ -114,7 +112,6 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 void setTimeOut(uint16 wait) {
 	timeOutEn = true;
 	timeOutCount = wait;
-	HAL_TIM_Base_Start(&htim11);
 }
 
 void LatchTestInit() {
@@ -140,9 +137,6 @@ uint8 getCurrentVersion(TloomConnected Board) {
 				break;
 			case b427x:
 				return BOARD_427x;
-				break;
-			case bNone:
-				return 255;
 				break;
 		}
 	return 255;
