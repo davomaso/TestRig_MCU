@@ -114,7 +114,7 @@ void communication_command(uns_ch * ComRep)
 			break;
 		case 0x57:
 		case 0x27:
-				SET_BIT(USART6->CR1, USART_CR1_RXNEIE);
+				USART6->CR1 |= (USART_CR1_RXNEIE);
 			break;
 		case 0x1B:
 				sprintf(debugTransmitBuffer, "Samples Uploaded\n\n");

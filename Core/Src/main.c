@@ -177,7 +177,6 @@ int main(void)
 	  		TestRig_Init();
 	  		TargetBoardParamInit();
 	  		HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
-
 	  		LCD_ClearLine(4);
 	  		LCD_ClearLine(3);
 	  		LCD_setCursor(2, 1);
@@ -303,7 +302,7 @@ int main(void)
 	  	            		ProcessState = psWaiting;
 	  	            	}
 	  	            } else if (Response == 0x11) {
-	  	            	if (~BoardConnected.SerialNumber ) {//&&  !BoardConnected.SerialNumber
+	  	            	if (~BoardConnected.SerialNumber) {
 	  	            		ContinueWithCurrentSerial();
 	  	            		LCD_ClearLine(4);
 	  	            	}
@@ -321,7 +320,7 @@ int main(void)
 	  	            break;
 	  	        case csConfiguring: // 0x57
 						communication_response(&Response, &UART2_Receive, UART2_RecPos);
-						if (Response == 0x57 || Response == 0x03) {
+						if (Response == 0x57) {
 							communication_command(&Response);
 							Command = 0x1A;
 							SetPara(Command);
