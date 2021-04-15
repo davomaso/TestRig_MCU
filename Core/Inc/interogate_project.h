@@ -209,7 +209,11 @@ _Bool BarcodeScanned;
 
 //	Timeout functionality, Loop action until timeout is met
 bool timeOutEn;
-uint8 timeOutCount;
+uint32 timeOutCount;
+
+bool latchTimeOutEn;
+bool LatchTimeOut;
+uint16 latchTimeOutCount;
 
 
 #endif /* INC_INTEROGATE_PROJECT_H_ */

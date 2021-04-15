@@ -38,3 +38,7 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 	}
 	USART2->CR1 |= USART_CR1_TXEIE;
 }
+
+void printT(uns_ch * Text) {
+	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
+}

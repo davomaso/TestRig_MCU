@@ -22,5 +22,5 @@ void WriteSDresults(TtestType *Code, float *Set, float *Measured) {
 void SDfileInit() {
 	Mount_SD("/");
 	Check_SD_Space();
-	Create_Dir("TEST_RESULTS");
+//	Create_Dir("TEST_RESULTS");
 }

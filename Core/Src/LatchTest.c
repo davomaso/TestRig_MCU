@@ -2,9 +2,10 @@
 #include "interogate_project.h"
 #include "UART_Routine.h"
 
-void runLatchTest(uint8 Test_Port){
+void runLatchTest(TboardConfig *Board, uint8 Test_Port){
 //Latch On
 	uns_ch LatchCommand = 0x26;	//Turn Digital Output on or off
+	uint8 LatchState;
 	ADC_MUXsel(Test_Port);
 	Para[0] = 0x80 + (Test_Port * 2); // 0x80 turns digital output on
 	Paralen = 1;
@@ -41,29 +42,28 @@ void runLatchTest(uint8 Test_Port){
 		}
 	}
 	uint8 Response;
-	while (!UART2_ReceiveComplete) { //Ned to include Timeout
+	runLatchTimeOut();
+	while (!UART2_ReceiveComplete && LatchTimeOut) { //TODO: Return to main(), requires the addition of callback to this function if 0xXX is received.
 
 	}
 	if (UART2_ReceiveComplete)
-		communication_response(&Response, &UART2_Receive, UART2_RecPos);
+		communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 
 	HAL_TIM_Base_Stop(&htim10);
 
 		//Print Results & Error Messages
 //	TransmitResults();
 	PrintLatchResults();
-	LatchState[Test_Port] = (0xFF & LatchErrorCheck());
-	if(LatchState[Test_Port])
-		printLatchError(&LatchState[Test_Port]);
+	LatchState = (0xFF & LatchErrorCheck());
+	if(LatchState)
+		printLatchError(&LatchState);
 
-	if(!LatchState[Test_Port]){
-		sprintf(debugTransmitBuffer, "\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
-		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	if(!LatchState){
+		printT("\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
+		Board->TestResults[Board->GlobalTestNum][Test_Port] = true;
 	}else{
-		sprintf(debugTransmitBuffer, "\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
-		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+		printT("\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
+		Board->TestResults[Board->GlobalTestNum][Test_Port] = false;
 		}
 
 //	TransmitResults();

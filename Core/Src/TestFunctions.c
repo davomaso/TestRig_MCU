@@ -86,16 +86,16 @@ void TestFunction(TboardConfig *Board) {
 int twoWireLatching(uint8 Test_Port,_Bool state) {
 		switch(Test_Port){
 		case Port_1:
-			LatchPort1 = (Test_Port == 0) && state ? true : false;
+			LatchPort1 = (Test_Port == Port_1) && state ? true : false;
 			break;
 		case Port_2:
-			LatchPort2 = (Test_Port == 1) && state ? true : false;
+			LatchPort2 = (Test_Port == Port_2) && state ? true : false;
 			break;
 		case Port_3:
-			LatchPort3 = (Test_Port == 2) && state ? true : false;
+			LatchPort3 = (Test_Port == Port_3) && state ? true : false;
 			break;
 		case Port_4:
-			LatchPort4 = (Test_Port == 3) && state ? true : false;
+			LatchPort4 = (Test_Port == Port_4) && state ? true : false;
 			break;
 		}
 	return state;

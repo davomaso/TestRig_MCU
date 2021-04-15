@@ -63,6 +63,7 @@ SPI_HandleTypeDef hspi3;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 
@@ -91,6 +92,7 @@ static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM11_Init(void);
 /* USER CODE BEGIN PFP */
 uint32 read_serial(void);
 void read_correctionFactors(void);
@@ -116,7 +118,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -142,19 +144,20 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
-  HAL_Delay(2000);
-  _Bool addSD_DelayVariable;
   MX_FATFS_Init();
   MX_USB_DEVICE_Init();
   MX_TIM10_Init();
   MX_USART1_UART_Init();
+  MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
-  addSD_DelayVariable = true;
+//  addSD_DelayVariable = true;
   HAL_I2C_Init(&hi2c1);
   LCD_init();
   TestRig_Init();
+  SDfileInit();
 
+//  HAL_TIM_Base_Start_IT(&htim10);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -164,12 +167,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+//=========================================================================================================//
+
+
+//=========================================================================================================//
 	  if ((CurrentState == csIDLE) && (ProcessState == psWaiting) && CheckLoom) {
 		  scanLoom(&BoardConnected);
 		  checkLoomConnected(&BoardConnected);
 		  ConfigInit();
 	  }
+//=========================================================================================================//
 
+
+//=========================================================================================================//
 	  	  //Testing Functionality
 	  if (KP_1.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
 	  		KP_1.Pressed = false;
@@ -187,6 +198,7 @@ int main(void)
 	  		communication_arraySerial(Command, 0, 0);
 	  		CurrentState = csInterogating;
 	  		ProcessState = psWaiting;
+	  }
 	  		// Programming Routine
 //  			ComRep = 0x08;
 //			communication_array(ComRep,&Para[0], Paralen);
@@ -220,11 +232,25 @@ int main(void)
 //	  		}
 //	  		//Testing Procedure Initialisation
 //	  		SDfileInit();
-	  	}
 //=========================================================================================================//
 
 
-//=================================================================================================================//
+//=========================================================================================================//
+	  if (KP_6.Pressed && (ProcessState == psWaiting) && (CurrentState == csIDLE) ) {
+		  reset_ALL_MUX();
+		  reset_ALL_DAC();
+		  MUX_Sel(Port_1, ASYNC_PULSE);
+		  MUX_Sel(Port_2, ASYNC_PULSE);
+		  MUX_Sel(Port_3, ASYNC_PULSE);
+		  MUX_Sel(Port_4, ASYNC_PULSE);
+		  MUX_Sel(Port_5, ASYNC_PULSE);
+		  MUX_Sel(Port_6, ASYNC_PULSE);
+
+	  }
+//=========================================================================================================//
+
+
+//=========================================================================================================//
 	  	if (ProcessState == psComplete) {
 	  		uns_ch Response;
 	  		uns_ch Command;
@@ -232,13 +258,14 @@ int main(void)
 	  	    	case csInitialising:	// 0xCC/0xC0 ????
 	  	    		if (READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
 	  	    			SET_BIT( BoardConnected.BSR, BOARD_INITIALISED );
-	  	    			communication_response(&Response, &UART2_Receive, UART2_RecPos);
+	  	    			communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 	  	    			if (!READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {
 							Command = 0x10;
 							communication_arraySerial(Command, 0, 0);
 							CurrentState = csSerialise;
 							ProcessState = psWaiting;
 	  	    			} else {
+	  	    				timeOutEn = false;
 	  	    				CurrentState = csIDLE;
 	  	    				ProcessState = psWaiting;
 	  	    			}
@@ -253,9 +280,7 @@ int main(void)
 							sprintf(debugTransmitBuffer, "Enter Serial Number:");
 							LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
-							sprintf(debugTransmitBuffer,"Enter Serial Number: \n");
-							CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-							HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+							printT("Enter Serial Number: \n");
 							BoardConnected.SerialNumber = read_serial();
 						}
 						if (BoardConnected.SerialNumber) {
@@ -278,7 +303,7 @@ int main(void)
 	  	    		break;
 	  	    	case csCalibrating:
 	  	    		//TODO: Implement calibration counter here for if the calibration fails, retry 3 times,
-	  	    		communication_response(&Response, &UART2_Receive, UART2_RecPos);
+	  	    		communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 	  	    		if ( Response == 0xC1 ) {
   	            		initialiseTargetBoard();
   	            		CurrentState = csInitialising;
@@ -286,17 +311,18 @@ int main(void)
 	  	    		}
 	  	    		break;
 	  	        case csInterogating: //0x09 & 0x35
-	  	        	communication_response(&Response, &UART2_Receive, UART2_RecPos);
+	  	        	communication_response(&Response, &UART2_RXbuffer[0], UART2_RecPos);
 	  	            if (Response == 0x09) {
 	  	            	communication_command(&Response);
 	  	            	if (READ_BIT( BoardConnected.BSR, BOARD_CALIBRATED)) {	//Check if board has been calibrated yet
 		  	                Command = 0x56;
 		  	                SetPara(Command);
-		  	                communication_array(Command,&Para, Paralen);
+		  	                communication_array(Command,&Para[0], Paralen);
 		  	                ProcessState = psWaiting;
 		  	                CurrentState = csConfiguring;
 	  	            	} else {
 	  	            		switchToCurrent = false;
+	  	            		HAL_Delay(50);
 	  	            		TargetBoardCalibration();
 	  	            		CurrentState = csCalibrating;
 	  	            		ProcessState = psWaiting;
@@ -319,7 +345,7 @@ int main(void)
 	  	            }
 	  	            break;
 	  	        case csConfiguring: // 0x57
-						communication_response(&Response, &UART2_Receive, UART2_RecPos);
+						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 						if (Response == 0x57) {
 							communication_command(&Response);
 							Command = 0x1A;
@@ -330,7 +356,7 @@ int main(void)
 						}
 	  	            break;
 	  	        case csSampling: // 0x1B
-						communication_response(&Response, &UART2_Receive, UART2_RecPos);
+						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 						communication_command(&Response);
 						ProcessState = psWaiting;
 						CurrentState = csUploading;
@@ -343,8 +369,11 @@ int main(void)
 						CurrentState = csSortResults;
 	  	            break;
 	  	        case csSortResults:
-						communication_response(&Response, &UART2_Receive, UART2_RecPos);
-						if (BoardConnected.GlobalTestNum <= BoardConnected.testNum) {
+						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
+						if(Response == 0x03) {
+							CurrentState = csUploading;
+							ProcessState = psWaiting;
+						} else if (BoardConnected.GlobalTestNum <= BoardConnected.testNum) {
 							if( CheckTestNumber(&BoardConnected)) {
 								Command = 0x56;
 								ProcessState = psWaiting;
@@ -357,6 +386,7 @@ int main(void)
 								sprintf(debugTransmitBuffer, "    Test Passed    ");
 								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_SET);
+								timeOutEn = false;
 								ProcessState = psComplete;
 								CurrentState = csIDLE;
 							} else {
@@ -364,6 +394,7 @@ int main(void)
 								sprintf(debugTransmitBuffer, "    Test Failed    ");
 								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
+								timeOutEn = false;
 								ProcessState = psWaiting;
 								CurrentState = csIDLE;
 									}
@@ -375,7 +406,7 @@ int main(void)
 						uint32 tempSerial;
 						uint32 CurrentSerial;
 						uint32 NewSerial;
-						tempSerial = ReadSerialNumber(&UART2_Receive[0], UART2_RecPos);
+						tempSerial = ReadSerialNumber(&UART2_RXbuffer[0], UART2_RecPos);
 							//Load Current Serial Number
 						memcpy(&CurrentSerial, &tempSerial, 4);
 							//Write New Serial Number
@@ -385,7 +416,7 @@ int main(void)
 						ProcessState = psWaiting;
 					} else if (Command == 0x12) {
 						uint32 tempSerial;
-						tempSerial = ReadSerialNumber(&UART2_Receive[0], UART2_RecPos);
+						tempSerial = ReadSerialNumber(&UART2_RXbuffer[0], UART2_RecPos);
 						if(tempSerial != BoardConnected.SerialNumber) {
 							Command = 0x10;
 							communication_arraySerial(Command, 0, 0);
@@ -412,6 +443,7 @@ int main(void)
 	  		sprintf(debugTransmitBuffer, "=========     Timeout Failure     =========\n");
 			HAL_UART_Transmit(&D_UART, &debugTransmitBuffer, strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 			uns_ch Command;
+			timeOutEn = false;
 			switch (CurrentState) {
 				case csInterogating:
 					if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED) ) {
@@ -518,8 +550,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 96;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   RCC_OscInitStruct.PLL.PLLR = 2;
@@ -533,7 +565,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
@@ -586,29 +618,13 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-//  sConfig.Channel = ADC_CHANNEL_0;
-//  sConfig.Rank = 1;
-//  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
-//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-//  */
-//  sConfig.Channel = ADC_CHANNEL_1;
-//  sConfig.Rank = 2;
-//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-//  */
-//  sConfig.Channel = ADC_CHANNEL_3;
-//  sConfig.Rank = 3;
-//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
@@ -670,7 +686,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 0;
+  hsd.Init.ClockDiv = 16;
   /* USER CODE BEGIN SDIO_Init 2 */
 
   /* USER CODE END SDIO_Init 2 */
@@ -733,9 +749,9 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 4799;
+  htim6.Init.Prescaler = 4800;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 99;
+  htim6.Init.Period = 100;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -811,6 +827,37 @@ static void MX_TIM10_Init(void)
   /* USER CODE BEGIN TIM10_Init 2 */
 
   /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
+  * @brief TIM11 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM11_Init(void)
+{
+
+  /* USER CODE BEGIN TIM11_Init 0 */
+
+  /* USER CODE END TIM11_Init 0 */
+
+  /* USER CODE BEGIN TIM11_Init 1 */
+
+  /* USER CODE END TIM11_Init 1 */
+  htim11.Instance = TIM11;
+  htim11.Init.Prescaler = 999;
+  htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim11.Init.Period = 47;
+  htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM11_Init 2 */
+
+  /* USER CODE END TIM11_Init 2 */
 
 }
 

@@ -11,7 +11,6 @@
 #include "fatfs.h"
 #include "string.h"
 #include "stdio.h"
-#include "fatfs.h"
 
 
 FATFS fs;  // file system

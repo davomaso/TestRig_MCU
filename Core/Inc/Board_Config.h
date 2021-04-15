@@ -30,6 +30,16 @@
 	#define BOARD_PROGRAMMED	(1 << 3)
 	#define BOARD_SERIALISED	(1 << 4)
 
+	//============		TEST PASSED VARIABLES		===========//
+	#define TEST_ONE_PASSED 	(1 << 0)
+	#define TEST_TWO_PASSED 	(1 << 1)
+	#define TEST_THREE_PASSED 	(1 << 2)
+	#define TEST_FOUR_PASSED 	(1 << 3)
+	#define TEST_FIVE_PASSED 	(1 << 4)
+	#define TEST_SIX_PASSED 	(1 << 5)
+	#define TEST_SEVEN_PASSED 	(1 << 6)
+	#define TEST_EIGHT_PASSED 	(1 << 7)
+
 	typedef struct {
 			//=== Port Code ===//
 			unsigned char Code;
@@ -64,6 +74,8 @@
 			TportConfig * ThisTest;
 			uint8 PortCodes[MAX_PORT_CODE_ARRAY_SIZE];
 			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
+			uint32 TestResults[8][16];
+			uint16 TPR; //TestPassedRegister;
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
 			uint8 BSR; //Board Status Register

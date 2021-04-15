@@ -21,7 +21,6 @@ void TestConfig402x(TboardConfig *);
 void TestConfig422x(TboardConfig *);
 void TestConfig427x(TboardConfig *);
 
-uint8 LatchState[4];
 
 float CHval[10][16];
 

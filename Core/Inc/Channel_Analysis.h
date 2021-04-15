@@ -10,7 +10,7 @@
 #include "Board_Config.h"
 void Decompress_Channels(uns_ch *, TboardConfig *);
 
-uint32 measuredBuffer[8][16];
+
 
 
 #endif /* INC_CHANNEL_ANALYSIS_H_ */

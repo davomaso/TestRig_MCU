@@ -9,28 +9,24 @@
 #include "stm32f4xx_hal.h"
 #include "Programming.h"
 
-
-extern UART_HandleTypeDef huart3;
-#define UART &huart3
-
-
-
 /* =============================>>>>>>>> NO CHANGES AFTER THIS LINE =====================================>>>>>>> */
-void Send_Uart (char *string)
-{
-	HAL_UART_Transmit(UART, (uint8_t *)string, strlen (string), HAL_MAX_DELAY);
+void Send_Uart (char *string) {
+	HAL_UART_Transmit(&D_UART, (uint8_t *)string, strlen (string), HAL_MAX_DELAY);
 }
 
-void Mount_SD (const TCHAR* path)
-{
+void Mount_SD (const TCHAR* path) {
 	fresult = f_mount(&fs, path, 1);
-	if (fresult != FR_OK) Send_Uart ("ERROR!!! in mounting SD CARD...\n\n");
-	else Send_Uart("SD CARD mounted successfully...\n");
-
+	if (fresult != FR_OK) {
+		Send_Uart ("ERROR!!! in mounting SD CARD...\n\n");
+	} else {
+		Send_Uart("SD CARD mounted successfully...\n");
+		LCD_setCursor(2, 0);
+		sprintf(debugTransmitBuffer, " SD card Connected  ");
+		LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	}
 }
 
-void Unmount_SD (const TCHAR* path)
-{
+void Unmount_SD (const TCHAR* path) {
 	fresult = f_mount(NULL, path, 1);
 	if (fresult == FR_OK) Send_Uart ("SD CARD UNMOUNTED successfully...\n\n\n");
 	else Send_Uart("ERROR!!! in UNMOUNTING SD CARD\n\n\n");

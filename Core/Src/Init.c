@@ -23,6 +23,9 @@ void TestRig_Init() {
 	  Para[0] = 0;
 	  Paralen = 0;
 
+	  ProcessState = psWaiting;
+	  CurrentState = csIDLE;
+
 	  UART2_RecPos = 0;
 	  samplesUploading = false;
 	  HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
@@ -45,6 +48,7 @@ void TestRig_Init() {
 	  HAL_TIM_Base_Start_IT(&htim6);
 	  HAL_TIM_Base_Start_IT(&htim7);
 	  HAL_TIM_Base_Start_IT(&htim14);
+	  HAL_TIM_Base_Start_IT(&htim11);
 
 	  LoomChecking = true;
 	  LoomState = bNone;
@@ -52,11 +56,9 @@ void TestRig_Init() {
 	  read_correctionFactors();
 
 
+	  timeOutCount = 0;
+	  timeOutEn = false;
 	  //Mount SD and check space
-//	  SDfileInit();
-//	  LCD_setCursor(2, 0);
-//	  sprintf(Buffer, " SD card Connected  ");
-//	  LCD_printf(&Buffer[0], strlen(Buffer));
       HAL_GPIO_WritePin(V12fuseEN_GPIO_Port, V12fuseEN_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin(V12fuseLatch_GPIO_Port, V12fuseLatch_Pin, GPIO_PIN_RESET);
 }
@@ -76,10 +78,8 @@ void TargetBoardParamInit() {
 	BoardConnected.latchPortCount = 0;
 	BoardConnected.testNum = 0;
 	BoardConnected.GlobalTestNum = 0;
-	BoardConnected.BSR = 0;
-	for (int i = 0; i < 15; i++) {
-		TestResults[i] = true;
-	}
+	CLEAR_REG(BoardConnected.BSR);
+	BoardConnected.TPR = 0xFFFF;
 	Vfuse.steadyState = 0;
 	Vin.steadyState = 0;
 }
@@ -112,6 +112,14 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 void setTimeOut(uint16 wait) {
 	timeOutEn = true;
 	timeOutCount = wait;
+	HAL_TIM_Base_Start_IT(&htim11);
+}
+
+void runLatchTimeOut(uint16 wait) {
+	latchTimeOutEn = true;
+	LatchTimeOut = true;
+	latchTimeOutCount = wait;
+	HAL_TIM_Base_Start_IT(&htim11);
 }
 
 void LatchTestInit() {

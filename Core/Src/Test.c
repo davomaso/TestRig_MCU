@@ -346,9 +346,8 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
-		SET_BIT( Board->BSR, BOARD_TEST_PASSED );
-		for (int i = 1; i <= Test; i++) {
-			if (TestResults[i] == false) {
+		for (uint8 i = 0; i < Test; i++) {
+			if ( ( Board->TPR & (1 << i) ) == false) {
 				sprintf(debugTransmitBuffer, "X ");
 				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 				CLEAR_BIT( Board->BSR, BOARD_TEST_PASSED );
@@ -357,6 +356,9 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
 		}
+			//Not 100% required
+		if ( (Board->TPR == 0xFFFF) )
+			SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		return false;
 		HAL_Delay(500);
 	}

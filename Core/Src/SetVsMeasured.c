@@ -10,7 +10,7 @@
 #include "Test.h"
 #include "SDcard.h"
 
-void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
+void CompareResults(TboardConfig * Board, float *SetVal)
 {
 	uint8 ChNum = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;
 	uint8 currResult;
@@ -42,14 +42,13 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 	Open_AppendFile(&FILEname[0]);
 
 	for (currResult = 0;currResult < ChNum;currResult++) {
+		int MeasuredVal = Board->TestResults[Board->GlobalTestNum][currResult];
 		switch (Board->TestCode[currResult]) {
 		case TWO_WIRE_LATCHING:
-			MeasuredVal++;
-			fMeasured = !(LatchState[currResult] & 255);
-			sprintf(debugTransmitBuffer,"Testing Latch\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			fMeasured = (float)MeasuredVal;
+			printT("Testing Latch\n");
 			PortTypes[currResult] = TTLatch;
+			comp_max = comp_min = 0;
 			break;
 
 		case ONE_VOLT:
@@ -61,7 +60,7 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 				comp_max = comp_min = (2.5*0.01) + (0.005 * *SetVal);
 			else if (Board->TestCode[currResult] == THREE_VOLT)
 				comp_max = comp_min = (3*0.01) + (0.005 * *SetVal);
-			fMeasured = (float) *MeasuredVal++ / 1000;
+			fMeasured = (float) MeasuredVal / 1000;
 			sprintf(debugTransmitBuffer,"Testing Voltage\n");
 			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
@@ -69,7 +68,7 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 			break;
 
 		case TWENTY_AMP:
-			fMeasured = (float) *MeasuredVal++ / 1000;
+			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = comp_min = (20*0.005) + (0.005 * *SetVal);
 			sprintf(debugTransmitBuffer,"Testing Currrent\n");
 			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
@@ -77,7 +76,7 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 			PortTypes[currResult] = TTCurrent;
 			break;
 		case ASYNC_PULSE:
-			fMeasured = (float) *MeasuredVal++ / 1000;
+			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = 0;//Once this works decrease the multiplication factor to improve testing accuracy
 			comp_min = 0;
 			sprintf(debugTransmitBuffer,"Testing Async\n");
@@ -86,7 +85,7 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 			PortTypes[currResult] = TTAsync;
 			break;
 		case SDI_TWELVE:
-			fMeasured = (float) *MeasuredVal++ / 1000;
+			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = (*SetVal); //Once this works decrease the multiplication factor to improve testing accuracy
 			comp_min = (*SetVal);
 			sprintf(debugTransmitBuffer,"Testing SDI-12\n");
@@ -95,12 +94,12 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 			PortTypes[currResult] = TTSDI;
 			break;
 		case NOTEST:
-			fMeasured = 0;
-			MeasuredVal++;
+			fMeasured = (float)0;
+			MeasuredVal;
 			PortTypes[currResult] = TTNo;
 			break;
 		}
-		if( (fMeasured <= (*SetVal + comp_max)) && (fMeasured >= (*SetVal - comp_min)) )
+		if( (fMeasured <= (*SetVal + comp_max)) && (fMeasured >= (*SetVal - comp_min)) || PortTypes[currResult] == TTNo )
 		{
 			//Pass
 			sprintf(debugTransmitBuffer,"**Port %d** PASSED\n",currResult+1);
@@ -124,8 +123,7 @@ void CompareResults(TboardConfig * Board,int * MeasuredVal, float *SetVal)
 			HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 			sprintf(debugTransmitBuffer, "X ");
 			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			TestResults[Board->GlobalTestNum] = false;
-			CLEAR_BIT( Board->BSR, BOARD_TEST_PASSED );
+			CLEAR_BIT(Board->TPR, (1 <<Board->GlobalTestNum) );
 			TresultStatus = TRfailed;
 		}
 		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {

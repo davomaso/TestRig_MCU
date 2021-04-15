@@ -64,6 +64,7 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim10;
+extern TIM_HandleTypeDef htim11;
 extern TIM_HandleTypeDef htim14;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
@@ -214,6 +215,7 @@ void SysTick_Handler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
+	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	if (CurrentState == csCalibrating) {
 		if (CalibratingTimer < CalibrateTimerTo) {
 			ADC_Ch0sel();
@@ -242,11 +244,6 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		} else
 			ProcessState = psFailed;
 	}
-	  if(timeOutEn) {
-		 if (--timeOutCount == 0) {
-			 ProcessState = psFailed;
-	  }
-	 }
 	if (LatchSampling)
 	{
 
@@ -382,6 +379,33 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
+
+/**
+  * @brief This function handles TIM1 trigger and commutation interrupts and TIM11 global interrupt.
+  */
+void TIM1_TRG_COM_TIM11_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
+	  if(timeOutEn) {
+		 if ( (--timeOutCount) == 0) {
+			 ProcessState = psFailed;
+			 HAL_TIM_Base_Stop(&htim11);
+		 }
+	  }
+
+	  if(latchTimeOutEn) {
+		  if (--latchTimeOutCount) {
+			  LatchTimeOut = false;
+			  HAL_TIM_Base_Stop;
+		  }
+	  }
+  /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim11);
+  /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 1 */
+
+  /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 1 */
+}
+
 /**
   * @brief This function handles USART2 global interrupt.
   */
@@ -406,13 +430,13 @@ void USART2_IRQHandler(void)
 					UART2_Recdata = true;
 					timeOutEn = false;
 				}
-				UART2_Receive[UART2_RecPos++] = data;
+				UART2_RXbuffer[UART2_RecPos++] = data;
 			} else if (UART2_Recdata) {
 				if (UART2_RecPos == 2) {
 					UART2_Length = data;
-					UART2_Receive[UART2_RecPos++] = UART2_Length;
+					UART2_RXbuffer[UART2_RecPos++] = UART2_Length;
 				} else
-					UART2_Receive[UART2_RecPos++] = data;
+					UART2_RXbuffer[UART2_RecPos++] = data;
 
 				//while the position is less than the length copy data into the buffer
 				//else set receive data to false. to stop flow of data into the buffer
@@ -435,7 +459,7 @@ void USART2_IRQHandler(void)
 				USART2->CR1 |= (USART_CR1_TCIE);
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
-			setTimeOut(400);
+			setTimeOut(2500);
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
 		}
@@ -452,6 +476,7 @@ void USART2_IRQHandler(void)
 
   /* USER CODE END USART2_IRQn 1 */
 }
+
 /**
   * @brief This function handles USART3 global interrupt.
   */
@@ -764,7 +789,8 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 /**
   * @brief This function handles TIM6 global interrupt.
   */
-void TIM6_IRQHandler(void) {
+void TIM6_IRQHandler(void)
+{
   /* USER CODE BEGIN TIM6_IRQn 0 */
 //  if (Programming) {
 //	  Programming = --Program_CountDown ? true : false;

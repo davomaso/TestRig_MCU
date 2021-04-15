@@ -53,6 +53,10 @@ void Decompress_Channels(uns_ch *data, TboardConfig * Board) {
 			Channel_value = *data++;
 			break;
 		}
-		measuredBuffer[BoardConnected.GlobalTestNum][CH_count++] = Channel_value;
+		/* if a latch result is detected do not copy the result into the result buffer, else if channel count
+		 * is greater than the number of latch ports copy the result across regardless */
+		if ( (( (CH_count+1) < Board->latchPortCount) && (Board->TestResults[Board->GlobalTestNum][CH_count] == 0)) || ( (CH_count+1) > Board->latchPortCount) )
+			Board->TestResults[Board->GlobalTestNum][CH_count] = Channel_value;
+		CH_count++;
 	}
 }
