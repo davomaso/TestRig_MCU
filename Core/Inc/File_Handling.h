@@ -18,11 +18,14 @@ FIL fil; // File
 FILINFO fno;
 FRESULT fresult;  // result
 UINT br, bw;  // File read/write count
+DIR CurrentDirectory;
 
 /**** capacity related *****/
 FATFS *pfs;
 DWORD fre_clust;
 uint32_t total, free_space;
+
+//char * fileLocation;
 
 /* mounts the sd card*/
 void Mount_SD (const TCHAR* path);

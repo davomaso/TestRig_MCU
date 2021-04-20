@@ -5,49 +5,46 @@
 #include "interogate_project.h"
 #include "Programming.h"
 
-void sortLine(char *Line) {
+void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 * Position) {
 	uint8 data[4];
+	* Position = 0;
 	if (*Line++ == ':') {
-		if (!(--fileSize % progressStep))
-			progressPercent += 5;
 		len = Ascii2hex(Line);
 		Line += 2;
-		if (!(--fileSize % progressStep))
-			progressPercent += 5;
 		hexAddress = (Ascii2hex(Line) << 8);
 		Line += 2;
-		if (!(--fileSize % progressStep))
-			progressPercent += 5;
 		hexAddress += Ascii2hex(Line);
 		Line += 2;
-		if (!(--fileSize % progressStep))
-			progressPercent += 5;
 		hexRecType = Ascii2hex(Line);
 		Line += 2;
-		if (!(--fileSize % progressStep))
-			progressPercent += 5;
-		fileSize -= 5 + len;
-		if (hexRecType == 0x01) {
-			write_flash_pages(&ProgrammingBuffer[0], ProgrammingCount/2);
-		} else {
-				while(len > 0) {
+		while(len > 0) {
 					len--;
-					ProgrammingBuffer[ProgrammingCount++] = Ascii2hex(Line);
+					*lineBuffer = Ascii2hex(Line);
+					lineBuffer++;
+					(*Position)++;
 					Line += 2;
-					if (!(--fileSize % progressStep)) {
-						progressPercent += 5;
-						sprintf(debugTransmitBuffer, "%d", progressPercent);
-						CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-					}
-					if (ProgrammingCount == 0xFF) {
-						//Write Page
-						write_flash_pages(&ProgrammingBuffer[0], ProgrammingCount/2);
-						ProgrammingCount = 0;
-				}
 			}
-		}
 		hexCheckSum = *Line++;
 	}
+}
+
+_Bool populatePageBuffer(uns_ch * Page, uint8 * PagePos, uns_ch * Line, uint8 * LinePos ) {
+	if ( (*PagePos + *LinePos) < MAX_PAGE_LENGTH ) {
+		memcpy(Page, Line, *LinePos);
+		*PagePos += *LinePos;
+		*LinePos = 0;
+		if (*PagePos == flashPagelen)
+			return true;
+		else
+			return false;
+	} else if ( (*PagePos + *LinePos ) > MAX_PAGE_LENGTH) {
+		uint8  dataLen;
+		 dataLen = MAX_PAGE_LENGTH - *PagePos;
+		memcpy(Page, Line, dataLen);
+		*LinePos -= dataLen;
+		return true;
+	}
+	return false;
 }
 
 void SetClkAndLck() {
@@ -55,18 +52,16 @@ void SetClkAndLck() {
 	uint8 response[4];
 		//Set Clk to 8Mhz
 	data[0] = 0xAC;
-	data[1] = 0xA0;
+	data[1] = 0xA0;		//Fuse Low Byte
 	data[2] = 0x00;
 	data[3] = 0xDD;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	data[1] = 0xA8;
+	data[1] = 0xA8;		//Fuse High Byte
 	data[3] = 0xD7;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	data[1] = 0xA4;
+	data[1] = 0xA4;		//Fuse Extended Byte
 	data[3] = 0xFC;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-
-
 }
 
 void ProgrammingInit() {
@@ -76,11 +71,12 @@ void ProgrammingInit() {
 
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
 	HAL_Delay(50);
+
 		//Enable Programming
 	while(response[2] != 0x53) {
 		data[0] = 0xAC;
 		data[1] = 0x53;
-       		data[2] = 0x00;
+       	data[2] = 0x00;
 		data[3] = 0x00;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0],&response[0], 4, HAL_MAX_DELAY);
 	}
@@ -124,19 +120,21 @@ void ProgrammingInit() {
 	if ( (TBmicro == Tatmega644) || (TBmicro == Tatmega644p) ) {
 			//Set Clk to 8Mhz
 		data[0] = 0xAC;
-		data[1] = 0xA0;
+		data[1] = 0xA0;		//Fuse Low Byte
 		data[2] = 0x00;
-		data[3] = 0xDD;
+		data[3] = 0xE2;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-		data[1] = 0xA8;
-		data[3] = 0xD7;
+		HAL_Delay(20);
+		data[1] = 0xA8;		//Fuse High Byte
+		data[3] = 0x91;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-		data[1] = 0xA4;
-		data[3] = 0xFC;
+		HAL_Delay(20);
+		data[1] = 0xA4;		//Fuse Extended Byte
+		data[3] = 0xF8;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+		HAL_Delay(20);
 		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
-		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_8);
-//		int byte = SPI3->CR1;
+		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_32);
 		ProgrammingCount = 0;
 	}
 	// Read Fuse Bits
@@ -176,7 +174,7 @@ char Ascii2hex(char *ch) {
 	return hex;
 }
 
-void loadByte (uint8_t hilo, uint8 addr, uint8_t * data) {
+void loadByte (uint8_t hilo, uint8 addr, uint8 * data) {
   spi_transaction(0x40 + 8 * hilo, 0x00, addr, *data);
 }
 
@@ -189,7 +187,7 @@ void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
   HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
 }
 
-void write_flash_pages(uint8 *buff, int length) {
+void PageWrite(uint8 *buff, int length) {
   int adr = 0;
   while (adr < length) {
     loadByte(LOW, adr, buff++);
@@ -216,3 +214,56 @@ void pageCommit(uint16 addr) {
 //	  spi_transaction(0x4D, 0x00, extendedPage++, 0x00);
 //  }
 //}
+_Bool ContinueWithCurrentProgram(){
+	LCD_ClearLine(2);
+	sprintf(lcdBuffer, "  Update Program?");
+	LCD_setCursor(2, 0);
+	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+
+	LCD_ClearLine(3);
+	sprintf(lcdBuffer, "      %x",BoardConnected.Version);
+	LCD_setCursor(3, 0);
+	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+
+	LCD_ClearLine(4);
+	sprintf(lcdBuffer, "*-Keep   #-Reprogram");
+	LCD_setCursor(4, 0);
+	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	while(1) {
+		if(KP_hash.Pressed){
+			KP_hash.Count = KP_hash.Pressed = 0;
+			CLEAR_BIT( BoardConnected.BSR, BOARD_PROGRAMMED );
+			return true;
+		}
+		if(KP_star.Pressed){
+			KP_star.Count = KP_star.Pressed = 0;
+			SET_BIT( BoardConnected.BSR, BOARD_PROGRAMMED );
+			return false;
+		}
+	}
+	return false;
+}
+
+_Bool EnableProgramming() {
+	uns_ch data[4];
+	uns_ch response[4];
+    //Reenable programming prior to writing a page,
+	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
+	HAL_Delay(20);
+		//Enable Programming
+	data[0] = 0xAC;
+	data[1] = 0x53;
+	data[2] = 0x00;
+	data[3] = 0x00;
+	HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
+		//Poll Ready
+	data[0] = 0xF0;
+	data[1] = 0x00;
+	while(ProcessState) {	//TODO: Add timeout functionality here if no response is received
+		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+		if( ((response[3] & 0x01) == 0) )
+			return true;
+		}
+	return false;
+}
+

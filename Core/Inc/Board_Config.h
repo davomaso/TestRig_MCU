@@ -22,6 +22,7 @@
 	#define MAX_TEST_ARRAY_SIZE 81
 	#define MAX_PORT_CODE_ARRAY_SIZE 64
 	#define MAX_TEST_CODE_ARRAY_SIZE 10
+	#define MAX_FILE_NAME_LENGTH 32
 
 	//============		BOARD STATUS VARIABLES		===========//
 	#define BOARD_TEST_PASSED 	(1 << 0)
@@ -62,6 +63,7 @@
 
 	typedef struct {
 			TloomConnected BoardType;
+			uns_ch Subclass;
 			uint16 Module;
 			uint16 Network;
 			uint8 Version;

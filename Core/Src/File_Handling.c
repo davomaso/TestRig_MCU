@@ -73,15 +73,10 @@ FRESULT Scan_SD (char* pat) {
     return fresult;
 }
 
-_Bool Find_File (char* pat, char* File) {
+_Bool Find_File (char* path, char* file) {
     DIR dir;
     FIL fil;
     UINT i;
-    char *path = malloc(20*sizeof (char));
-    sprintf (path, "%s",pat);
-
-    char *file = malloc(20*sizeof (char));
-    sprintf (file, "%d",File);
     fresult = f_opendir(&dir, path);                       /* Open the directory */
     if (fresult == FR_OK)
     {
@@ -367,43 +362,17 @@ FRESULT Create_Dir (char *name) {
     }
     return fresult;
 }
-
-void  ReadProgram (char * fileName) {
+void OpenFile(char * fileName) {
 	f_open(&fil, fileName, FA_READ | FA_OPEN_EXISTING);
 	fileSize = f_size(&fil);
 	progressStep = fileSize / 20;
 	sprintf(debugTransmitBuffer, "File Size: ");
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	sprintf(debugTransmitBuffer,"%d", fileSize);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-	char data[255];
-	UINT testbyte;
-    char line[100];
-    CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-    //Reenable programming prior to writing a page,
-	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
-	HAL_Delay(20);
-		//Enable Programming
-	data[0] = 0xAC;
-	data[1] = 0x53;
-	data[2] = 0x00;
-	data[3] = 0x00;
-	HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
-
-	while (f_gets(line, sizeof(line), &fil)) {
-        sortLine(&line[0]);
-        sprintf(debugTransmitBuffer,".\n");
-        CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-    }
-	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-	sprintf(debugTransmitBuffer, "Done\n");
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	f_close(&fil);
+	printT(&debugTransmitBuffer[0]);
+	sprintf(debugTransmitBuffer,"%.03f kb", (float)fileSize/1000);
+	printT(&debugTransmitBuffer[0]);
 }
 
-void Check_SD_Space (void)
+void Check_SD_Space ()
 {
     /* Check free space */
     f_getfree("", &fre_clust, &pfs);

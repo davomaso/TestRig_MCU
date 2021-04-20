@@ -485,7 +485,7 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART3_IRQn 0 */
 	if (USART3->SR & USART_SR_RXNE) {
 		uns_ch data;
-		data = USART3->DR;	//TODO:buffer overrun
+		data = USART3->DR;
 		if (((data >= 0x30) && (data <= 0x39)) || (data == 0x0D)) {
 			if ( (data == 0x0D) && (BarcodeCount > 0) ) {
 				BarcodeScanned = true;

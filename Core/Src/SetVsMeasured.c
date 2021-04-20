@@ -126,6 +126,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 			CLEAR_BIT(Board->TPR, (1 <<Board->GlobalTestNum) );
 			TresultStatus = TRfailed;
 		}
+			//Write Results to file
 		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {
 			sprintf(debugTransmitBuffer,
 					"%d,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",

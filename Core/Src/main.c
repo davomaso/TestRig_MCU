@@ -196,42 +196,10 @@ int main(void)
 	  		uns_ch Command = 0x10;
 //	  		SetPara(Command);
 	  		communication_arraySerial(Command, 0, 0);
+	  		setTimeOut(200);
 	  		CurrentState = csInterogating;
 	  		ProcessState = psWaiting;
 	  }
-	  		// Programming Routine
-//  			ComRep = 0x08;
-//			communication_array(ComRep,&Para[0], Paralen);
-//			Programming = true;
-//			Program_CountDown = 25;
-//			HAL_TIM_Base_Start(&htim6);
-//				//Find Version Currently On Board
-//	  		while (Programming) {
-//	  			Programming = (ComRep == 0x35) ? false : true;
-//				if (UART2_ReceiveComplete)
-//					communication_response(&UART2_Receive[0], UART2_RecPos);
-//				else if (Comm_Ready && Programming)
-//					communication_command();
-//	  		}
-//
-//	  			//Begin Programming
-//	  		ProgrammingInit();	//Set Clk to 8Mhz
-//	  		scan_loom();		//Get LoomConnected
-//	  		if (Find_File("/FIRMWARE", LoomConnected)) {
-//	  			if (findVer(&fno.fname[0]) > Version[0]) {
-//	  				char * tempDir;
-//	  				tempDir = "/FIRMWARE/";
-//	  				char * location = malloc(1+strlen(&fno.fname[0])+strlen(tempDir));
-//	  				strcpy(location, tempDir);
-//	  				strcat(location, fno.fname);
-//	  				ReadProgram(&location[0]);
-//	  		} else {
-//				sprintf(Buffer, "hex file not found");
-//				LCD_printf(&Buffer[0], strlen(Buffer));
-//	  			}
-//	  		}
-//	  		//Testing Procedure Initialisation
-//	  		SDfileInit();
 //=========================================================================================================//
 
 
@@ -254,6 +222,8 @@ int main(void)
 	  	if (ProcessState == psComplete) {
 	  		uns_ch Response;
 	  		uns_ch Command;
+	  		char * fileLocation = malloc(32 * sizeof(char));
+	  	    uns_ch tempLine[100];
 	  	    switch(CurrentState) {
 	  	    	case csInitialising:	// 0xCC/0xC0 ????
 	  	    		if (READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
@@ -301,6 +271,30 @@ int main(void)
 						}
 					}
 	  	    		break;
+	  	    	case csProgramming:
+	  		  		// Programming Routine
+	  	    		ProgrammingInit();
+					if( FindBoardFile(&BoardConnected, &fileLocation) ) {
+						OpenFile(&fileLocation);
+						printT("\n\n\n");
+						while (f_gets(&tempLine, sizeof(tempLine), &fil)) {	//							printT(&tempLine[0]); //print file
+					        sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
+					        uint8 Pos = LineBufferPosition;
+					        if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition) ) {
+					        	PageWrite(&PageBuffer, PageBufferPosition);
+					        	PageBufferPosition = 0;
+					        	if(LineBufferPosition)
+					        		populatePageBuffer(&PageBuffer[0], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
+					        }
+					    }
+						SetClkAndLck();
+						printT("Programming Done\n");
+						//TODO: Verify programming here
+						Close_File(&fileLocation);
+					} else {
+
+					}
+	  	    		break;
 	  	    	case csCalibrating:
 	  	    		//TODO: Implement calibration counter here for if the calibration fails, retry 3 times,
 	  	    		communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
@@ -334,13 +328,19 @@ int main(void)
 	  	            	}
 	  	            	if (BoardConnected.Version < getCurrentVersion(BoardConnected.BoardType) ) {
 	  	            		CurrentState = csProgramming;
-	  	            		ProcessState = psWaiting;
-	  	            	} else {
-	  	            	Command = 0x08;
-	  	            	SetPara(Command);
-	  	            	communication_array(Command, &Para, Paralen);
-  	            		CurrentState = csInterogating;
-  	            		ProcessState = psWaiting;
+	  	            		ProcessState = psComplete;
+	  	            	} else { //TODO: Put the user choice to reprogram the board here
+	  	            		if (ContinueWithCurrentProgram() ) {
+		  	            		CurrentState = csProgramming;
+		  	            		ProcessState = psComplete;
+	  	            		} else {
+	  		  	            	Command = 0x08;
+	  		  	            	SetPara(Command);
+	  		  	            	communication_array(Command, &Para, Paralen);
+	  	  	            		CurrentState = csInterogating;
+	  	  	            		ProcessState = psWaiting;
+	  	            		}
+	  	            		LCD_ClearLine(4);
 	  	            	}
 	  	            }
 	  	            break;
@@ -446,7 +446,11 @@ int main(void)
 			timeOutEn = false;
 			switch (CurrentState) {
 				case csInterogating:
-					if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED) ) {
+					if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED)) {
+						currentBoardConnected(&BoardConnected);
+						CurrentState = csProgramming;
+						ProcessState = psComplete;
+					} else if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED) ) {
 						Command = 0x08;
 						SetPara(Command);
 						communication_array(Command, &Para, Paralen);
@@ -711,8 +715,8 @@ static void MX_SPI3_Init(void)
   /* SPI3 parameter configuration*/
   hspi3.Instance = SPI3;
   hspi3.Init.Mode = SPI_MODE_MASTER;
-  hspi3.Init.Direction = SPI_DIRECTION_1LINE;
-  hspi3.Init.DataSize = SPI_DATASIZE_16BIT;
+  hspi3.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi3.Init.NSS = SPI_NSS_SOFT;
@@ -749,9 +753,9 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 4800;
+  htim6.Init.Prescaler = 4799;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 100;
+  htim6.Init.Period = 99;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -785,9 +789,9 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 1000;
+  htim7.Init.Prescaler = 999;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 48;
+  htim7.Init.Period = 47;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {

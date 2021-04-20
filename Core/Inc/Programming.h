@@ -28,6 +28,9 @@ void spi_transaction(uint8, uint8, uint8, uint8);
 #define STK_NOSYNC  0x15
 #define CRC_EOP     0x20
 
+#define MAX_LINE_LENGTH 100
+#define MAX_PAGE_LENGTH 256
+
 //uint8 data[4];
 uint16 hexAddress;
 uns_ch hexRecType;
@@ -49,6 +52,11 @@ uint16 flashPagelen;
 uint16 eepromPagelen;
 uint16 extendedPage;
 uint8 page;
+
+uns_ch LineBuffer[MAX_LINE_LENGTH];
+uint8 LineBufferPosition;
+uns_ch PageBuffer[MAX_PAGE_LENGTH];
+uint8 PageBufferPosition;
 
 
 #endif /* SRC_PROGRAMMING_H_ */

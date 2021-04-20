@@ -100,6 +100,8 @@ void TestConfig935x(TboardConfig * Board) {
 }
 
 void TestConfig937x(TboardConfig * Board) {
+	Board->BoardType = 0x9370;
+	Board->Subclass = 'D';
 	Board->latchPortCount = 2;
 	Board->analogInputCount = 2;
 	Board->digitalInputCout = 0;
