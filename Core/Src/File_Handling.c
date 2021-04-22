@@ -368,7 +368,7 @@ void OpenFile(char * fileName) {
 	progressStep = fileSize / 20;
 	sprintf(debugTransmitBuffer, "File Size: ");
 	printT(&debugTransmitBuffer[0]);
-	sprintf(debugTransmitBuffer,"%.03f kb", (float)fileSize/1000);
+	sprintf(debugTransmitBuffer,"%.03f kB", (float)fileSize/1000);
 	printT(&debugTransmitBuffer[0]);
 }
 

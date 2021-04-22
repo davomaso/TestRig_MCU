@@ -222,8 +222,9 @@ int main(void)
 	  	if (ProcessState == psComplete) {
 	  		uns_ch Response;
 	  		uns_ch Command;
-	  		char * fileLocation = malloc(32 * sizeof(char));
+	  		char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
 	  	    uns_ch tempLine[100];
+	  	    uint8 Pos;
 	  	    switch(CurrentState) {
 	  	    	case csInitialising:	// 0xCC/0xC0 ????
 	  	    		if (READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
@@ -274,23 +275,166 @@ int main(void)
 	  	    	case csProgramming:
 	  		  		// Programming Routine
 	  	    		ProgrammingInit();
-					if( FindBoardFile(&BoardConnected, &fileLocation) ) {
-						OpenFile(&fileLocation);
+//	  	    		EnableProgramming();
+					if( FindBoardFile(&BoardConnected, fileLocation) ) {
+						OpenFile(fileLocation);
 						printT("\n\n\n");
+						uns_ch LineBuffer[MAX_LINE_LENGTH];
+						uint8 LineBufferPosition;
+						uns_ch PageBuffer[MAX_PAGE_LENGTH];
+						uint8 PageBufferPosition = 0;
+						uint16 count = 0;
+						uns_ch RecBuffer[MAX_PAGE_LENGTH];
+						uint16 page = 0;
+
 						while (f_gets(&tempLine, sizeof(tempLine), &fil)) {	//							printT(&tempLine[0]); //print file
 					        sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
-					        uint8 Pos = LineBufferPosition;
+					        Pos = LineBufferPosition;
 					        if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition) ) {
-					        	PageWrite(&PageBuffer, PageBufferPosition);
+						        uns_ch data[4];
+					        	if (page == 0) {
+					        		data[0] = 0x4D;
+					        		data[1] = 0x00;
+					        		data[2] = 0x00;
+					        		data[3] = 0x00;
+					        		HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
+					        	}
+//					        	PollReady();
+					        	PageWrite(&PageBuffer[0], flashPagelen/2, page);
+							    for (uint8 i = 0; i < 128; i++) {
+							        uns_ch LowByte;
+							        uns_ch HighByte;
+							        uns_ch data[4];
+							        uns_ch receive[4];
+	//						        PollReady();
+							        data[0] = 0x20;
+							        data[1] = page;
+							        data[2] = i;
+							        data[3] = 0x00;
+							        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+							        LowByte = receive[3];
+							        RecBuffer[count++] = LowByte;
+	//						        PollReady();
+							        data[0] = 0x28;
+							        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+							        HighByte = receive[3];
+							        RecBuffer[count++] = HighByte;
+							        PollReady();
+							    }
+							    count = 0;
+							    page++;
 					        	PageBufferPosition = 0;
 					        	if(LineBufferPosition)
-					        		populatePageBuffer(&PageBuffer[0], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
+					        		populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
 					        }
 					    }
-						SetClkAndLck();
+						while (PageBufferPosition != 0 ) {
+							 PageBuffer[PageBufferPosition++] = 0xFF;
+						}
+						PageWrite(&PageBuffer[0], flashPagelen/2, page);
+					    for (uint8 i = 0; i < 128; i++) {
+					        uns_ch LowByte;
+					        uns_ch HighByte;
+					        uns_ch data[4];
+					        uns_ch receive[4];
+//						        PollReady();
+					        data[0] = 0x20;
+					        data[1] = page;
+					        data[2] = i;
+					        data[3] = 0x00;
+					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+					        LowByte = receive[3];
+					        RecBuffer[i*2] = LowByte;
+//						        PollReady();
+					        data[0] = 0x28;
+					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+					        HighByte = receive[3];
+					        RecBuffer[i*2+1] = HighByte;
+					        PollReady();
+					    }
 						printT("Programming Done\n");
 						//TODO: Verify programming here
-						Close_File(&fileLocation);
+						Close_File(fileLocation);
+
+						count = PageBufferPosition = page = 0;
+
+				        uns_ch data[4];
+			        	if (page == 0) {
+			        		data[0] = 0x4D;
+			        		data[1] = 0x00;
+			        		data[2] = 0x00;
+			        		data[3] = 0x00;
+			        		HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
+			        	}
+							// Verify Board Programming
+						for (page = 0;page < 256;page++) {
+						    for (uint8 i = 0; i < 128; i++) {
+						        uns_ch LowByte;
+						        uns_ch HighByte;
+						        uns_ch data[4];
+						        uns_ch receive[4];
+//						        PollReady();
+						        data[0] = 0x20;
+						        data[1] = page;
+						        data[2] = i;
+						        data[3] = 0x00;
+						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+						        LowByte = receive[3];
+						        RecBuffer[i*2] = LowByte;
+//						        PollReady();
+						        data[0] = 0x28;
+						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+						        HighByte = receive[3];
+						        RecBuffer[i*2+1] = HighByte;
+						    }
+						    count = 0;
+						}
+//						OpenFile(&fileLocation);
+//						while(f_gets(&tempLine, 100, &fil)) {
+//							sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
+//					        if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition) ) {
+//					        	for (int i = 0; i < 128; i++) {
+//					        		uns_ch data[4];
+//					        		uns_ch receive[4];
+//					        		PollReady();
+//					        		data[0] = 0x20;
+//					        		data[1] = page;
+//					        		data[2] = i;
+//					        		data[3] = 0x00;
+//					        		HAL_SPI_TransmitReceive(&hspi3, &data, &receive, 4, HAL_MAX_DELAY);
+//					        		PollReady();
+//					        		RecBuffer[count] = receive[3];
+//					        		data[0] = 0x28;
+//					        		data[1] = page;
+//					        		data[2] = i;
+//					        		data[3] = 0x00;
+//					        		HAL_SPI_TransmitReceive(&hspi3, &data, &receive, 4, HAL_MAX_DELAY);
+//					        		RecBuffer[count+1] = receive[3];
+//					        		if ((RecBuffer[count] != PageBuffer[i]) && (RecBuffer[count+1] != PageBuffer[i+1] ) ) {
+//					        			_Bool Program = false;
+//					        		}
+//					        		count += 2;
+//
+//					        	}
+//				        		page++;
+//					        	count = PageBufferPosition = 0;
+//					        	if(LineBufferPosition)
+//					        		populatePageBuffer(&PageBuffer[0], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
+//					        }
+//
+//						}
+//						Close_File(&fileLocation);
+						SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
+						SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
+						SetClkAndLck();
+						HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+
+						SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
+						Command = 0x08;
+						SetPara(Command);
+						communication_array(Command, &Para, Paralen);
+						CurrentState = csInterogating;
+						ProcessState = psWaiting;
 					} else {
 
 					}
@@ -302,6 +446,8 @@ int main(void)
   	            		initialiseTargetBoard();
   	            		CurrentState = csInitialising;
 	  	    			ProcessState = psWaiting;
+	  	    		} else {
+	  	    			//TODO: add timeout and repeat transmission
 	  	    		}
 	  	    		break;
 	  	        case csInterogating: //0x09 & 0x35

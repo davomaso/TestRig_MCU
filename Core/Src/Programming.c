@@ -50,28 +50,36 @@ _Bool populatePageBuffer(uns_ch * Page, uint8 * PagePos, uns_ch * Line, uint8 * 
 void SetClkAndLck() {
 	uint8 data[4];
 	uint8 response[4];
-		//Set Clk to 8Mhz
+	PollReady();
 	data[0] = 0xAC;
 	data[1] = 0xA0;		//Fuse Low Byte
 	data[2] = 0x00;
 	data[3] = 0xDD;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	data[1] = 0xA8;		//Fuse High Byte
+	data[0] = 0xAC;
+	data[1] = 0xA8;
+	data[2] = 0x00;	//Fuse High Byte
 	data[3] = 0xD7;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 	data[1] = 0xA4;		//Fuse Extended Byte
+	data[3] = 0xFD;
+	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+	data[0] = 0xAC;
+	data[1] = 0xE0;
+	data[2] = 0x00;
 	data[3] = 0xFC;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+
 }
 
 void ProgrammingInit() {
 	uint8 data[4];
 	uint8 response[4];
+	response[2] = 0;
 	uint8 SignatureByte[3];
 
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
 	HAL_Delay(50);
-
 		//Enable Programming
 	while(response[2] != 0x53) {
 		data[0] = 0xAC;
@@ -122,15 +130,15 @@ void ProgrammingInit() {
 		data[0] = 0xAC;
 		data[1] = 0xA0;		//Fuse Low Byte
 		data[2] = 0x00;
-		data[3] = 0xE2;
+		data[3] = 0xD2;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		HAL_Delay(20);
 		data[1] = 0xA8;		//Fuse High Byte
-		data[3] = 0x91;
+		data[3] = 0xD7;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		HAL_Delay(20);
 		data[1] = 0xA4;		//Fuse Extended Byte
-		data[3] = 0xF8;
+		data[3] = 0xFD;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		HAL_Delay(20);
 		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
@@ -174,8 +182,8 @@ char Ascii2hex(char *ch) {
 	return hex;
 }
 
-void loadByte (uint8_t hilo, uint8 addr, uint8 * data) {
-  spi_transaction(0x40 + 8 * hilo, 0x00, addr, *data);
+void loadByte (uint8_t hilo, uint8 page, uint8 addr, uint8 data) {
+  spi_transaction(0x40 + 8 * hilo, page, addr, data);
 }
 
 void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
@@ -187,20 +195,37 @@ void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
   HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
 }
 
-void PageWrite(uint8 *buff, int length) {
-  int adr = 0;
-  while (adr < length) {
-    loadByte(LOW, adr, buff++);
-    loadByte(HIGH, adr, buff++);
-    adr++;
+void PageWrite(uint8 *buff, uint16 length, uint8 page) {
+  uint8 adr;
+
+
+  for(adr = 0; adr < length; adr++) {
+	  loadByte(LOW, 0, adr, *buff++);
+	  loadByte(HIGH, 0, adr, *buff++);
   }
   pageCommit(page);
-  page++;
+//  HAL_Delay(5);
+  PollReady();
 }
 
-void pageCommit(uint16 addr) {
-  spi_transaction(0x4C, addr , 0x00, 0x00);
-  HAL_Delay(5);
+void PollReady() {
+	//Poll Ready
+	uns_ch data[4];
+	uns_ch receive[4];
+	receive[3] = 0xFF;
+
+	data[0] = 0xF0;
+	data[1] = 0x00;
+	data[2] = 0x00;
+	data[3] = 0x00;
+	while ((receive[3] & 0x01) != 0) {
+		HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+	}
+}
+
+void pageCommit(uint8 currPage) {
+  spi_transaction(0x4C, currPage >> 1, ((currPage & 0x01) << 7), 0x00);
+
 }
 	//Only required if the microcontroller runs more than 64Kbytes of flash memory
 //void WriteExtendedPage() {
@@ -221,7 +246,7 @@ _Bool ContinueWithCurrentProgram(){
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
 
 	LCD_ClearLine(3);
-	sprintf(lcdBuffer, "      %x",BoardConnected.Version);
+	sprintf(lcdBuffer, "Current Version   %x",BoardConnected.Version);
 	LCD_setCursor(3, 0);
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
 

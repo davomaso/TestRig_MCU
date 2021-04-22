@@ -1227,8 +1227,7 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi, uint8_t *pTxD
     }
     while ((hspi->TxXferCount > 0U) || (hspi->RxXferCount > 0U))
     {
-      /* Check TXE flag */
-      if ((__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE)) && (hspi->TxXferCount > 0U) && (txallowed == 1U))
+      /* Check TXE flag */      if ((__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE)) && (hspi->TxXferCount > 0U) && (txallowed == 1U))
       {
         *(__IO uint8_t *)&hspi->Instance->DR = (*hspi->pTxBuffPtr);
         hspi->pTxBuffPtr++;

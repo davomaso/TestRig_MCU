@@ -51,12 +51,8 @@ uint8 progressPercent;
 uint16 flashPagelen;
 uint16 eepromPagelen;
 uint16 extendedPage;
-uint8 page;
 
-uns_ch LineBuffer[MAX_LINE_LENGTH];
-uint8 LineBufferPosition;
-uns_ch PageBuffer[MAX_PAGE_LENGTH];
-uint8 PageBufferPosition;
+
 
 
 #endif /* SRC_PROGRAMMING_H_ */
