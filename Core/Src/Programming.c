@@ -56,20 +56,23 @@ void SetClkAndLck() {
 	data[2] = 0x00;
 	data[3] = 0xDD;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+	HAL_Delay(25);
 	data[0] = 0xAC;
 	data[1] = 0xA8;
 	data[2] = 0x00;	//Fuse High Byte
 	data[3] = 0xD7;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+	HAL_Delay(25);
 	data[1] = 0xA4;		//Fuse Extended Byte
 	data[3] = 0xFD;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+	HAL_Delay(25);
 	data[0] = 0xAC;
 	data[1] = 0xE0;
 	data[2] = 0x00;
 	data[3] = 0xFC;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-
+	HAL_Delay(25);
 }
 
 void ProgrammingInit() {
@@ -291,4 +294,33 @@ _Bool EnableProgramming() {
 		}
 	return false;
 }
+
+_Bool VerifyPage(uint8 page, uns_ch * PageByte) {
+	for (uint8 i = 0; i < 128; i++) {
+			uns_ch LowByte;
+			uns_ch HighByte;
+			uns_ch data[4];
+			uns_ch receive[4];
+			uns_ch RecBuffer[MAX_PAGE_LENGTH];
+			//PollReady();
+			data[0] = 0x20;
+			data[1] = page;
+			data[2] = i;
+			data[3] = 0x00;
+			HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+			LowByte = receive[3];
+			RecBuffer[i*2] = LowByte;
+			//PollReady();
+			data[0] = 0x28;
+			HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+			HighByte = receive[3];
+			RecBuffer[i*2+1] = HighByte;
+			PollReady();
+			if( (LowByte != *PageByte++) || (HighByte != *PageByte++) ) {
+				return false;
+			}
+		}
+	return true;
+}
+
 

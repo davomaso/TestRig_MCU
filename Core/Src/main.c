@@ -301,27 +301,12 @@ int main(void)
 					        	}
 //					        	PollReady();
 					        	PageWrite(&PageBuffer[0], flashPagelen/2, page);
-							    for (uint8 i = 0; i < 128; i++) {
-							        uns_ch LowByte;
-							        uns_ch HighByte;
-							        uns_ch data[4];
-							        uns_ch receive[4];
-	//						        PollReady();
-							        data[0] = 0x20;
-							        data[1] = page;
-							        data[2] = i;
-							        data[3] = 0x00;
-							        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-							        LowByte = receive[3];
-							        RecBuffer[count++] = LowByte;
-	//						        PollReady();
-							        data[0] = 0x28;
-							        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-							        HighByte = receive[3];
-							        RecBuffer[count++] = HighByte;
-							        PollReady();
-							    }
-							    count = 0;
+//					        	while(1) {
+//									if( !VerifyPage(page, &PageBuffer[0]) ) {
+//										PageWrite(&PageBuffer[0], flashPagelen/2, page);
+//									} else
+//										break;
+//					        	}
 							    page++;
 					        	PageBufferPosition = 0;
 					        	if(LineBufferPosition)
@@ -332,26 +317,26 @@ int main(void)
 							 PageBuffer[PageBufferPosition++] = 0xFF;
 						}
 						PageWrite(&PageBuffer[0], flashPagelen/2, page);
-					    for (uint8 i = 0; i < 128; i++) {
-					        uns_ch LowByte;
-					        uns_ch HighByte;
-					        uns_ch data[4];
-					        uns_ch receive[4];
-//						        PollReady();
-					        data[0] = 0x20;
-					        data[1] = page;
-					        data[2] = i;
-					        data[3] = 0x00;
-					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-					        LowByte = receive[3];
-					        RecBuffer[i*2] = LowByte;
-//						        PollReady();
-					        data[0] = 0x28;
-					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-					        HighByte = receive[3];
-					        RecBuffer[i*2+1] = HighByte;
-					        PollReady();
-					    }
+//					    for (uint8 i = 0; i < 128; i++) {
+//					        uns_ch LowByte;
+//					        uns_ch HighByte;
+//					        uns_ch data[4];
+//					        uns_ch receive[4];
+////						        PollReady();
+//					        data[0] = 0x20;
+//					        data[1] = page;
+//					        data[2] = i;
+//					        data[3] = 0x00;
+//					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+//					        LowByte = receive[3];
+//					        RecBuffer[i*2] = LowByte;
+////						        PollReady();
+//					        data[0] = 0x28;
+//					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+//					        HighByte = receive[3];
+//					        RecBuffer[i*2+1] = HighByte;
+//					        PollReady();
+//					    }
 						printT("Programming Done\n");
 						//TODO: Verify programming here
 						Close_File(fileLocation);
@@ -367,28 +352,28 @@ int main(void)
 			        		HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
 			        	}
 							// Verify Board Programming
-						for (page = 0;page < 256;page++) {
-						    for (uint8 i = 0; i < 128; i++) {
-						        uns_ch LowByte;
-						        uns_ch HighByte;
-						        uns_ch data[4];
-						        uns_ch receive[4];
-//						        PollReady();
-						        data[0] = 0x20;
-						        data[1] = page;
-						        data[2] = i;
-						        data[3] = 0x00;
-						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-						        LowByte = receive[3];
-						        RecBuffer[i*2] = LowByte;
-//						        PollReady();
-						        data[0] = 0x28;
-						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-						        HighByte = receive[3];
-						        RecBuffer[i*2+1] = HighByte;
-						    }
-						    count = 0;
-						}
+//						for (page = 0;page < 256;page++) {
+//						    for (uint8 i = 0; i < 128; i++) {
+//						        uns_ch LowByte;
+//						        uns_ch HighByte;
+//						        uns_ch data[4];
+//						        uns_ch receive[4];
+////						        PollReady();
+//						        data[0] = 0x20;
+//						        data[1] = page;
+//						        data[2] = i;
+//						        data[3] = 0x00;
+//						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+//						        LowByte = receive[3];
+//						        RecBuffer[i*2] = LowByte;
+////						        PollReady();
+//						        data[0] = 0x28;
+//						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
+//						        HighByte = receive[3];
+//						        RecBuffer[i*2+1] = HighByte;
+//						    }
+//						    count = 0;
+//						}
 //						OpenFile(&fileLocation);
 //						while(f_gets(&tempLine, 100, &fil)) {
 //							sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
@@ -429,12 +414,12 @@ int main(void)
 						SetClkAndLck();
 						HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 
-						SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
-						Command = 0x08;
-						SetPara(Command);
-						communication_array(Command, &Para, Paralen);
-						CurrentState = csInterogating;
-						ProcessState = psWaiting;
+//						SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
+//						Command = 0x08;
+//						SetPara(Command);
+//						communication_array(Command, &Para, Paralen);
+//						CurrentState = csInterogating;
+//						ProcessState = psWaiting;
 					} else {
 
 					}
