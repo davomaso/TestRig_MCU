@@ -154,8 +154,11 @@ int main(void)
 //  addSD_DelayVariable = true;
   HAL_I2C_Init(&hi2c1);
   LCD_init();
+  ChangeCharacterSet('A');
+
   TestRig_Init();
   SDfileInit();
+  char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
 
 //  HAL_TIM_Base_Start_IT(&htim10);
   /* USER CODE END 2 */
@@ -191,7 +194,7 @@ int main(void)
 	  		LCD_ClearLine(4);
 	  		LCD_ClearLine(3);
 	  		LCD_setCursor(2, 1);
-	  		sprintf(debugTransmitBuffer, "    Programming    ");
+	  		sprintf(debugTransmitBuffer, "    Interogating    ");
 	  		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  		uns_ch Command = 0x10;
 //	  		SetPara(Command);
@@ -222,7 +225,6 @@ int main(void)
 	  	if (ProcessState == psComplete) {
 	  		uns_ch Response;
 	  		uns_ch Command;
-	  		char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
 	  	    uns_ch tempLine[100];
 	  	    uint8 Pos;
 	  	    switch(CurrentState) {
@@ -241,7 +243,6 @@ int main(void)
 	  	    				ProcessState = psWaiting;
 	  	    			}
 					} else {
-						currentBoardConnected(&BoardConnected);
 							//Refresh LCD screen
 						if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {
 							LCD_ClearLine(2);
@@ -253,21 +254,21 @@ int main(void)
 
 							printT("Enter Serial Number: \n");
 							BoardConnected.SerialNumber = read_serial();
-						}
-						if (BoardConnected.SerialNumber) {
-							Command = 0x08;
-							SetPara(Command);
-							HAL_Delay(50);
-							communication_array(Command,&Para, Paralen);
-							sprintf(debugTransmitBuffer,"Interogating...\n");
-							HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-							CurrentState = csInterogating;
-							ProcessState = psWaiting;
+							SET_BIT(BoardConnected.BSR, BOARD_SERIALISED);
+							if (BoardConnected.SerialNumber) {
+								Command = 0x10;
+								communication_arraySerial(Command, 0, 0);
+								CurrentState = csSerialise;
+								ProcessState = psWaiting;
+							}
 						} else {
 							LCD_Clear();
 							TestRig_Init();
 							TestRig_MainMenu();
-							CurrentState = csIDLE;
+							Command = 0x08;
+							SetPara(Command);
+							communication_array(Command, &Para, Paralen);
+							CurrentState = csInterogating;
 							ProcessState = psWaiting;
 						}
 					}
@@ -275,10 +276,17 @@ int main(void)
 	  	    	case csProgramming:
 	  		  		// Programming Routine
 	  	    		ProgrammingInit();
-//	  	    		EnableProgramming();
 					if( FindBoardFile(&BoardConnected, fileLocation) ) {
 						OpenFile(fileLocation);
-						printT("\n\n\n");
+						TestRig_MainMenu();
+						LCD_setCursor(2, 5);
+						sprintf(debugTransmitBuffer, "Programming");
+						LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+						// File size divide by two as .hex file is in ascii character form
+						// Divide by the length of each page
+						// Multiply by 70% to get an approximation of the actual data to transmit to the target board
+						uint16 ProgressBarTarget;
+						ProgressBarTarget = round( (float) ( (fileSize/2) / flashPagelen) * 0.7 );
 						uns_ch LineBuffer[MAX_LINE_LENGTH];
 						uint8 LineBufferPosition;
 						uns_ch PageBuffer[MAX_PAGE_LENGTH];
@@ -286,12 +294,13 @@ int main(void)
 						uint16 count = 0;
 						uns_ch RecBuffer[MAX_PAGE_LENGTH];
 						uint16 page = 0;
+						uint8 Percentage = 0;
 
-						while (f_gets(&tempLine, sizeof(tempLine), &fil)) {	//							printT(&tempLine[0]); //print file
+						while (f_gets(&tempLine, sizeof(tempLine), &fil)) {
 					        sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
 					        Pos = LineBufferPosition;
 					        if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition) ) {
-						        uns_ch data[4];
+						       uns_ch data[4];
 					        	if (page == 0) {
 					        		data[0] = 0x4D;
 					        		data[1] = 0x00;
@@ -299,129 +308,47 @@ int main(void)
 					        		data[3] = 0x00;
 					        		HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
 					        	}
-//					        	PollReady();
 					        	PageWrite(&PageBuffer[0], flashPagelen/2, page);
-//					        	while(1) {
-//									if( !VerifyPage(page, &PageBuffer[0]) ) {
-//										PageWrite(&PageBuffer[0], flashPagelen/2, page);
-//									} else
-//										break;
-//					        	}
-							    page++;
-					        	PageBufferPosition = 0;
-					        	if(LineBufferPosition)
-					        		populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
-					        }
+					        	if ( !VerifyPage(page, &PageBuffer[0]) )	{
+					        		PageWrite(&PageBuffer[0], flashPagelen/2, page);
+					        		if(!VerifyPage(page, &PageBuffer[0])) {
+					        				printT("Failed to Program Board\n");
+					        				break;
+					        			}
+					        		}
+			        			PageBufferPosition = 0;
+			        			if(LineBufferPosition)
+			        				populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
+					        	Percentage = (uint8)( (page/(float)ProgressBarTarget) * 100 );
+					        	ProgressBar(Percentage);
+						        page++;
+					        	}
 					    }
 						while (PageBufferPosition != 0 ) {
 							 PageBuffer[PageBufferPosition++] = 0xFF;
 						}
 						PageWrite(&PageBuffer[0], flashPagelen/2, page);
-//					    for (uint8 i = 0; i < 128; i++) {
-//					        uns_ch LowByte;
-//					        uns_ch HighByte;
-//					        uns_ch data[4];
-//					        uns_ch receive[4];
-////						        PollReady();
-//					        data[0] = 0x20;
-//					        data[1] = page;
-//					        data[2] = i;
-//					        data[3] = 0x00;
-//					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-//					        LowByte = receive[3];
-//					        RecBuffer[i*2] = LowByte;
-////						        PollReady();
-//					        data[0] = 0x28;
-//					        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-//					        HighByte = receive[3];
-//					        RecBuffer[i*2+1] = HighByte;
-//					        PollReady();
-//					    }
 						printT("Programming Done\n");
-						//TODO: Verify programming here
 						Close_File(fileLocation);
 
-						count = PageBufferPosition = page = 0;
 
-				        uns_ch data[4];
-			        	if (page == 0) {
-			        		data[0] = 0x4D;
-			        		data[1] = 0x00;
-			        		data[2] = 0x00;
-			        		data[3] = 0x00;
-			        		HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
-			        	}
-							// Verify Board Programming
-//						for (page = 0;page < 256;page++) {
-//						    for (uint8 i = 0; i < 128; i++) {
-//						        uns_ch LowByte;
-//						        uns_ch HighByte;
-//						        uns_ch data[4];
-//						        uns_ch receive[4];
-////						        PollReady();
-//						        data[0] = 0x20;
-//						        data[1] = page;
-//						        data[2] = i;
-//						        data[3] = 0x00;
-//						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-//						        LowByte = receive[3];
-//						        RecBuffer[i*2] = LowByte;
-////						        PollReady();
-//						        data[0] = 0x28;
-//						        HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
-//						        HighByte = receive[3];
-//						        RecBuffer[i*2+1] = HighByte;
-//						    }
-//						    count = 0;
-//						}
-//						OpenFile(&fileLocation);
-//						while(f_gets(&tempLine, 100, &fil)) {
-//							sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
-//					        if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition) ) {
-//					        	for (int i = 0; i < 128; i++) {
-//					        		uns_ch data[4];
-//					        		uns_ch receive[4];
-//					        		PollReady();
-//					        		data[0] = 0x20;
-//					        		data[1] = page;
-//					        		data[2] = i;
-//					        		data[3] = 0x00;
-//					        		HAL_SPI_TransmitReceive(&hspi3, &data, &receive, 4, HAL_MAX_DELAY);
-//					        		PollReady();
-//					        		RecBuffer[count] = receive[3];
-//					        		data[0] = 0x28;
-//					        		data[1] = page;
-//					        		data[2] = i;
-//					        		data[3] = 0x00;
-//					        		HAL_SPI_TransmitReceive(&hspi3, &data, &receive, 4, HAL_MAX_DELAY);
-//					        		RecBuffer[count+1] = receive[3];
-//					        		if ((RecBuffer[count] != PageBuffer[i]) && (RecBuffer[count+1] != PageBuffer[i+1] ) ) {
-//					        			_Bool Program = false;
-//					        		}
-//					        		count += 2;
-//
-//					        	}
-//				        		page++;
-//					        	count = PageBufferPosition = 0;
-//					        	if(LineBufferPosition)
-//					        		populatePageBuffer(&PageBuffer[0], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
-//					        }
-//
-//						}
-//						Close_File(&fileLocation);
-						SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
+						PageBufferPosition = page = 0;
+						SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_64);
 						SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
 						SetClkAndLck();
+						//HAL_Delay(100); // check if required
 						HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 
-//						SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
-//						Command = 0x08;
-//						SetPara(Command);
-//						communication_array(Command, &Para, Paralen);
-//						CurrentState = csInterogating;
-//						ProcessState = psWaiting;
+						SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
+						Command = 0x08;
+						SetPara(Command);
+						communication_array(Command, &Para, Paralen);
+						CurrentState = csInterogating;
+						ProcessState = psWaiting;
 					} else {
-
+						printT("Could not find hex file...\n");
+						CurrentState = csProgramming;
+						ProcessState = psFailed;
 					}
 	  	    		break;
 	  	    	case csCalibrating:
@@ -453,26 +380,30 @@ int main(void)
 	  	            		ProcessState = psWaiting;
 	  	            	}
 	  	            } else if (Response == 0x11) {
-	  	            	if (~BoardConnected.SerialNumber) {
-	  	            		ContinueWithCurrentSerial();
-	  	            		LCD_ClearLine(4);
-	  	            	}
+						currentBoardConnected(&BoardConnected);
 	  	            	if (BoardConnected.Version < getCurrentVersion(BoardConnected.BoardType) ) {
 	  	            		CurrentState = csProgramming;
 	  	            		ProcessState = psComplete;
 	  	            	} else { //TODO: Put the user choice to reprogram the board here
 	  	            		if (ContinueWithCurrentProgram() ) {
+//	  							currentBoardConnected(&BoardConnected);
+//	  	            			Mount_SD("/");
 		  	            		CurrentState = csProgramming;
 		  	            		ProcessState = psComplete;
-	  	            		} else {
-	  		  	            	Command = 0x08;
-	  		  	            	SetPara(Command);
-	  		  	            	communication_array(Command, &Para, Paralen);
-	  	  	            		CurrentState = csInterogating;
-	  	  	            		ProcessState = psWaiting;
+		  	            		LCD_ClearLine(4);
+		  	            		break;
 	  	            		}
-	  	            		LCD_ClearLine(4);
 	  	            	}
+	  	            		if( ContinueWithCurrentSerial() ) {
+	  	            			Command = 0x08;
+	  	            			SetPara(Command);
+	  	            			communication_array(Command, &Para, Paralen);
+	  	            			CurrentState = csInterogating;
+	  	            			ProcessState = psWaiting;
+	  	            		} else {
+	  	            			CurrentState = csInitialising;
+	  	            			ProcessState = psComplete;
+	  	            		}
 	  	            }
 	  	            break;
 	  	        case csConfiguring: // 0x57
@@ -518,7 +449,7 @@ int main(void)
 								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_SET);
 								timeOutEn = false;
-								ProcessState = psComplete;
+								ProcessState = psWaiting;
 								CurrentState = csIDLE;
 							} else {
 								LCD_setCursor(2, 0);
@@ -556,10 +487,18 @@ int main(void)
 							SET_BIT( BoardConnected.BSR, BOARD_SERIALISED );
 							sprintf(debugTransmitBuffer, "=====     Board Serialised     =====\n");
 							HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-							sprintf(debugTransmitBuffer, "Serial number %u loaded into board\n", BoardConnected.SerialNumber);
+							sprintf(debugTransmitBuffer, "Serial number %d loaded into board\n", BoardConnected.SerialNumber);
 							HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+
+							Command = 0x08;
+							SetPara(Command);
+							HAL_Delay(50);
+							communication_array(Command,&Para, Paralen);
+							sprintf(debugTransmitBuffer,"Interogating...\n");
+							HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+
+							CurrentState = csInterogating;
 							ProcessState = psWaiting;
-							CurrentState = csIDLE;
 						}
 					}
 	  	        	break;
@@ -579,6 +518,9 @@ int main(void)
 				case csInterogating:
 					if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED)) {
 						currentBoardConnected(&BoardConnected);
+						LCD_ClearLine(1);
+						sprintf(debugTransmitBuffer, "    Programming    ");
+						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 						CurrentState = csProgramming;
 						ProcessState = psComplete;
 					} else if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED) ) {
@@ -1245,6 +1187,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : Loom_Sel_Pin */
+  GPIO_InitStruct.Pin = Loom_Sel_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Loom_Sel_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : PASS_FAIL_Pin ADC_MUX_A_Pin ADC_MUX_B_Pin Buffer_OE_Pin */
   GPIO_InitStruct.Pin = PASS_FAIL_Pin|ADC_MUX_A_Pin|ADC_MUX_B_Pin|Buffer_OE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -1302,12 +1250,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RS485_4011EN_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : Loom_Sel_Pin */
-  GPIO_InitStruct.Pin = Loom_Sel_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(Loom_Sel_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SD_Det_Pin */
   GPIO_InitStruct.Pin = SD_Det_Pin;

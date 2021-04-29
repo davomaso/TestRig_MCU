@@ -329,10 +329,13 @@ void SetPara(uns_ch Command)
 
 						SetTestParam(&BoardConnected, BoardConnected.GlobalTestNum, &Para[0], &Paralen);
 						communication_array(Command, &Para[0], Paralen);
-					 	LCD_ClearLine(1);
-						LCD_setCursor(1, 0);
-						sprintf(debugTransmitBuffer,"%x%c S/N: %d  ", BoardConnected.BoardType,Subclass, BoardConnected.SerialNumber);
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+
+						if( BoardConnected.GlobalTestNum == 0) {
+							LCD_ClearLine(1);
+							LCD_setCursor(1, 0);
+							sprintf(debugTransmitBuffer,"%x%c S/N: %d  ", BoardConnected.BoardType,Subclass, BoardConnected.SerialNumber);
+							LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							}
 				break;
 			case 0xCC:
 					Para[0] = 0x49;
@@ -344,28 +347,6 @@ void SetPara(uns_ch Command)
 				break;
 		}
 }
-
-
-//void interrogateBoard() {
-//	uns_ch ComRep;
-//	ComRep = 0x08;
-//	communication_array(ComRep,&Para[0], Paralen);
-//	while(!UART2_ReceiveComplete) {
-//
-//	}
-//	if (UART2_ReceiveComplete)
-//		communication_response(&ComRep,&UART2_Receive[0], UART2_RecPos);
-//	while(!Comm_Ready){
-//
-//	}
-//	if (Comm_Ready)
-//		communication_command(&ComRep);
-//	while(!UART2_ReceiveComplete) {
-//
-//	}
-//	if (UART2_ReceiveComplete)
-//		communication_response(&ComRep,&UART2_Receive[0], UART2_RecPos);
-//}
 
 void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewSerial)
 {

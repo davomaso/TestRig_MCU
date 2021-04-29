@@ -133,6 +133,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define V12fuseEN_Pin GPIO_PIN_2
 #define V12fuseEN_GPIO_Port GPIOE
+#define Loom_Sel_Pin GPIO_PIN_14
+#define Loom_Sel_GPIO_Port GPIOC
 #define PASS_FAIL_Pin GPIO_PIN_15
 #define PASS_FAIL_GPIO_Port GPIOC
 #define KP_R1_Pin GPIO_PIN_0
@@ -229,8 +231,6 @@ void Error_Handler(void);
 #define RS485_EN_GPIO_Port GPIOD
 #define V12fuseLatch_Pin GPIO_PIN_9
 #define V12fuseLatch_GPIO_Port GPIOG
-#define Loom_Sel_Pin GPIO_PIN_12
-#define Loom_Sel_GPIO_Port GPIOG
 #define SD_Det_Pin GPIO_PIN_1
 #define SD_Det_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */

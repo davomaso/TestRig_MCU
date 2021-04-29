@@ -8,6 +8,7 @@
 #include <File_Handling.h>
 #include "stm32f4xx_hal.h"
 #include "Programming.h"
+#include "ff.h"
 
 /* =============================>>>>>>>> NO CHANGES AFTER THIS LINE =====================================>>>>>>> */
 void Send_Uart (char *string) {
@@ -77,9 +78,18 @@ _Bool Find_File (char* path, char* file) {
     DIR dir;
     FIL fil;
     UINT i;
-    fresult = f_opendir(&dir, path);                       /* Open the directory */
+    fresult = f_opendir(&dir, path);
+    /* Open the directory */
+    if(fresult != FR_OK) {
+    	Mount_SD("/");
+        if(fresult == FR_OK) {
+        	f_opendir(&dir, path);
+        }
+    }
     if (fresult == FR_OK)
     {
+    	if (!strcmp(fno.fname, file))
+    		return true;
         for (;;)
         {
             fresult = f_readdir(&dir, &fno);                   /* Read a directory item */
@@ -96,27 +106,24 @@ _Bool Find_File (char* path, char* file) {
                 fresult = Scan_SD(path);                     /* Enter the directory */
                 if (fresult != FR_OK) break;
                 path[i] = 0;
-            }
-            else
-            {   /* It is a file. */
-           	   char *buf = malloc(30*sizeof(char));
-               sprintf(buf,"File: %s/%s\n", path, fno.fname);
+            } else {   /* It is a file. */
                if (*file++ == fno.fname[0]) {
                    if (*file++ == fno.fname[1]) {
                        if (*file++ == fno.fname[2]) {
                            if (*file++ == fno.fname[3]) {
+                           	   char *buf = malloc(30*sizeof(char));
+                               sprintf(buf,"File: %s/%s\n", path, fno.fname);
                                Send_Uart(buf);
-                               file--;
+                               free(buf);
                                return 1;
                            }
                            file--;
+                       	  }
+                         file--;
                        }
-                       file--;
+                    file--;
                    }
-                   file--;
-               }
-               file--;
-               free(buf);
+                file--;
             }
         }
         f_closedir(&dir);
@@ -166,7 +173,7 @@ FRESULT Write_File (char *name, char *data) {
 	    return fresult;
 	} else {
 	    /* Create a file with read write access and open it */
-	    fresult = f_open(&fil, name, FA_OPEN_EXISTING | FA_WRITE);
+	    fresult = f_open(&fil, name, FA_OPEN_EXISTING | FA_WRITE | FA_CREATE_ALWAYS);
 	    if (fresult != FR_OK) {
 	    	char *buf = malloc(100*sizeof(char));
 	    	sprintf (buf, "ERROR!!! No. %d in opening file *%s*\n\n", fresult, name);
@@ -264,14 +271,15 @@ FRESULT Create_File (char *name)
     return fresult;
 }
 
-void Open_AppendFile(char * name) {
-    fresult = f_open(&fil, name, FA_OPEN_APPEND | FA_WRITE);
+FRESULT Open_AppendFile(char * name) {
+    fresult = f_open(&fil, name, FA_OPEN_APPEND | FA_WRITE | FA_READ);
     if (fresult != FR_OK) {
     	char *buf = malloc(100*sizeof(char));
     	sprintf (buf, "ERROR!!! No. %d in opening file *%s*\n\n", fresult, name);
     	Send_Uart(buf);
         free(buf);
     }
+    return fresult;
 }
 
 void Close_File(char * name) {
@@ -317,6 +325,8 @@ FRESULT Update_File (char *name, char *data)
 	    	free(buf);
 	    }
 	}
+	delay_us(50);
+	Close_File(name);
     return fresult;
 }
 
@@ -365,7 +375,6 @@ FRESULT Create_Dir (char *name) {
 void OpenFile(char * fileName) {
 	f_open(&fil, fileName, FA_READ | FA_OPEN_EXISTING);
 	fileSize = f_size(&fil);
-	progressStep = fileSize / 20;
 	sprintf(debugTransmitBuffer, "File Size: ");
 	printT(&debugTransmitBuffer[0]);
 	sprintf(debugTransmitBuffer,"%.03f kB", (float)fileSize/1000);

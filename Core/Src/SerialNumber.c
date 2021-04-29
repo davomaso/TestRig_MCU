@@ -153,12 +153,14 @@ void ContinueWithCurrentSerial() {
 		if(KP_hash.Pressed){
 			KP_hash.Count = KP_hash.Pressed = 0;
 			SET_BIT( BoardConnected.BSR, BOARD_SERIALISED );
-			break;
+			LCD_ClearLine(4);
+			return true;
 		}
 		if(KP_star.Pressed){
 			KP_star.Count = KP_star.Pressed = 0;
 			CLEAR_BIT( BoardConnected.BSR, BOARD_SERIALISED );
-			break;
+			LCD_ClearLine(4);
+			return false;
 		}
 	}
 }

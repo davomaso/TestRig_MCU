@@ -3,12 +3,13 @@
 
 void scanLoom(TboardConfig *Board){
 		//First Wire
-	HAL_GPIO_WritePin(Loom_Sel_GPIO_Port, Loom_Sel_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(Loom_Sel_GPIO_Port, Loom_Sel_Pin, GPIO_PIN_SET);
 	CheckLoom = false;
 	PrevLoomState = LoomState;
 	LoomState = 0x00;
 	for(int i = 0; i < 4;i++){
 		ADC_MUXsel(i);
+		delay_us(50); //Wait for system to become stable
 		if(!HAL_GPIO_ReadPin(Loom_Sel_GPIO_Port, Loom_Sel_Pin)){
 			LoomState |= (1 << (i));
 		} else {
@@ -100,41 +101,6 @@ void scanLoom(TboardConfig *Board){
 	}
 
 }
-
-//void BoardInterrogated() {
-//	if(Board & 0xFF00 == 0x93)
-//	{
-//		 if( ((Board & 0xF0) == 0x50 )  && (LoomConnected == b935x) ){
-//			 	BoardConnected = TestConfig935x();
-//				TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
-//		 } else if( ((Board & 0xF0) == 0x70) && (LoomConnected == b937x) ){
-//				BoardConnected = TestConfig937x();
-//				TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
-//		 }
-//	}
-//	else if(Board & 0xFF00 == 0x40)
-//	{
-//		if( ((Board & 0xF0) == 0x10) && (LoomConnected == b401x) ){
-//			BoardConnected = TestConfig401x();
-//			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
-//		} else if ( ((Board & 0xF0) == 0x20) && (LoomConnected == b402x)){
-//			BoardConnected = TestConfig402x();
-//			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
-//		}
-//	} else if (Board & 0xFF00 == 0x42) {
-//		if( ((Board & 0xF0) == 0x20) && (LoomConnected == b422x)){
-//			BoardConnected = TestConfig422x();
-//			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
-//		} else if ( ((Board & 0xF0) == 0x70) && (LoomConnected == b427x)) {
-//			BoardConnected = TestConfig427x();
-//			TportCount = BoardConnected.outputPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
-//		}
-//	} else{
-//		sprintf(Buffer, "BoardConfig Error/Loom Connected Error");
-//		CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-//		  HAL_UART_Transmit(&huart1, &Buffer[0], strlen(Buffer), HAL_MAX_DELAY);
-//	}
-//}
 
 void currentBoardConnected(TboardConfig * Board) {
 			if(Board->BoardType == b935x) {

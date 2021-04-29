@@ -58,7 +58,7 @@ void TestRig_Init() {
 
 	  timeOutCount = 0;
 	  timeOutEn = false;
-	  //Mount SD and check space
+
       HAL_GPIO_WritePin(V12fuseEN_GPIO_Port, V12fuseEN_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin(V12fuseLatch_GPIO_Port, V12fuseLatch_Pin, GPIO_PIN_RESET);
 }

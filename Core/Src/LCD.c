@@ -118,3 +118,27 @@ void LCD_ClearLine(uint8 Line) {
 	LCD_setCursor(Line, 0);
 	LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 }
+
+void ChangeCharacterSet(uns_ch Set) {
+	uns_ch Byte;
+	Byte = 0x3A;
+	HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
+	delay_us(50);
+	Byte = 0x72;
+	HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
+	delay_us(50);
+	if (Set == 'A')
+		Byte = 0x00;
+	else if (Set == 'B')
+		Byte = 0x04;
+	else if (Set == 'C')
+		Byte = 0x0C;
+	HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0xC0, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
+	delay_us(50);
+	Byte = 0x38;
+	HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
+	delay_us(50);
+//	LCD_setCursor(2, 2);
+//	Byte = 0x1F;
+//	LCD_printf(&Byte, 1);
+}

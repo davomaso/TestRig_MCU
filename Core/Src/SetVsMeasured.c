@@ -35,11 +35,15 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 	spacing /= 2;
 	LCD_setCursor(3, spacing);
  	LCD_setCursor(3, spacing);
-	sprintf(FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
-	Create_File(&FILEname[0]);
-	sprintf(debugTransmitBuffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
-	Write_File(&FILEname[0], &debugTransmitBuffer[0]);
-	Open_AppendFile(&FILEname[0]);
+
+ 	if (Board->GlobalTestNum == 0) {
+		sprintf(FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
+		sprintf(debugTransmitBuffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
+		if ( Write_File(&FILEname[0], &debugTransmitBuffer[0]) != FR_OK) {
+			Mount_SD("/");
+			Write_File(&FILEname[0], &debugTransmitBuffer[0]);
+		}
+ 	}
 
 	for (currResult = 0;currResult < ChNum;currResult++) {
 		int MeasuredVal = Board->TestResults[Board->GlobalTestNum][currResult];
@@ -140,12 +144,13 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 					LatchRes.FuseLowVoltage, LatchRes.MOSonHigh,
 					LatchRes.MOSonLow, LatchRes.MOSoffHigh, LatchRes.MOSoffLow);
 		} else if ((PortTypes[currResult] != TTNo)){
-			sprintf(debugTransmitBuffer, "%d,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,*SetVal,fMeasured);
+			sprintf(debugTransmitBuffer, "%d,%d,%d,%,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,*SetVal,fMeasured);
 		}
+		Open_AppendFile(&FILEname[0]);
 		Update_File(&FILEname[0], debugTransmitBuffer);
 		*SetVal++;
 	}
-	Close_File(&FILEname[0]);
+//	Close_File(&FILEname[0]);
 //	WriteSDresults(&PortTypes[0] ,&SetResults[0], &MeasuredResults[0]);
 	Board->GlobalTestNum++;
 }

@@ -46,13 +46,8 @@ typedef enum {Tatmega644 = 644, Tatmega644p = 645, Tnone = 0}TtbMicroController;
 TtbMicroController TBmicro;
 
 uint32 fileSize;
-uint16 progressStep;
-uint8 progressPercent;
 uint16 flashPagelen;
 uint16 eepromPagelen;
 uint16 extendedPage;
-
-
-
 
 #endif /* SRC_PROGRAMMING_H_ */
