@@ -7,6 +7,15 @@
 
 //This routine will handle all communication protocol associated with sending command/receiving commands to/from the target board
 
+			// Source File Description
+/*
+ *  communication_array :- Takes command and parameters to be sent to the board and prepares the string to be transmit out UART2
+ *
+ *  communication_command :-
+ *
+ *
+ */
+
 //INCLUDES
 #include "main.h"
 #include "stm32f4xx_it.h"
@@ -110,16 +119,13 @@ void communication_command(uns_ch * ComRep)
 	{
 		case 0x35:
 				//Set this to 0x56 when configuration command is working	//0x1A required to upload samples
-				BoardConnected.GlobalTestNum = 0; //Set to one for test count in set v measured
+				 //Set to one for test count in set v measured
 			break;
 		case 0x57:
-			if (SDIenabled) {
-				USART6->CR1 |= (USART_CR1_RXNEIE);
-			}
+
 			break;
 		case 0x1B:
-				printT("Samples Uploaded\n\n");
-				printT("Requesting Results\n\n");
+
 			break;
 		case 0x19:
 				SetPara(*ComRep);
@@ -282,6 +288,9 @@ void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 
 _Bool CRC_Check(uns_ch *input, uint8 length)
 {
+	/*
+	 * Basic CRC check to determine whether the string received is correct, and add the CRC at the end of the string being sent
+	 */
 	uint16 Crc_response;
 	Crc_response = uart_CalcCRC16(input,length-2);
 	input += (length-2);
@@ -293,6 +302,11 @@ _Bool CRC_Check(uns_ch *input, uint8 length)
 
 void SetPara(uns_ch Command)
 {
+	/*
+	 * Set Communication Parameters Routine
+	 * Dependant on the command being transmitted to the target device a different parameter is required to be sent
+	 * This function will determine what is sent with the command passed to it
+	 */
 			//Set parameters 00 - 0F sample inputs, command
 		switch (Command)
 		{
@@ -350,6 +364,12 @@ void SetPara(uns_ch Command)
 
 void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewSerial)
 {
+	/*
+	 * Rountine to set and read Serial number of the board
+	 * If no currentserial number is passed, the routine will leave the 4 bytes of data out
+	 * else a new serial number is being programmed to the board by which both serial numbers
+	 * are required
+	 */
 	UART2_ReceiveComplete = false;
 	uint8 Length = NewSerial ? 11:7;
 	uint8 Comlen = Length + 3;

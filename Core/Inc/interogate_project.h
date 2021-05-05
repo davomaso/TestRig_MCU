@@ -15,6 +15,7 @@
 #include "Test.h"
 #include "Board_Config.h"
 #include <time.h>
+#include "ADC_Variables.h"
 
 //Routines
 void communication_array(uns_ch, uns_ch*, uint8);

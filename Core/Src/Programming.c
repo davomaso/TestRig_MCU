@@ -6,6 +6,10 @@
 #include "Programming.h"
 
 void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
+	/*
+	 * Routine to sort through a line of INTEL hex format data
+	 * Put the data into a line buffer that can be handled by the populate page buffer routine.
+	 */
 	uint8 data[4];
 	*Position = 0;
 	if (*Line++ == ':') {
@@ -28,8 +32,13 @@ void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	}
 }
 
-_Bool populatePageBuffer(uns_ch *Page, uint8 *PagePos, uns_ch *Line,
-		uint8 *LinePos) {
+_Bool populatePageBuffer(uns_ch *Page, uint8 *PagePos, uns_ch *Line, uint8 *LinePos) {
+	/*
+	 * Populate the page buffer with a line of data, if the page is populated return true so the page
+	 * can be programmed to the target board.
+	 * Else return false if the whole line is loaded into the buffer so that more data can be loaded into a line
+	 * to be repopulated until the buffer is full.
+	 */
 	if ((*PagePos + *LinePos) < MAX_PAGE_LENGTH) {
 		memcpy(Page, Line, *LinePos);
 		*PagePos += *LinePos;
@@ -49,6 +58,11 @@ _Bool populatePageBuffer(uns_ch *Page, uint8 *PagePos, uns_ch *Line,
 }
 
 void SetClkAndLck() {
+	/*
+	 * Following successful programmming, and verification this routine is used to set the clk and lock bytes so the
+	 * target boards can operate with the expected 3-8Mhz external XTAL.
+	 */
+
 	uint8 data[4];
 	uint8 response[4];
 	PollReady();
@@ -123,6 +137,10 @@ void SetClkAndLck() {
 }
 
 void ProgrammingInit() {
+	/*
+	 * Routine to enable programming
+	 * Poll the device until ready, erase device, and change clk to 8Mhz to program at a greater speed
+	 */
 	uint8 data[4];
 	uint8 response[4];
 	response[2] = 0;
@@ -217,6 +235,11 @@ void ProgrammingInit() {
 }
 
 uint8 findVer(char *data) {
+	/*
+	 * Find the version of firmware of the string that was passed to the routine.
+	 * Routine should take any string, searching through the string until a v is found
+	 * returning integers following the 'v' or 'V'
+	 */
 	while (*data != 'v')
 		data++;
 	uint8 tempVer[2];
@@ -230,6 +253,10 @@ uint8 findVer(char *data) {
 }
 
 char Ascii2hex(char *ch) {
+	/*
+	 * Routine to convert ascii characters to hex so each byte read from the files on the SD card can be correctly
+	 * read prior to programming
+	 */
 	char hex;
 	if (*ch < 0x40)
 		hex = ((*ch++ - 0x30) << 4);
@@ -247,6 +274,7 @@ void loadByte(uint8_t hilo, uint8 page, uint8 addr, uint8 data) {
 }
 
 void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
+	// Transmit 4 bytes of data on SPI3, routine used typically for programming the target devices
 	uint8 data[4];
 	data[0] = a;
 	data[1] = b;
@@ -256,6 +284,13 @@ void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
 }
 
 void PageWrite(uint8 *buff, uint16 length, uint8 page) {
+	/*
+	 * Take buffer of 'length' bytes long and write page
+	 *
+	 * Load each byte onto the device, incrementing the address from 0-255
+	 * Once limit is reached write the page with the page commit routine.
+	 *
+	 */
 	uint8 adr;
 	for (adr = 0; adr < length; adr++) {
 		loadByte(LOW, 0, adr, *buff++);
@@ -285,6 +320,10 @@ void pageCommit(uint8 currPage) {
 }
 
 _Bool ContinueWithCurrentProgram() {
+	/*
+	 * Take user input to determine whether to continue with programming or continue with
+	 * the current firmware that is currently loaded onto the board.
+	 */
 	LCD_ClearLine(2);
 	sprintf(lcdBuffer, "  Update Program?");
 	LCD_setCursor(2, 0);
@@ -315,6 +354,9 @@ _Bool ContinueWithCurrentProgram() {
 }
 
 _Bool EnableProgramming() {
+	/*
+	 * Routine to enable programming and poll until ready
+	 */
 	uns_ch data[4];
 	uns_ch response[4];
 	//Reenable programming prior to writing a page,
@@ -339,6 +381,9 @@ _Bool EnableProgramming() {
 }
 
 _Bool VerifyPage(uint8 page, uns_ch *PageByte) {
+	/*
+	 * Routine to verify the data programmed to the device was correct comparing to the page buffer
+	 */
 	uns_ch LowByte;
 	uns_ch HighByte;
 	uns_ch data[4];
@@ -364,6 +409,9 @@ _Bool VerifyPage(uint8 page, uns_ch *PageByte) {
 }
 
 void ProgressBar(uint8 Percentage) {
+	/*
+	 * Passing a percentage to this routine will update the progress bar present on the LCD screen
+	 */
 	uns_ch Byte;
 	uns_ch ProgressBarBlock = 0x1F;
 	uns_ch HalfProgressBarBlock = 0xD9;

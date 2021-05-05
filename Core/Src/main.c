@@ -175,6 +175,10 @@ int main(void)
 
 
 //=========================================================================================================//
+	  	  	  /*
+	  	  	   * If system is in the idle, waiting and checkloom is toggled true by the timeout, the loom
+	  	  	   * should be scanned with the board that is connected returned.
+	  	  	   */
 	  if ((CurrentState == csIDLE) && (ProcessState == psWaiting) && CheckLoom) {
 		  scanLoom(&BoardConnected);
 		  checkLoomConnected(&BoardConnected);
@@ -185,6 +189,7 @@ int main(void)
 
 //=========================================================================================================//
 	  	  //Testing Functionality
+	  	  	  //If 1 on the keypad is pressed Testing procedure is to begin
 	  if (KP_1.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
 	  		KP_1.Pressed = false;
 	  		KP_1.Count = 0;
@@ -207,28 +212,21 @@ int main(void)
 
 
 //=========================================================================================================//
-	  if (KP_6.Pressed && (ProcessState == psWaiting) && (CurrentState == csIDLE) ) {
-		  reset_ALL_MUX();
-		  reset_ALL_DAC();
-		  MUX_Sel(Port_1, ASYNC_PULSE);
-		  MUX_Sel(Port_2, ASYNC_PULSE);
-		  MUX_Sel(Port_3, ASYNC_PULSE);
-		  MUX_Sel(Port_4, ASYNC_PULSE);
-		  MUX_Sel(Port_5, ASYNC_PULSE);
-		  MUX_Sel(Port_6, ASYNC_PULSE);
-
-	  }
-//=========================================================================================================//
-
-
-//=========================================================================================================//
+	  /*
+	   * When a process is complete, via either a response from the target board or a timeout the system
+	   * will return here to continue with the testing procedure, resetting the current state and resetting
+	   * the process state to waiting.
+	   */
 	  	if (ProcessState == psComplete) {
 	  		uns_ch Response;
 	  		uns_ch Command;
 	  	    uns_ch tempLine[100];
 	  	    uint8 Pos;
 	  	    switch(CurrentState) {
-	  	    	case csInitialising:	// 0xCC/0xC0 ????
+	  	    	case csInitialising:
+	  	    		/*
+	  	    		 * Following the testing procedure this will configure the baord to be placed into stock
+	  	    		 */
 	  	    		if (READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
 	  	    			SET_BIT( BoardConnected.BSR, BOARD_INITIALISED );
 	  	    			communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
@@ -274,7 +272,9 @@ int main(void)
 					}
 	  	    		break;
 	  	    	case csProgramming:
-	  		  		// Programming Routine
+	  		  		/*
+	  		  		 *
+	  		  		 */
 	  	    		ProgrammingInit();
 					if( FindBoardFile(&BoardConnected, fileLocation) ) {
 						OpenFile(fileLocation);
@@ -365,7 +365,7 @@ int main(void)
 	  	        case csInterogating: //0x09 & 0x35
 	  	        	communication_response(&Response, &UART2_RXbuffer[0], UART2_RecPos);
 	  	            if (Response == 0x09) {
-	  	            	communication_command(&Response);
+//	  	            	communication_command(&Response);
 	  	            	if (READ_BIT( BoardConnected.BSR, BOARD_CALIBRATED)) {	//Check if board has been calibrated yet
 		  	                Command = 0x56;
 		  	                SetPara(Command);
@@ -409,7 +409,9 @@ int main(void)
 	  	        case csConfiguring: // 0x57
 						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 						if (Response == 0x57) {
-							communication_command(&Response);
+							if (SDIenabled) {
+								USART6->CR1 |= (USART_CR1_RXNEIE);
+							}
 							Command = 0x1A;
 							SetPara(Command);
 							communication_array(Command,&Para, Paralen);
@@ -419,7 +421,8 @@ int main(void)
 	  	            break;
 	  	        case csSampling: // 0x1B
 						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
-						communication_command(&Response);
+						printT("Samples Uploaded\n\n");
+						printT("Requesting Results\n\n");
 						ProcessState = psWaiting;
 						CurrentState = csUploading;
 	  	            break;

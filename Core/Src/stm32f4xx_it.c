@@ -217,6 +217,12 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
 	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	if (CurrentState == csCalibrating) {
+		/*
+		 * Read the ADC to determine when the Port that the calibration is connected to falls to GND,
+		 * When a ground is detected for 5ms switch to current putting 20mA on all ports to calibrate
+		 * the current on all ports.
+		 * In the event of a failure set the ProcessState to psFailed to halt process
+		 */
 		if (CalibratingTimer < CalibrateTimerTo) {
 			ADC_Ch0sel();
 			HAL_ADC_Start(&hadc1);
@@ -246,8 +252,18 @@ void TIM1_UP_TIM10_IRQHandler(void)
 	}
 	if (LatchSampling)
 	{
-
+		/*
+		 * For Latch testing to operate correctly:
+		 * The System polls the ADC every 200us, this is then averaged over 1ms to determine a more accurate reading.
+		 * Once the system has established a stable fuse and input voltage after 10ms with an average above  the 0x26 80 command is transmitted.
+		 * The same polling process continues through this.
+		 * If the Latch is read to be between 47-52ms the latch off 0x26 00 is transmitted and the latching of the other 2 MOSFET
+		 * can be analysed.
+		 *
+		 *
+		 */
 		if (LatchCountTimer < latchCountTo) {
+			//Poll ADC every 200us to take average across 1ms to get more accurate reading
 					//ADC 1
 				ADC_Ch0sel();
 				HAL_ADC_Start(&hadc1);
@@ -279,14 +295,19 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					//ADC2
 				adc2.total += adc2.raw_Buffer[raw_adcCount];
 
-				if(LatchCountTimer > 10)
-				{
+				if(LatchCountTimer > 10) {
+					/*
+					 *  Once voltage is stable find the lowest fuse and input voltage. If the calculated average voltage is less then the current minimum
+					 *  set the minimum to the calculated average
+					 *  */
 					Vfuse.lowVoltage = Vfuse.average < Vfuse.lowVoltage ? Vfuse.average:Vfuse.lowVoltage;
 					Vin.lowVoltage = Vin.average < Vin.lowVoltage ? Vin.average:Vin.lowVoltage;
 				}
 
 			if(raw_adcCount == 5){
-
+				/*
+				 * Average the results from the previous 1ms of data collected
+				 */
 //				HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 				adc1.average = adc1.total / raw_adcCount;
 				adc1.avg_Buffer[LatchCountTimer] = adc1.average;
@@ -304,12 +325,20 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
 				if(stableVoltageCount)
 				{
+					/*
+					 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
+					 * set LatchSampling to false so that the process is halted and the test fails
+					 */
 					if(Vfuse.average > 3000 && Vfuse.average > 0.75*Vin.average) stableVoltageCount--;
 					else stableVoltageCount++;
 					LatchSampling = stableVoltageCount > 75 ? false:true;
 				}
 
 				if(LatchCountTimer == 50 && !stableVoltageCount){
+					/*
+					 * Calculate the steady state/ average voltage of the fuse and input accross the range determined
+					 * if the fuse and input are determined to be stable
+					*/
 					for(int i = 0; i <= LatchCountTimer;i++)
 					{
 						Vfuse.steadyState += Vfuse.avg_Buffer[i];
@@ -319,8 +348,12 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					Vin.steadyState /= LatchCountTimer;
 				}
 				if (LatchCountTimer > 50  && !stableVoltageCount) {
-						//Latch On Test
-						if (adc1.average > 2400) {
+						/*
+						 * If statement to determine the voltages of the latches, mosfet voltages, pulsewidths and the average across the
+						 * pulse. If the
+						 */
+							//Latch On Test
+						if (adc1.average > LATCH_HIGH_VOLTAGE_THRESHOLD) {
 							adc1.HighPulseWidth++;
 							adc1.highVoltage += adc1.average;
 							if (adc1.HighPulseWidth > 5 && adc1.HighPulseWidth < 45) {

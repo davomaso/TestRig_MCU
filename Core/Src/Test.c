@@ -75,24 +75,30 @@ void ConfigInit() {
 
 //=====================================================  SINGLE & DUAL BOARDS  =====================================================//
 void TestConfig935x(TboardConfig * Board) {
-	uint32 *TestArray935x[6][5] = {
-			{ &latchTest, &currentTest,&OnevoltTest, &asyncDigitalTest, &asyncDigitalTest },
-			{ &latchTest, &sdi12Test, &TwovoltTest, &asyncDigitalTest, &asyncDigitalTest },
-			{ &latchTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest },
-			{ &latchTest, &OnevoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest },
-			{ &latchTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest },
-			{ &latchTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest }
+		// Port Test Array
+	uint32 *tempTestARR[30] = {
+			{ &latchTest, &currentTest,&OnevoltTest, &asyncDigitalTest, &asyncDigitalTest }, //
+			{ &latchTest, &sdi12Test, &TwovoltTest, &asyncDigitalTest, &asyncDigitalTest }, //
+			{ &latchTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest }, //
+			{ &latchTest, &OnevoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest }, //
+			{ &latchTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest }, //
+			{ &latchTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest } //
 	};
-	uint8 portCodeArray935x[5][4] = {
+	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR) );
+	Board->ArrayPtr = 0;
+		// Port Code Array
+	uint8 tempPcARR[5][4] = {
 			{ 0x80, 0x81, 0x82, 0x83 },
 			{ 0xC0, 0xC1, 0xC2, 0xC3 },
 			{ 0xD0, 0xD1, 0xD2, 0xD3 },
 			{ 0xE0, 0xE1, 0xE2, 0x00 },
 			{ 0xF0, 0xF1, 0xF2, 0x00 },
 	};
-	memcpy(&Board->PortCodes, &portCodeArray935x, sizeof(portCodeArray935x));
+	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
 	Board->BoardType = b935x;
+	Board->Subclass = 'C';
+		// Quantity of each Port type & tests
 	Board->latchPortCount = 1;
 	Board->analogInputCount = 2;
 	Board->digitalInputCout = 2;
@@ -100,13 +106,7 @@ void TestConfig935x(TboardConfig * Board) {
 }
 
 void TestConfig937x(TboardConfig * Board) {
-	Board->BoardType = 0x9370;
-	Board->Subclass = 'D';
-	Board->latchPortCount = 2;
-	Board->analogInputCount = 2;
-	Board->digitalInputCout = 0;
-	Board->testNum = 6;
-
+		// Port Test Array
 	TportConfig *tempTestARR[24] = {	// Array size must not exceed size of MAX_TEST_ARRAY_SIZE
 					&latchTest, &noTest, &OnevoltTest, &asyncDigitalTest,	//
 					&noTest, &latchTest, &TwovoltTest, &asyncDigitalTest,	//
@@ -117,7 +117,7 @@ void TestConfig937x(TboardConfig * Board) {
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
-
+		// Port Code Array
 	 uint8 tempPcARR[16] = {	//
 			 0x80, 0x81, 0x00, 0x00 ,	//
 			 0x84, 0x85, 0x88, 0x89 ,	//
@@ -125,7 +125,14 @@ void TestConfig937x(TboardConfig * Board) {
 			 0xD0, 0xD1, 0xD2, 0x00 ,	//
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
-
+		//Board Type
+	Board->BoardType = 0x9370;
+	Board->Subclass = 'D';
+		//Quantity of each Port type & tests
+	Board->latchPortCount = 2;
+	Board->analogInputCount = 2;
+	Board->digitalInputCout = 0;
+	Board->testNum = 6;
 }
 //==================================================================================================================================//
 
