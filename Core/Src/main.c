@@ -151,15 +151,12 @@ int main(void)
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
-//  addSD_DelayVariable = true;
   HAL_I2C_Init(&hi2c1);
   LCD_init();
   ChangeCharacterSet('A');
 
   TestRig_Init();
   SDfileInit();
-  char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
-
 //  HAL_TIM_Base_Start_IT(&htim10);
   /* USER CODE END 2 */
 
@@ -175,11 +172,11 @@ int main(void)
 
 
 //=========================================================================================================//
-	  	  	  /*
-	  	  	   * If system is in the idle, waiting and checkloom is toggled true by the timeout, the loom
-	  	  	   * should be scanned with the board that is connected returned.
-	  	  	   */
 	  if ((CurrentState == csIDLE) && (ProcessState == psWaiting) && CheckLoom) {
+  	  	  /*
+  	  	   * If system is in the idle, waiting and checkloom is toggled true by the timeout, the loom
+  	  	   * should be scanned with the board that is connected returned.
+  	  	   */
 		  scanLoom(&BoardConnected);
 		  checkLoomConnected(&BoardConnected);
 		  ConfigInit();
@@ -191,7 +188,10 @@ int main(void)
 	  	  //Testing Functionality
 	  	  	  //If 1 on the keypad is pressed Testing procedure is to begin
 	  if (KP_1.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
-	  		KP_1.Pressed = false;
+	  		/*
+	  		 * If 1 is pressed
+	  		 */
+		  	KP_1.Pressed = false;
 	  		KP_1.Count = 0;
 	  		TestRig_Init();
 	  		TargetBoardParamInit();
@@ -202,7 +202,6 @@ int main(void)
 	  		sprintf(debugTransmitBuffer, "    Interogating    ");
 	  		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  		uns_ch Command = 0x10;
-//	  		SetPara(Command);
 	  		communication_arraySerial(Command, 0, 0);
 	  		setTimeOut(200);
 	  		CurrentState = csInterogating;
@@ -220,8 +219,6 @@ int main(void)
 	  	if (ProcessState == psComplete) {
 	  		uns_ch Response;
 	  		uns_ch Command;
-	  	    uns_ch tempLine[100];
-	  	    uint8 Pos;
 	  	    switch(CurrentState) {
 	  	    	case csInitialising:
 	  	    		/*
@@ -237,12 +234,16 @@ int main(void)
 							ProcessState = psWaiting;
 	  	    			} else {
 	  	    				timeOutEn = false;
+	  	    				LCD_setCursor(2, 0);
+	  	    				sprintf(debugTransmitBuffer, "Previous Test Passed");
+	  	    				LCD_ClearLine(2);
+	  	    				LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  	    				CurrentState = csIDLE;
 	  	    				ProcessState = psWaiting;
 	  	    			}
 					} else {
 							//Refresh LCD screen
-						if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {
+						if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {	// when board is not serialised prompt user for user input
 							LCD_ClearLine(2);
 							LCD_ClearLine(3);
 							LCD_ClearLine(4);
@@ -252,7 +253,7 @@ int main(void)
 
 							printT("Enter Serial Number: \n");
 							BoardConnected.SerialNumber = read_serial();
-							SET_BIT(BoardConnected.BSR, BOARD_SERIALISED);
+							SET_BIT(BoardConnected.BSR, BOARD_SERIALISED);	// Set board register serialised bit to set
 							if (BoardConnected.SerialNumber) {
 								Command = 0x10;
 								communication_arraySerial(Command, 0, 0);
@@ -262,7 +263,6 @@ int main(void)
 						} else {
 							LCD_Clear();
 							TestRig_Init();
-							TestRig_MainMenu();
 							Command = 0x08;
 							SetPara(Command);
 							communication_array(Command, &Para, Paralen);
@@ -272,89 +272,15 @@ int main(void)
 					}
 	  	    		break;
 	  	    	case csProgramming:
-	  		  		/*
-	  		  		 *
-	  		  		 */
-	  	    		ProgrammingInit();
-					if( FindBoardFile(&BoardConnected, fileLocation) ) {
-						OpenFile(fileLocation);
-						TestRig_MainMenu();
-						LCD_setCursor(2, 5);
-						sprintf(debugTransmitBuffer, "Programming");
-						LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-						// File size divide by two as .hex file is in ascii character form
-						// Divide by the length of each page
-						// Multiply by 70% to get an approximation of the actual data to transmit to the target board
-						uint16 ProgressBarTarget;
-						ProgressBarTarget = round( (float) ( (fileSize/2) / flashPagelen) * 0.7 );
-						uns_ch LineBuffer[MAX_LINE_LENGTH];
-						uint8 LineBufferPosition;
-						uns_ch PageBuffer[MAX_PAGE_LENGTH];
-						uint8 PageBufferPosition = 0;
-						uint16 count = 0;
-						uns_ch RecBuffer[MAX_PAGE_LENGTH];
-						uint16 page = 0;
-						uint8 Percentage = 0;
-
-						while (f_gets(&tempLine, sizeof(tempLine), &fil)) {
-					        sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
-					        Pos = LineBufferPosition;
-					        if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition) ) {
-						       uns_ch data[4];
-					        	if (page == 0) {
-					        		data[0] = 0x4D;
-					        		data[1] = 0x00;
-					        		data[2] = 0x00;
-					        		data[3] = 0x00;
-					        		HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
-					        	}
-					        	PageWrite(&PageBuffer[0], flashPagelen/2, page);
-					        	if ( !VerifyPage(page, &PageBuffer[0]) )	{
-					        		PageWrite(&PageBuffer[0], flashPagelen/2, page);
-					        		if(!VerifyPage(page, &PageBuffer[0])) {
-					        				printT("Failed to Program Board\n");
-					        				break;
-					        			}
-					        		}
-			        			PageBufferPosition = 0;
-			        			if(LineBufferPosition)
-			        				populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[Pos-LineBufferPosition], &LineBufferPosition);
-					        	Percentage = (uint8)( (page/(float)ProgressBarTarget) * 100 );
-					        	ProgressBar(Percentage);
-						        page++;
-					        	}
-					    }
-						while (PageBufferPosition != 0 ) {
-							 PageBuffer[PageBufferPosition++] = 0xFF;
-						}
-						PageWrite(&PageBuffer[0], flashPagelen/2, page);
-						printT("Programming Done\n");
-						Close_File(fileLocation);
-
-
-						PageBufferPosition = page = 0;
-						SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_64);
-						SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
-						SetClkAndLck();
-						//HAL_Delay(100); // check if required
-						HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-
-						SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
-						Command = 0x08;
-						SetPara(Command);
-						communication_array(Command, &Para, Paralen);
-						CurrentState = csInterogating;
-						ProcessState = psWaiting;
-					} else {
-						printT("Could not find hex file...\n");
-						CurrentState = csProgramming;
-						ProcessState = psFailed;
-					}
+	  	    		ProgramTargetBoard(&BoardConnected);
 	  	    		break;
 	  	    	case csCalibrating:
 	  	    		//TODO: Implement calibration counter here for if the calibration fails, retry 3 times,
 	  	    		communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 	  	    		if ( Response == 0xC1 ) {
+		  	    		LCD_setCursor(2, 0);
+		  	    		sprintf(debugTransmitBuffer, "    Initialising    ");
+		  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
   	            		initialiseTargetBoard();
   	            		CurrentState = csInitialising;
 	  	    			ProcessState = psWaiting;
@@ -365,7 +291,6 @@ int main(void)
 	  	        case csInterogating: //0x09 & 0x35
 	  	        	communication_response(&Response, &UART2_RXbuffer[0], UART2_RecPos);
 	  	            if (Response == 0x09) {
-//	  	            	communication_command(&Response);
 	  	            	if (READ_BIT( BoardConnected.BSR, BOARD_CALIBRATED)) {	//Check if board has been calibrated yet
 		  	                Command = 0x56;
 		  	                SetPara(Command);
@@ -373,6 +298,9 @@ int main(void)
 		  	                ProcessState = psWaiting;
 		  	                CurrentState = csConfiguring;
 	  	            	} else {
+	  		  	    		LCD_setCursor(2, 0);
+	  		  	    		sprintf(debugTransmitBuffer, "    Calibrating    ");
+	  		  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  	            		switchToCurrent = false;
 	  	            		HAL_Delay(50);
 	  	            		TargetBoardCalibration();
@@ -386,8 +314,7 @@ int main(void)
 	  	            		ProcessState = psComplete;
 	  	            	} else { //TODO: Put the user choice to reprogram the board here
 	  	            		if (ContinueWithCurrentProgram() ) {
-//	  							currentBoardConnected(&BoardConnected);
-//	  	            			Mount_SD("/");
+	  							currentBoardConnected(&BoardConnected);
 		  	            		CurrentState = csProgramming;
 		  	            		ProcessState = psComplete;
 		  	            		LCD_ClearLine(4);
@@ -398,6 +325,9 @@ int main(void)
 	  	            			Command = 0x08;
 	  	            			SetPara(Command);
 	  	            			communication_array(Command, &Para, Paralen);
+				  	    		LCD_setCursor(2, 0);
+				  	    		sprintf(debugTransmitBuffer, "   Interrogating    ");
+				  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  	            			CurrentState = csInterogating;
 	  	            			ProcessState = psWaiting;
 	  	            		} else {
@@ -452,8 +382,12 @@ int main(void)
 								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_SET);
 								timeOutEn = false;
-								ProcessState = psWaiting;
-								CurrentState = csIDLE;
+				  	    		LCD_setCursor(2, 0);
+				  	    		sprintf(debugTransmitBuffer, "    Initialising    ");
+				  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+		  	            		initialiseTargetBoard();
+		  	            		CurrentState = csInitialising;
+			  	    			ProcessState = psWaiting;
 							} else {
 								LCD_setCursor(2, 0);
 								sprintf(debugTransmitBuffer, "    Test Failed    ");
@@ -897,7 +831,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 119;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 1;
+  htim10.Init.Period = 9;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

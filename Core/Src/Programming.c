@@ -2,8 +2,95 @@
  * Programming.c
  */
 #include <main.h>
+#include "fatfs.h"
 #include "interogate_project.h"
 #include "Programming.h"
+#include "File_Handling.h"
+
+_Bool populatePageBuffer(uns_ch*, uint8*,uns_ch*,uint8*);
+_Bool VerifyPage(uint8 , uns_ch *);
+
+void ProgramTargetBoard (TboardConfig * Board) {
+	uns_ch tempLine[100];
+	uint8 Pos;
+	uns_ch Command;
+	uint16 ProgressBarTarget;
+	uns_ch LineBuffer[MAX_LINE_LENGTH];
+	uint8 LineBufferPosition;
+	uns_ch PageBuffer[MAX_PAGE_LENGTH];
+	uint8 PageBufferPosition = 0;
+	uint16 count = 0;
+	uns_ch RecBuffer[MAX_PAGE_LENGTH];
+	uint16 page = 0;
+	uint8 Percentage = 0;
+	char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
+
+	ProgrammingInit();
+
+	if (FindBoardFile(Board, fileLocation)) {
+		OpenFile(fileLocation);
+		TestRig_MainMenu();
+		LCD_setCursor(2, 5);
+		sprintf(debugTransmitBuffer, "Programming");
+		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+		// File size divide by two as .hex file is in ascii character form
+		// Divide by the length of each page
+		// Multiply by 70% to get an approximation of the actual data to transmit to the target board
+		ProgressBarTarget = round( (float) ((fileSize / 2) / flashPagelen) * 0.7);
+		while (f_gets(&tempLine, sizeof(tempLine), &fil)) {
+			sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
+			Pos = LineBufferPosition;
+			if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition)) {
+				uns_ch data[4];
+				if (page == 0) {
+					data[0] = 0x4D;
+					data[1] = 0x00;
+					data[2] = 0x00;
+					data[3] = 0x00;
+					HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
+				}
+				PageWrite(&PageBuffer[0], flashPagelen / 2, page);
+				if (!VerifyPage(page, &PageBuffer[0])) {
+					PageWrite(&PageBuffer[0], flashPagelen / 2, page);
+					if (!VerifyPage(page, &PageBuffer[0])) {
+						printT("Failed to Program Board\n");
+						break;
+					}
+				}
+				PageBufferPosition = 0;
+				if (LineBufferPosition)
+					populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[Pos - LineBufferPosition], &LineBufferPosition);
+				Percentage = (uint8) ((page / (float) ProgressBarTarget) * 100);
+				ProgressBar(Percentage);
+				page++;
+			}
+		}
+		while (PageBufferPosition != 0) {
+			PageBuffer[PageBufferPosition++] = 0xFF;
+		}
+		PageWrite(&PageBuffer[0], flashPagelen / 2, page);
+		printT("Programming Done\n");
+		Close_File(fileLocation);
+
+		PageBufferPosition = page = 0;
+		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_64);
+		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
+		SetClkAndLck();
+		//HAL_Delay(100); // check if required
+		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+
+		SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
+		Command = 0x08;
+		SetPara(Command);
+		communication_array(Command, &Para, Paralen);
+		CurrentState = csInterogating;
+		ProcessState = psWaiting;
+	} else {
+		printT("Could not find hex file...\n");
+		CurrentState = csProgramming;
+		ProcessState = psFailed;
+	}
+}
 
 void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	/*

@@ -1,26 +1,20 @@
-/*
- * File_Handling_RTOS.c
- *
- *  Created on: 14-May-2020
- *      Author: Controllerstech
- */
-
 #include <File_Handling.h>
 #include "stm32f4xx_hal.h"
 #include "Programming.h"
 #include "ff.h"
 
 /* =============================>>>>>>>> NO CHANGES AFTER THIS LINE =====================================>>>>>>> */
-void Send_Uart (char *string) {
-	HAL_UART_Transmit(&D_UART, (uint8_t *)string, strlen (string), HAL_MAX_DELAY);
-}
-
 void Mount_SD (const TCHAR* path) {
+	/*
+	 * Routine to mount the SD card, returning FRESULT, if return is 0 then SD mounted correctly
+	 * see ff.h for further explanation of FATFS FRESULT responses.
+	 * An explanation of each of these responses can be found at http://elm-chan.org/fsw/ff/00index_e.html
+	 */
 	fresult = f_mount(&fs, path, 1);
 	if (fresult != FR_OK) {
-		Send_Uart ("ERROR!!! in mounting SD CARD...\n\n");
+		 printT("ERROR!!! in mounting SD CARD...\n\n");
 	} else {
-		Send_Uart("SD CARD mounted successfully...\n");
+		printT("SD CARD mounted successfully...\n");
 		LCD_setCursor(2, 0);
 		sprintf(debugTransmitBuffer, " SD card Connected  ");
 		LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
@@ -28,19 +22,25 @@ void Mount_SD (const TCHAR* path) {
 }
 
 void Unmount_SD (const TCHAR* path) {
+	/*
+	 * Following any operation of reading/writing to the SD card the UNMOUNT function is required to disconnect the SD card
+	 * This function wil l act similarly to the previous routine return an FRESULT determining whether the unmounting was successful.
+	 */
 	fresult = f_mount(NULL, path, 1);
-	if (fresult == FR_OK) Send_Uart ("SD CARD UNMOUNTED successfully...\n\n\n");
-	else Send_Uart("ERROR!!! in UNMOUNTING SD CARD\n\n\n");
+	if (fresult == FR_OK) printT ("SD CARD UNMOUNTED successfully...\n\n\n");
+	else printT("ERROR!!! in UNMOUNTING SD CARD\n\n\n");
 }
 
-/* Start node to be scanned (***also used as work area***) */
 FRESULT Scan_SD (char* pat) {
+	/*
+	 * Routine to scan through the SD card searching for the file passed to the routine.
+	 * Similary to the previous routines this will return an FRESULT to determine correct operation
+	 */
     DIR dir;
     UINT i;
     char *path = malloc(20*sizeof (char));
     sprintf (path, "%s",pat);
-
-    fresult = f_opendir(&dir, path);                       /* Open the directory */
+    fresult = f_opendir(&dir, path);
     if (fresult == FR_OK)
     {
         for (;;)
@@ -52,7 +52,7 @@ FRESULT Scan_SD (char* pat) {
             	if (!(strcmp ("SYSTEM~1", fno.fname))) continue;
             	char *buf = malloc(30*sizeof(char));
             	sprintf (buf, "Dir: %s\r\n", fno.fname);
-            	Send_Uart(buf);
+            	printT(buf);
             	free(buf);
                 i = strlen(path);
                 sprintf(&path[i], "/%s", fno.fname);
@@ -64,7 +64,7 @@ FRESULT Scan_SD (char* pat) {
             {   /* It is a file. */
            	   char *buf = malloc(30*sizeof(char));
                sprintf(buf,"File: %s/%s\n", path, fno.fname);
-               Send_Uart(buf);
+               printT(buf);
                free(buf);
             }
         }
@@ -75,6 +75,11 @@ FRESULT Scan_SD (char* pat) {
 }
 
 _Bool Find_File (char* path, char* file) {
+	/*
+	 * As the previous routine scans for a specified file, this routine scans the SD card for a specific directory and file,
+	 * this routine is typically for searching for the .hex board files as a string comparison is made to determine when the
+	 * board file is found following the first 4 characters/ (the board type)
+	 */
     DIR dir;
     FIL fil;
     UINT i;
@@ -94,26 +99,25 @@ _Bool Find_File (char* path, char* file) {
         {
             fresult = f_readdir(&dir, &fno);                   /* Read a directory item */
             if (fresult != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fattrib & AM_DIR)     /* It is a directory */
-            {
-            	if (!(strcmp ("SYSTEM~1", fno.fname))) continue;
+            if (fno.fattrib & AM_DIR) {   /* Check if it is a directory */
+            	if (!(strcmp ("SYSTEM~1", fno.fname))) continue; // Ensure directory is not SYSTEM~1
             	char *buf = malloc(30*sizeof(char));
             	sprintf (buf, "Dir: %s\r\n", fno.fname);
-            	Send_Uart(buf);
+            	printT(buf);
             	free(buf);
                 i = strlen(path);
                 sprintf(&path[i], "/%s", fno.fname);
                 fresult = Scan_SD(path);                     /* Enter the directory */
                 if (fresult != FR_OK) break;
                 path[i] = 0;
-            } else {   /* It is a file. */
-               if (*file++ == fno.fname[0]) {
-                   if (*file++ == fno.fname[1]) {
-                       if (*file++ == fno.fname[2]) {
-                           if (*file++ == fno.fname[3]) {
+            } else {   /* If it is not a directory it is a file. */
+               if (*file++ == fno.fname[0]) {					//Determine first character of file and compare to filename passed to function
+                   if (*file++ == fno.fname[1]) {				//Determine second character of file and compare to filename passed to function
+                       if (*file++ == fno.fname[2]) {			//Determine third character of file and compare to filename passed to function
+                           if (*file++ == fno.fname[3]) {		//Determine fourth character of file and compare to filename passed to function
                            	   char *buf = malloc(30*sizeof(char));
                                sprintf(buf,"File: %s/%s\n", path, fno.fname);
-                               Send_Uart(buf);
+                               printT(buf);
                                free(buf);
                                return 1;
                            }
@@ -132,76 +136,56 @@ _Bool Find_File (char* path, char* file) {
     return 0;
 }
 
-/* Only supports removing files from home directory */
-FRESULT Format_SD (void) {
-    DIR dir;
-    char *path = malloc(20*sizeof (char));
-    sprintf (path, "%s","/");
-
-    fresult = f_opendir(&dir, path);                       /* Open the directory */
-    if (fresult == FR_OK)
-    {
-        for (;;)
-        {
-            fresult = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (fresult != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fattrib & AM_DIR)     /* It is a directory */
-            {
-            	if (!(strcmp ("SYSTEM~1", fno.fname))) continue;
-            	fresult = f_unlink(fno.fname);
-            	if (fresult == FR_DENIED) continue;
-            }
-            else
-            {   /* It is a file. */
-               fresult = f_unlink(fno.fname);
-            }
-        }
-        f_closedir(&dir);
-    }
-    free(path);
-    return fresult;
-}
-
 FRESULT Write_File (char *name, char *data) {
+	/*
+	 * Routine checks whether file exists, if it does the
+	 */
 	/**** check whether the file exists or not ****/
-	fresult = f_stat (name, &fno);
-	if (fresult != FR_OK) {
-		char *buf = malloc(100*sizeof(char));
-		sprintf (buf, "ERROR!!! *%s* does not exists\n\n", name);
-		Send_Uart (buf);
-	    free(buf);
-	    return fresult;
-	} else {
+//	fresult = f_stat (name, &fno);
+//	if (fresult != FR_OK) {
+//		char *buf = malloc(100*sizeof(char));
+//		sprintf (buf, "ERROR!!! *%s* does not exists\n\n", name);
+//		printT (buf);
+//	    free(buf);
+//	    return fresult;	//return result if the file does not exist
+//	} else {
 	    /* Create a file with read write access and open it */
-	    fresult = f_open(&fil, name, FA_OPEN_EXISTING | FA_WRITE | FA_CREATE_ALWAYS);
+		//Check if FA_OPEN_EXISTING is required below
+	    fresult = f_open(&fil, name, FA_CREATE_ALWAYS | FA_WRITE );	//Open file with write permissions, create the file even if existing so data is overwritten
 	    if (fresult != FR_OK) {
 	    	char *buf = malloc(100*sizeof(char));
 	    	sprintf (buf, "ERROR!!! No. %d in opening file *%s*\n\n", fresult, name);
-	    	Send_Uart(buf);
+	    	printT(buf);
 	        free(buf);
-	        return fresult;
+	        return fresult; //return result if error when opening file
 	    } else {
 	    	fresult = f_write(&fil, data, strlen(data), &bw);
 	    	if (fresult != FR_OK) {
 	    		char *buf = malloc(100*sizeof(char));
 	    		sprintf (buf, "ERROR!!! No. %d while writing to the FILE *%s*\n\n", fresult, name);
-	    		Send_Uart(buf);
+	    		printT(buf);
 	    		free(buf);
+	    		return fresult; // if error when writing to file return the error
 	    	}
 	    }
-	    Close_File(name);
+	    Close_File(name);	//Following writing to the file close the file and return the result
 	    return fresult;
-	}
+	//}
 }
 
 FRESULT Read_File (char *name)
 {
+	/*
+	 * Routine checks whether file exists, if true. The file is opened with read only permissions.
+	 * The routine returns the contents of the file.
+	 */
+
 	/**** check whether the file exists or not ****/
 	fresult = f_stat (name, &fno);
 	if (fresult != FR_OK) {
 		char *buf = malloc(100*sizeof(char));
 		sprintf (buf, "ERRROR!!! *%s* does not exists\n\n", name);
-		Send_Uart (buf);
+		printT (buf);
 		free(buf);
 	    return fresult;
 	} else {
@@ -210,7 +194,7 @@ FRESULT Read_File (char *name)
 		if (fresult != FR_OK) {
 			char *buf = malloc(100*sizeof(char));
 			sprintf (buf, "ERROR!!! No. %d in opening file *%s*\n\n", fresult, name);
-		    Send_Uart(buf);
+			printT(buf);
 		    free(buf);
 		    return fresult;
 		}
@@ -220,22 +204,22 @@ FRESULT Read_File (char *name)
 			char *buf = malloc(100*sizeof(char));
 			free(buffer);
 		 	sprintf (buf, "ERROR!!! No. %d in reading file *%s*\n\n", fresult, name);
-		  	Send_Uart(buffer);
+		 	printT(buf);
 		  	free(buf);
 		} else {
-			Send_Uart(buffer);
+			printT(buffer);
 			free(buffer);
 			/* Close file */
 			fresult = f_close(&fil);
 			if (fresult != FR_OK) {
 				char *buf = malloc(100*sizeof(char));
 				sprintf (buf, "ERROR!!! No. %d in closing file *%s*\n\n", fresult, name);
-				Send_Uart(buf);
+				printT(buf);
 				free(buf);
 			} else {
 				char *buf = malloc(100*sizeof(char));
 				sprintf (buf, "File *%s* CLOSED successfully\n", name);
-				Send_Uart(buf);
+				printT(buf);
 				free(buf);
 			}
 		}
@@ -245,11 +229,15 @@ FRESULT Read_File (char *name)
 
 FRESULT Create_File (char *name)
 {
+	/*
+	 * f_stat used to determine whether file exists, if not f_open is used to create the file with
+	 * read and write privileges. FRESULT returned to determine if successful.
+	 */
 	fresult = f_stat (name, &fno);
 	if (fresult == FR_OK) {
 		char *buf = malloc(100*sizeof(char));
 		sprintf (buf, "ERROR!!! *%s* already exists!!!!\n use Update_File \n\n",name);
-		Send_Uart(buf);
+		printT(buf);
 		free(buf);
 	    return fresult;
 	} else {
@@ -257,13 +245,13 @@ FRESULT Create_File (char *name)
 		if (fresult != FR_OK) {
 			char *buf = malloc(100*sizeof(char));
 			sprintf (buf, "ERROR!!! No. %d in creating file *%s*\n\n", fresult, name);
-			Send_Uart(buf);
+			printT(buf);
 			free(buf);
 		    return fresult;
 		} else {
 			char *buf = malloc(100*sizeof(char));
 			sprintf (buf, "*%s* created successfully\n Now use Write_File to write data\n",name);
-			Send_Uart(buf);
+			printT(buf);
 			free(buf);
 		}
 	}
@@ -272,11 +260,17 @@ FRESULT Create_File (char *name)
 }
 
 FRESULT Open_AppendFile(char * name) {
+	/*
+	 * First the routine opens the file passed to the function. Read and Write permissions are
+	 * granted. Open Append allows for the creation of a file if it has not previously existed,
+	 * with the read and write pointer pointed to EOF.
+	 * As previous FRESULT is returned to inform of any errors
+	 */
     fresult = f_open(&fil, name, FA_OPEN_APPEND | FA_WRITE | FA_READ);
     if (fresult != FR_OK) {
     	char *buf = malloc(100*sizeof(char));
     	sprintf (buf, "ERROR!!! No. %d in opening file *%s*\n\n", fresult, name);
-    	Send_Uart(buf);
+    	printT(buf);
         free(buf);
     }
     return fresult;
@@ -287,12 +281,12 @@ void Close_File(char * name) {
 	if (fresult != FR_OK) {
 		char *buf = malloc(100*sizeof(char));
 		sprintf (buf, "ERROR No. %d in closing file *%s*\n\n", fresult, name);
-		Send_Uart(buf);
+		printT(buf);
 		free(buf);
 	} else {
 		char *buf = malloc(100*sizeof(char));
 		sprintf (buf, "File *%s* CLOSED successfully\n", name);
-		Send_Uart(buf);
+		printT(buf);
 		free(buf);
 	}
 }
@@ -306,7 +300,7 @@ FRESULT Update_File (char *name, char *data)
 	if (fresult != FR_OK) {
 		char *buf = malloc(100*sizeof(char));
 		sprintf (buf, "ERROR!!! *%s* does not exists\n\n", name);
-		Send_Uart (buf);
+		printT (buf);
 		free(buf);
 	    return fresult;
 	} else {
@@ -316,12 +310,12 @@ FRESULT Update_File (char *name, char *data)
 	    if (fresult != FR_OK) {
 	    	char *buf = malloc(100*sizeof(char));
 	    	sprintf (buf, "ERROR!!! No. %d in writing file *%s*\n\n", fresult, name);
-	    	Send_Uart(buf);
+	    	printT(buf);
 	    	free(buf);
 	    } else {
 	    	char *buf = malloc(100*sizeof(char));
 	    	sprintf (buf, "*%s* UPDATED successfully\n", name);
-	    	Send_Uart(buf);
+	    	printT(buf);
 	    	free(buf);
 	    }
 	}
@@ -330,49 +324,32 @@ FRESULT Update_File (char *name, char *data)
     return fresult;
 }
 
-FRESULT Remove_File (char *name)
-{
-	/**** check whether the file exists or not ****/
-	fresult = f_stat (name, &fno);
-	if (fresult != FR_OK) {
-		char *buf = malloc(100*sizeof(char));
-		sprintf (buf, "ERROR!!! *%s* does not exists\n\n", name);
-		Send_Uart (buf);
-		free(buf);
-		return fresult;
-	} else {
-		fresult = f_unlink (name);
-		if (fresult == FR_OK) {
-			char *buf = malloc(100*sizeof(char));
-			sprintf (buf, "*%s* has been removed successfully\n", name);
-			Send_Uart (buf);
-			free(buf);
-		} else {
-			char *buf = malloc(100*sizeof(char));
-			sprintf (buf, "ERROR No. %d in removing *%s*\n\n",fresult, name);
-			Send_Uart (buf);
-			free(buf);
-		}
-	}
-	return fresult;
-}
-
 FRESULT Create_Dir (char *name) {
+	/*
+	 * Creates directory with the name passed to the routine. As the other FATFS routines above
+	 * if a process fails FRESULT returns a value regarding what the failure was
+	 */
     fresult = f_mkdir(name);
     if (fresult == FR_OK) {
     	char *buf = malloc(100*sizeof(char));
     	sprintf (buf, "*%s* has been created successfully\n", name);
-    	Send_Uart (buf);
+    	printT (buf);
     	free(buf);
     } else {
     	char *buf = malloc(100*sizeof(char));
     	sprintf (buf, "ERROR No. %d in creating directory *%s*\n\n", fresult,name);
-    	Send_Uart(buf);
+    	printT(buf);
     	free(buf);
     }
     return fresult;
 }
 void OpenFile(char * fileName) {
+	/*
+	 * Routine to open file
+	 * Failure if the file does not exist
+	 * Process only allows for read only permissions
+	 * If the file is found the size of the file is displayed on the terminal
+	 */
 	f_open(&fil, fileName, FA_READ | FA_OPEN_EXISTING);
 	fileSize = f_size(&fil);
 	sprintf(debugTransmitBuffer, "File Size: ");
@@ -383,18 +360,24 @@ void OpenFile(char * fileName) {
 
 void Check_SD_Space ()
 {
+	/*
+	 * Routine required to print the FreeSpace left on the SD card to both the terminal and LCD
+	 * Routine finds the number of FAT entries and the number of remaining clusters. Displaying the
+	 * total space of the SD card on the terminal, and the free space to both the terminal and LCD.
+	 *
+	 */
     /* Check free space */
     f_getfree("", &fre_clust, &pfs);
 
     total = (uint32_t)((pfs->n_fatent - 2) * pfs->csize * 0.5);
     char *buf = malloc(30*sizeof(char));
     sprintf (buf, "SD CARD Total Size: \t%lu\n",total);
-    Send_Uart(buf);
+    printT(buf);
     free(buf);
     free_space = (uint32_t)(fre_clust * pfs->csize * 0.5);
     buf = malloc(30*sizeof(char));
     sprintf (buf, "SD CARD Free Space: \t%lu\n",free_space);
-    Send_Uart(buf);
+    printT(buf);
     free(buf);
     free_space /= 1000;
     LCD_setCursor(3, 0);

@@ -13,12 +13,18 @@
 #include "stdio.h"
 
 
+//	uint8 PortCount;
+//	uint8 *Code;
+char FILEname[255];
+
+
 FATFS fs;  // file system
 FIL fil; // File
 FILINFO fno;
 FRESULT fresult;  // result
 UINT br, bw;  // File read/write count
 DIR CurrentDirectory;
+DIR dir;
 
 /**** capacity related *****/
 FATFS *pfs;

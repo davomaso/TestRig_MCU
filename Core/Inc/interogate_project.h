@@ -26,7 +26,7 @@ void BoardConfig(void);
 void ADC_Init(void);
 void TransmitResults(void);
 void PrintLatchResults(void);
-int8_t LatchErrorCheck(void);
+uint8 LatchErrorCheck(void);
 void printLatchError(uint8 *);
 void ADC_MUXsel(uint8);
 uint32 ReadSerialNumber(uns_ch *, uint16);

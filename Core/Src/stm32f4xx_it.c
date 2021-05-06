@@ -253,40 +253,37 @@ void TIM1_UP_TIM10_IRQHandler(void)
 	if (LatchSampling)
 	{
 		/*
-		 * For Latch testing to operate correctly:
-		 * The System polls the ADC every 200us, this is then averaged over 1ms to determine a more accurate reading.
-		 * Once the system has established a stable fuse and input voltage after 10ms with an average above  the 0x26 80 command is transmitted.
-		 * The same polling process continues through this.
-		 * If the Latch is read to be between 47-52ms the latch off 0x26 00 is transmitted and the latching of the other 2 MOSFET
-		 * can be analysed.
-		 *
-		 *
+		 * While the LatchSampling variable is true the system will complete the latching test process,
+		 * if the systems fuse or input voltage is not stable it will fail the test.
+		 *	While true, the ADC will poll every 200us averaging the results for 1ms then handle the data to determine,
+		 *	pulse widths, high voltages, low voltages, fuse voltages and input voltages.
+		 *	From this other factors can be determined such as current through the latch, and MOSFET voltages.
 		 */
 		if (LatchCountTimer < latchCountTo) {
 			//Poll ADC every 200us to take average across 1ms to get more accurate reading
 					//ADC 1
 				ADC_Ch0sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 100);
+				HAL_ADC_PollForConversion(&hadc1, 10);
 				adc1.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 
 					//ADC 2
 				ADC_Ch1sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 100);
+				HAL_ADC_PollForConversion(&hadc1, 10);
 				adc2.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 //					//Vin
 				ADC_Ch2sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 100);
+				HAL_ADC_PollForConversion(&hadc1, 10);
 				Vin.total += HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 //					//Vfuse
 				ADC_Ch3sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 100);
+				HAL_ADC_PollForConversion(&hadc1, 10);
 				Vfuse.total += HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 
@@ -294,6 +291,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				adc1.total += adc1.raw_Buffer[raw_adcCount];
 					//ADC2
 				adc2.total += adc2.raw_Buffer[raw_adcCount];
+
 
 				if(LatchCountTimer > 10) {
 					/*
@@ -329,31 +327,29 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
 					 * set LatchSampling to false so that the process is halted and the test fails
 					 */
-					if(Vfuse.average > 3000 && Vfuse.average > 0.75*Vin.average) stableVoltageCount--;
+					if( (Vfuse.average > 3000) && (Vfuse.average > 0.75*Vin.average) ) stableVoltageCount--;
 					else stableVoltageCount++;
 					LatchSampling = stableVoltageCount > 75 ? false:true;
 				}
 
-				if(LatchCountTimer == 50 && !stableVoltageCount){
+				if(LatchCountTimer == 50 && !stableVoltageCount) {
 					/*
 					 * Calculate the steady state/ average voltage of the fuse and input accross the range determined
 					 * if the fuse and input are determined to be stable
 					*/
-					for(int i = 0; i <= LatchCountTimer;i++)
-					{
+					for(int i = 0; i <= LatchCountTimer;i++) {
 						Vfuse.steadyState += Vfuse.avg_Buffer[i];
 						Vin.steadyState += Vin.avg_Buffer[i];
 					}
 					Vfuse.steadyState /= LatchCountTimer;
 					Vin.steadyState /= LatchCountTimer;
-				}
-				if (LatchCountTimer > 50  && !stableVoltageCount) {
+				} else if (LatchCountTimer > 50  && !stableVoltageCount) {
 						/*
-						 * If statement to determine the voltages of the latches, mosfet voltages, pulsewidths and the average across the
-						 * pulse. If the
+						 * If statement to determine the voltages of the latch and pulsewidths.
+						 * If the pulse width is above 47ms the latchoff rountine can be run.
 						 */
 							//Latch On Test
-						if (adc1.average > LATCH_HIGH_VOLTAGE_THRESHOLD) {
+						if (adc1.average > 2400) {
 							adc1.HighPulseWidth++;
 							adc1.highVoltage += adc1.average;
 							if (adc1.HighPulseWidth > 5 && adc1.HighPulseWidth < 45) {
@@ -397,7 +393,6 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				Vfuse.total = 0;
 				Vin.total = 0;
 				raw_adcCount = 0;
-
 				LatchCountTimer++;
 			}
 			raw_adcCount++;
@@ -420,6 +415,11 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
 	  if(timeOutEn) {
+		  /*
+		   * Timeout routine to be run throughout the program,
+		   * if the timeout is complete the ProcessState is set
+		   * to Failed as a response or event did not occur as expected
+		   */
 		 if ( (--timeOutCount) == 0) {
 			 ProcessState = psFailed;
 			 HAL_TIM_Base_Stop(&htim11);
@@ -427,6 +427,9 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 	  }
 
 	  if(latchTimeOutEn) {
+		  /*
+		   * Latch timeout to wait for the 0x27 response as this can occur any time following the transmission of a 0x26
+		   */
 		  if (--latchTimeOutCount) {
 			  LatchTimeOut = false;
 			  HAL_TIM_Base_Stop;
@@ -446,6 +449,14 @@ void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
 	if (USART2->SR & USART_SR_RXNE) {
+		/*
+		 * Board Comms receive routine to handle the data from the RS485 or Radio
+		 * The Routine should sort through the string of data determining whether the string
+		 * is correct by first receiving either 0xB2 21 or 0xB2 0F, if this condition is met it will
+		 * receive the specified amount of data determined by the length byte in the string.
+		 * Once collected communication_response() will determine whether the CRC is correct and
+		 * handle what the system does with the string and future processes.
+		 */
 			//Overflow check for Receive position, if the size of buffer is larger than 254 reset to 0
 			if (UART2_RecPos > (LRGBUFFER))
 				UART2_RecPos = 0;
@@ -474,10 +485,9 @@ void USART2_IRQHandler(void)
 				//while the position is less than the length copy data into the buffer
 				//else set receive data to false. to stop flow of data into the buffer
 				if (UART2_RecPos == (UART2_Length + 3)) {
-					//UART3_transmit(&UART2_Receive[0], UART2_RecPos);
 					UART2_Recdata = false;
 					UART2_ReceiveComplete = true;
-					ProcessState = psComplete;
+					ProcessState = psComplete;		//Set process to complete to flag that communications were received and continue with testing
 					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 					USART2->CR1  &= ~(USART_CR1_RXNEIE);
 				}
@@ -486,6 +496,12 @@ void USART2_IRQHandler(void)
 		}
 
 	if (USART2->SR & USART_SR_TXE) {
+		/*
+		 * Transmit Interrupt Routine
+		 * Populate the UART transmit register with the data that is in the TXbuffer, if the end condition is met
+		 * turn the interrupts off and continue as expected.
+		 * Following the transmission of a string/interrupt turned off use settimeout() to determine whether communications are operating correctly
+		 */
 		if (UART2_TXpos == UART2_TXcount) {
 			//disable interrupts
 			if (UART2_TXcount > 0)
@@ -517,6 +533,12 @@ void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
 	if (USART3->SR & USART_SR_RXNE) {
+		/*
+		 * Barcode Scanner Receive Interrupt
+		 * Interrupt rountine to receive data from the barcode scanner.
+		 * Check the data for a carridge return while false and data received,
+		 * populate the barcodeBuffer to be handled by readSerial()
+		 */
 		uns_ch data;
 		data = USART3->DR;
 		if (((data >= 0x30) && (data <= 0x39)) || (data == 0x0D)) {
@@ -550,7 +572,14 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
   /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
   HAL_TIM_IRQHandler(&htim14);
   /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 1 */
-	//LED Toggle
+
+  /*
+   * Interrupt Timer for Asynchronous Pulses
+   * This timer is required to send asynchronous pulses at varying lengths. 2 Counters are implemented
+   * to transmit a variety of fast and long pulses to determine whether the filtration is operating correctly
+   * on the digital ports of the target board.
+   */
+  //LED Toggle
   if(Async_Port1.Active)		//max pulse count == 20
     {
   	  if(Async_Port1.fcount > 0){
@@ -825,14 +854,11 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 void TIM6_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM6_IRQn 0 */
-//  if (Programming) {
-//	  Programming = --Program_CountDown ? true : false;
-//	  if (Program_CountDown == 10) {
-//		  ComRep = 0x08;
-//		  communication_array(ComRep,&Para[0], Paralen);
-//	  }
-//	}
-
+	/*
+	 * Loom Select Timer
+	 * Timer every 2s check the loom to determine whether a different loom has been
+	 * connected to test a different variant of boards
+	 */
   if(LoomChecking){
 	  if(LoomCheckCount == 200){
 		  CheckLoom = true;
@@ -844,6 +870,11 @@ void TIM6_IRQHandler(void)
   /* USER CODE BEGIN TIM6_IRQn 1 */
   if(samplesUploading)
   {
+	  /*
+	   * Timer that is set when samples begin uploading to determine when to send
+	   * the 0x18 Command to fetch results
+	   * Set the processState to complete so that the next step can begin
+	   */
 	  if(sampleCount == sampleTime)
 	  {
 		  samplesUploading = false;
@@ -866,6 +897,11 @@ void TIM7_IRQHandler(void)
   /* USER CODE END TIM7_IRQn 0 */
   HAL_TIM_IRQHandler(&htim7);
   /* USER CODE BEGIN TIM7_IRQn 1 */
+  /*
+   * Timer to check which key presses have been made. A simple matrix scan functionality is run, with counters
+   * incremented to eliminate switch bounce and be assured the user actually pressed the button
+   */
+
 	HAL_GPIO_WritePin(KP_R1_GPIO_Port, KP_R1_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(KP_R2_GPIO_Port, KP_R2_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(KP_R3_GPIO_Port, KP_R3_Pin, GPIO_PIN_SET);
@@ -975,6 +1011,14 @@ void OTG_FS_IRQHandler(void)
 void USART6_IRQHandler(void)
 {
   /* USER CODE BEGIN USART6_IRQn 0 */
+	/*
+	 * SDI-12 Interrupt Rountine
+	 * If SDI-12 is enabled the USART6 Receive interrupt will be enabled.
+	 * Until a '?' is received the system will be in an undefined state, once receive it will enter query
+	 * The routine will respond with the addres
+	 *
+	 */
+
 	uint16 UART6status = USART6->SR;
 	unsigned char UART6data = (USART6->DR & 0X7F);
 	if(UART6status & USART_ERROR_MASK){

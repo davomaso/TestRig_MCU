@@ -109,8 +109,6 @@ void TestRig_MainMenu() {
 	  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  LCD_setCursor(3, 0);
 	  LCD_CursorOn_Off(false);
-//	  BoardConnected.BoardType = bNone;
-//	  scan_loom();
 }
 
 void LCD_ClearLine(uint8 Line) {

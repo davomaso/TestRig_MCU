@@ -1,13 +1,4 @@
-/*
- * communication.c
- *
- *  Created on: Apr 12, 2020
- *      Author: David Mason
- */
-
-//This routine will handle all communication protocol associated with sending command/receiving commands to/from the target board
-
-			// Source File Description
+	// Source File Description
 /*
  *  communication_array :- Takes command and parameters to be sent to the board and prepares the string to be transmit out UART2
  *
@@ -25,15 +16,7 @@
 #include "Test.h"
 #include "Channel_Analysis.h"
 
-unsigned short uart_CalcCRC16(unsigned char*, unsigned char);
-_Bool CRC_Check(unsigned char*, unsigned char);
-void RTC_Set(unsigned char*,unsigned char);
-
-extern unsigned char OneByte_HexToAsc(unsigned char *, unsigned char);
-//extern unsigned char Decompress_Channels(unsigned char *, unsigned char);
-	//Test.c Functions
-//extern TboardConfig TestConfig935x(void);
-extern void ConfigInit(void);
+_Bool CRC_Check(uns_ch *, uns_ch);
 
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
@@ -54,57 +37,55 @@ extern TIM_HandleTypeDef htim14;
 //Parameters:			variable
 //CRC:					2 bytes
 
-//result:				1 byte for the storage of hexadecimal characters
-
 void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
 {
+	/*
+	 * Communication routine that sets the buffer to be transmitted to the target board, implementing the parameters set by SetPara and
+	 * puts the CRC at the end of the string from uart_CRC.
+	 *
+	 */
 	uint16 Length;
 	uint16 Crc;
 	UART2_ReceiveComplete = false;
 	Length = 14 + Paralen;
-//	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
 	Comlen = Length + 3;
 
-//Assign Elements to Communications Buffer Array
- Com_buffer[0] = 0xB2;
- Com_buffer[1] = 0x21;
- Com_buffer[2] = Length;
- Com_buffer[3] = BoardConnected.Network;   //LSB first, so that user can easily input network when terminal is implemented
- Com_buffer[4] = (BoardConnected.Network >> 8);
- Com_buffer[5] = '\x01';
- Com_buffer[6] = BoardConnected.Module;
- Com_buffer[7] = (BoardConnected.Module >> 8);
- for(int i = 8;i <= 13; i++)
- {
-	 Com_buffer[i] = '\x00';
- }
- Com_buffer[14] = Command;
- //set para below, not required at this stage
- //probably use switch/case statement to determine the size of parameter with respect to the C/R input
- if(Paralen > 0)
-	 memcpy(&Com_buffer[15], Para, Paralen);
+	Com_buffer[0] = 0xB2;
+	Com_buffer[1] = 0x21;
+	Com_buffer[2] = Length;
+	Com_buffer[3] = BoardConnected.Network;
+	Com_buffer[4] = (BoardConnected.Network >> 8);
+	Com_buffer[5] = '\x01';
+	Com_buffer[6] = BoardConnected.Module;
+	Com_buffer[7] = (BoardConnected.Module >> 8);
+	for(int i = 8;i <= 13; i++)
+	 {
+		 Com_buffer[i] = '\x00';
+	 }
+	Com_buffer[14] = Command;
 
- //use the CRC calculator to propagate a CRC to add to the end of the Communications buffer
- //CRC is calculated from the beginning of the header to the start of the CRC hence only adding 1
- Crc = uart_CalcCRC16(&Com_buffer[0], (Length + 1));
- Com_buffer[Comlen-2] = Crc;
- Com_buffer[Comlen-1] = (Crc >> 8);
+	if(Paralen > 0)
+		 memcpy(&Com_buffer[15], Para, Paralen);
 
- 	 //Switch Comms to Radio or RS485 depending on Board Connected
- if((BoardConnected.BoardType == b935x) || (BoardConnected.BoardType == b937x)) {
-	 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
- } else if((BoardConnected.BoardType == b401x) || (BoardConnected.BoardType == b422x)) {
-	 USART2->CR1 &= ~(USART_CR1_RE);
-	 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
-	 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
- } else if((BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b427x)) {
-	 if(BoardConnected.GlobalTestNum < 4){
+	Crc = uart_CalcCRC16(&Com_buffer[0], (Length + 1));
+	Com_buffer[Comlen-2] = Crc;
+	Com_buffer[Comlen-1] = (Crc >> 8);
+
+		 //Switch Comms to Radio or RS485 depending on Board Connected
+	if((BoardConnected.BoardType == b935x) || (BoardConnected.BoardType == b937x)) {
 		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-	 } else {
+	 } else if((BoardConnected.BoardType == b401x) || (BoardConnected.BoardType == b422x)) {
 		 USART2->CR1 &= ~(USART_CR1_RE);
 		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 		 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
-	 }
+	 } else if((BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b427x)) {
+		 if(BoardConnected.GlobalTestNum < 4){
+			 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+		 } else {
+			 USART2->CR1 &= ~(USART_CR1_RE);
+			 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
+			 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
+		 }
  }
 
  //Transmit the Communication array
@@ -112,26 +93,6 @@ void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
  // UART2 Receive Interrupt Enable.
  USART2->CR1  |= USART_CR1_RXNEIE;
  }
-
-void communication_command(uns_ch * ComRep)
-{
-	switch (*ComRep)
-	{
-		case 0x35:
-				//Set this to 0x56 when configuration command is working	//0x1A required to upload samples
-				 //Set to one for test count in set v measured
-			break;
-		case 0x57:
-
-			break;
-		case 0x1B:
-
-			break;
-		case 0x19:
-				SetPara(*ComRep);
-			break;
-	}
-}
 
 void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 {

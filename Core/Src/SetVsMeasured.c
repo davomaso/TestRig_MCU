@@ -8,7 +8,7 @@
 #include "SetVsMeasured.h"
 #include "interogate_project.h"
 #include "Test.h"
-#include "SDcard.h"
+#include "File_Handling.h"
 
 void CompareResults(TboardConfig * Board, float *SetVal)
 {
@@ -20,10 +20,21 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 	float comp_min;
 	Tresult TresultStatus;
 
+ 	if (Board->GlobalTestNum == 0) {
+		sprintf(FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
+		sprintf(debugTransmitBuffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
+		if ( Write_File(&FILEname[0], &debugTransmitBuffer[0]) != FR_OK) {
+			Mount_SD("/");
+			HAL_Delay(250);
+			Write_File(&FILEname[0], &debugTransmitBuffer[0]);
+		}
+ 	}
 	sprintf(debugTransmitBuffer,"\n====================	Test %d	====================\n\n",Board->GlobalTestNum+1);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-
+	HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	LCD_ClearLine(2);
+	LCD_ClearLine(3);
+	LCD_ClearLine(4);
 	LCD_setCursor(2, 0);
 	sprintf(debugTransmitBuffer, "       Test %d       ", Board->GlobalTestNum+1);
 	LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
@@ -35,15 +46,6 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 	spacing /= 2;
 	LCD_setCursor(3, spacing);
  	LCD_setCursor(3, spacing);
-
- 	if (Board->GlobalTestNum == 0) {
-		sprintf(FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
-		sprintf(debugTransmitBuffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
-		if ( Write_File(&FILEname[0], &debugTransmitBuffer[0]) != FR_OK) {
-			Mount_SD("/");
-			Write_File(&FILEname[0], &debugTransmitBuffer[0]);
-		}
- 	}
 
 	for (currResult = 0;currResult < ChNum;currResult++) {
 		int MeasuredVal = Board->TestResults[Board->GlobalTestNum][currResult];
@@ -134,7 +136,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {
 			sprintf(debugTransmitBuffer,
 					"%d,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",
-					Board->BoardType, Board->GlobalTestNum,
+					Board->BoardType, Board->GlobalTestNum+1,
 					(currResult + 1),
 					PortTypes[currResult], TresultStatus, LatchRes.tOn,
 					LatchRes.tOff, LatchRes.PortAhighVoltage,
@@ -144,7 +146,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 					LatchRes.FuseLowVoltage, LatchRes.MOSonHigh,
 					LatchRes.MOSonLow, LatchRes.MOSoffHigh, LatchRes.MOSoffLow);
 		} else if ((PortTypes[currResult] != TTNo)){
-			sprintf(debugTransmitBuffer, "%d,%d,%d,%,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,*SetVal,fMeasured);
+			sprintf(debugTransmitBuffer, "%d,%d,%d,%,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,Board->TestResults[Board->GlobalTestNum][currResult],fMeasured);
 		}
 		Open_AppendFile(&FILEname[0]);
 		Update_File(&FILEname[0], debugTransmitBuffer);

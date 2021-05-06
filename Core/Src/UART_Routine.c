@@ -1,15 +1,14 @@
-//UART Routine for UART2 and UART3
-//will handle both receiving and transmitting
-
-//Includes:
 #include "main.h"
 #include "stm32f4xx_it.h"
 #include "UART_Routine.h"
 
-//Author: David Mason
-//last updated 19/11/2020
-
 void UART2_transmit(unsigned char *data, unsigned char arraysize) {
+	/*
+	 * UART2 Transmit Routine for board comms
+	 * While in the sleepstate 0x55 will be transmitted twice and 0x00 transmitted twice to wake the target board
+	 * following this the data pointer will be loaded into the TXbuffer for the size specified.
+	 * Once Complete the transmit interrupt is enabled and the data begun to be transmitted out the UART port.
+	 */
 	//Disable transmit interrupt
 	USART2->CR1 &= ~(USART_CR1_TXEIE);
 	USART2->CR1 &= ~(USART_CR1_TCIE);
@@ -40,5 +39,6 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 }
 
 void printT(uns_ch * Text) {
+	// Routine to take string and print it on the debug terminal
 	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
 }

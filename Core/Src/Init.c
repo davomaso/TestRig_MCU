@@ -47,6 +47,7 @@ void TestRig_Init() {
 
 	  HAL_TIM_Base_Start_IT(&htim6);
 	  HAL_TIM_Base_Start_IT(&htim7);
+	  HAL_TIM_Base_Start(&htim10);
 	  HAL_TIM_Base_Start_IT(&htim14);
 	  HAL_TIM_Base_Start_IT(&htim11);
 

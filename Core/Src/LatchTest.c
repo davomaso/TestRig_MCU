@@ -12,7 +12,7 @@ void runLatchTest(TboardConfig *Board, uint8 Test_Port){
 	latchCountTo = 2000;
 	PulseCountDown = latchCountTo;
 
-	HAL_TIM_Base_Start(&htim10);
+	HAL_TIM_Base_Start_IT(&htim10);
 	ADC_Init();
 	while(stableVoltageCount){
 		if(!LatchSampling)
@@ -52,7 +52,7 @@ void runLatchTest(TboardConfig *Board, uint8 Test_Port){
 	HAL_TIM_Base_Stop(&htim10);
 
 		//Print Results & Error Messages
-//	TransmitResults();
+	TransmitResults();
 	PrintLatchResults();
 	LatchState = (0xFF & LatchErrorCheck());
 	if(LatchState)
