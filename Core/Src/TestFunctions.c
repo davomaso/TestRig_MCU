@@ -637,12 +637,9 @@ void reset_ALL_MUX() {
 
 //	=================================    ADC    =====================================//
 void ADC_Init(){
-	LatchSampling = true;
+	CLEAR_REG(LatchTestStatusRegister);
 	stableVoltageCount = 10;
-
 	LatchCountTimer = 0;
-	LatchOnComplete = false;
-	LatchOffComplete = false;
 		//Low Voltage Reset
 	Vfuse.lowVoltage = 4096;
 	Vin.lowVoltage = 4096;
@@ -673,6 +670,7 @@ void ADC_Init(){
 	Vfuse.average = 0;
 	Vfuse.steadyState = 0;
 	Vfuse.total = 0;
+	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 }
 void ADC_MUXsel(uint8 ADCport){
 	switch(ADCport){

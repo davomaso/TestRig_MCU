@@ -9,12 +9,12 @@ uint8 LatchErrorCheck(){
 	 * failures are presented.
 	 */
 		//ADC1 Check
-	if((adc1.HighPulseWidth > 52 || adc1.HighPulseWidth < 48) || (adc1.LowPulseWidth > 52 || adc1.LowPulseWidth < 48) )
+	if( (adc1.HighPulseWidth > 52 || adc1.HighPulseWidth < 48) || (adc1.LowPulseWidth > 52 || adc1.LowPulseWidth < 48) )
 		SET_BIT(LatchTestErrorRegister, PORT_A_PULSEWIDTH_ERROR);
 	if(adc1.highVoltage <= 10  || adc1.lowVoltage >= 0.7 || adc1.highVoltage == 0)
 		SET_BIT(LatchTestErrorRegister, PORT_A_VOLTAGE_ERROR);
 		//ADC2 Check
-	if(adc2.HighPulseWidth > 52 || adc2.HighPulseWidth < 48|| (adc2.LowPulseWidth > 52 || adc2.LowPulseWidth < 48))
+	if( (adc2.HighPulseWidth > 52) || (adc2.HighPulseWidth < 48) || (adc2.LowPulseWidth > 52) || (adc2.LowPulseWidth < 48) )
 		SET_BIT(LatchTestErrorRegister, PORT_B_PULSEWIDTH_ERROR);
 	if((adc2.highVoltage < 10) || (adc2.lowVoltage > 0.7) || (adc2.highVoltage == 0))
 		SET_BIT(LatchTestErrorRegister, PORT_B_VOLTAGE_ERROR);
@@ -37,49 +37,42 @@ void printLatchError(uint8 *ErrorCode){
 	 * Prints the errors that are determined above. Dependant on the code that is set by the routines above will
 	 * determine the errors that are printed to the terminal.
 	 */
-	if(*ErrorCode & 1)
-	{
+	if(*ErrorCode & PORT_A_PULSEWIDTH_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--PortA Pulse Width ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
-	if(*ErrorCode & 2)
-	{
+	if(*ErrorCode & PORT_A_VOLTAGE_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--PortA Voltage ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
-	if(*ErrorCode & 4)
-	{
+	if(*ErrorCode & PORT_B_PULSEWIDTH_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--PortB Pulse Width ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
-	if(*ErrorCode & 8)
-	{
+	if(*ErrorCode & PORT_B_VOLTAGE_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--PortB Voltage ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
-	if(*ErrorCode & 16)
-	{
+	if(*ErrorCode & INPUT_VOLTAGE_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--Input Voltage ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
-	if(*ErrorCode & 32){
+	if(*ErrorCode & FUSE_VOLTAGE_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--Fuse Voltage ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
-	if(*ErrorCode & 64)
-	{
+	if(*ErrorCode & PORT_A_MOSFET_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--MOSFET 1 Voltage ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 	}
-	if(*ErrorCode & 128)
-	{
+	if(*ErrorCode & PORT_B_MOSFET_ERROR) {
 		sprintf(debugTransmitBuffer, "\n******** ERROR--MOSFET 2 Voltage ********\n");
 		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);

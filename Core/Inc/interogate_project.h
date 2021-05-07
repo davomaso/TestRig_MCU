@@ -118,7 +118,6 @@ _Bool LatchPort2;
 _Bool LatchPort3;
 _Bool LatchPort4;
 uint16_t LatchCountTimer;
-_Bool LatchSampling;
 uint8_t stableVoltageCount;
 uint16_t latchCountTo;
 
@@ -172,10 +171,8 @@ typedef struct{
 
 TlatchResults LatchRes;
 
-uint8_t raw_adcCount;
-_Bool LatchOnComplete;
-_Bool LatchOffComplete;
-uint8_t PulseCountDown;
+uint8 usADCcount; 			//us ADC count to poll the ADC every 100us
+uint8_t PulseCountDown;		// Stable voltage pulse
 
 uint8_t LatchErrCheck;
 

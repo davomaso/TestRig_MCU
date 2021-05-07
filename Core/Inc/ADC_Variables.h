@@ -47,6 +47,6 @@ uint8 LatchTestErrorRegister;
 #define LATCH_OFF_COMPLETE		4
 #define LATCH_SAMPLING			8
 
-uint8 LatchTestControlRegister;
+uint8 LatchTestStatusRegister;
 
 #endif /* INC_ADC_VARIABLES_H_ */

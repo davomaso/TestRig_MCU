@@ -215,7 +215,7 @@ void SysTick_Handler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
-	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+//	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	if (CurrentState == csCalibrating) {
 		/*
 		 * Read the ADC to determine when the Port that the calibration is connected to falls to GND,
@@ -230,12 +230,12 @@ void TIM1_UP_TIM10_IRQHandler(void)
 			calibrateADCval.total += HAL_ADC_GetValue(&hadc1);
 			HAL_ADC_Stop(&hadc1);
 
-			raw_adcCount++;
+			usADCcount++;
 
-			if ( raw_adcCount >= 5 ) {
-				calibrateADCval.average = calibrateADCval.total / raw_adcCount;
+			if ( usADCcount >= 5 ) {
+				calibrateADCval.average = calibrateADCval.total / usADCcount;
 				calibrateADCval.total = 0;
-				raw_adcCount = 0;
+				usADCcount = 0;
 
 				if (calibrateADCval.average <= 100) {
 					if (!(--CalibrationCountdown)) {
@@ -250,8 +250,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		} else
 			ProcessState = psFailed;
 	}
-	if (LatchSampling)
-	{
+	if ( READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING) ) {
 		/*
 		 * While the LatchSampling variable is true the system will complete the latching test process,
 		 * if the systems fuse or input voltage is not stable it will fail the test.
@@ -265,14 +264,14 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				ADC_Ch0sel();
 				HAL_ADC_Start(&hadc1);
 				HAL_ADC_PollForConversion(&hadc1, 10);
-				adc1.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
+				adc1.raw_Buffer[usADCcount] = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 
 					//ADC 2
 				ADC_Ch1sel();
 				HAL_ADC_Start(&hadc1);
 				HAL_ADC_PollForConversion(&hadc1, 10);
-				adc2.raw_Buffer[raw_adcCount] = HAL_ADC_GetValue(&hadc1);
+				adc2.raw_Buffer[usADCcount] = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 //					//Vin
 				ADC_Ch2sel();
@@ -288,9 +287,9 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				HAL_ADC_Stop(&hadc1);
 
 					//ADC1
-				adc1.total += adc1.raw_Buffer[raw_adcCount];
+				adc1.total += adc1.raw_Buffer[usADCcount];
 					//ADC2
-				adc2.total += adc2.raw_Buffer[raw_adcCount];
+				adc2.total += adc2.raw_Buffer[usADCcount];
 
 
 				if(LatchCountTimer > 10) {
@@ -302,37 +301,39 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					Vin.lowVoltage = Vin.average < Vin.lowVoltage ? Vin.average:Vin.lowVoltage;
 				}
 
-			if(raw_adcCount == 5){
+			if(usADCcount == 5){
 				/*
 				 * Average the results from the previous 1ms of data collected
 				 */
-//				HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-				adc1.average = adc1.total / raw_adcCount;
+				HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+				adc1.average = adc1.total / usADCcount;
 				adc1.avg_Buffer[LatchCountTimer] = adc1.average;
 
-				adc2.average = adc2.total / raw_adcCount;
+				adc2.average = adc2.total / usADCcount;
 				adc2.avg_Buffer[LatchCountTimer] = adc2.average;
 
 
-				Vfuse.average = Vfuse.total / raw_adcCount;
+				Vfuse.average = Vfuse.total / usADCcount;
 				Vfuse.avg_Buffer[LatchCountTimer] = Vfuse.average;
 
-				Vin.average = Vin.total/raw_adcCount;
+				Vin.average = Vin.total/usADCcount;
 				Vin.avg_Buffer[LatchCountTimer] = Vin.average;
 
 
-				if(stableVoltageCount)
-				{
+				if(stableVoltageCount) {
 					/*
 					 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
 					 * set LatchSampling to false so that the process is halted and the test fails
 					 */
 					if( (Vfuse.average > 3000) && (Vfuse.average > 0.75*Vin.average) ) stableVoltageCount--;
 					else stableVoltageCount++;
-					LatchSampling = stableVoltageCount > 75 ? false:true;
+					if( stableVoltageCount > 75)
+						CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
+					else if (stableVoltageCount == 0)
+						SET_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
 				}
 
-				if(LatchCountTimer == 50 && !stableVoltageCount) {
+				if(LatchCountTimer == 50 && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE) ) {
 					/*
 					 * Calculate the steady state/ average voltage of the fuse and input accross the range determined
 					 * if the fuse and input are determined to be stable
@@ -343,7 +344,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					}
 					Vfuse.steadyState /= LatchCountTimer;
 					Vin.steadyState /= LatchCountTimer;
-				} else if (LatchCountTimer > 50  && !stableVoltageCount) {
+				} else if (LatchCountTimer > 50  && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE) ) {
 						/*
 						 * If statement to determine the voltages of the latch and pulsewidths.
 						 * If the pulse width is above 47ms the latchoff rountine can be run.
@@ -385,20 +386,22 @@ void TIM1_UP_TIM10_IRQHandler(void)
 							PulseCountDown = (adc2.HighPulseWidth > 45 || adc1.LowPulseWidth > 45) ? 10 : PulseCountDown;
 						}
 						PulseCountDown--;
-						LatchOnComplete = (adc1.HighPulseWidth > 47 && adc2.LowPulseWidth > 47) ? true : false;
-						LatchOffComplete = (adc2.HighPulseWidth > 47 || adc1.LowPulseWidth > 47) ? true : false;
+						if ( ( (adc1.HighPulseWidth > 47) && (adc2.LowPulseWidth > 47) )  )//|| (PulseCountDown == 0)
+							SET_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE);
+						if ( adc2.HighPulseWidth > 47 || adc1.LowPulseWidth > 47)
+							SET_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE);
 					}
 				adc1.total = 0;
 				adc2.total = 0;
 				Vfuse.total = 0;
 				Vin.total = 0;
-				raw_adcCount = 0;
+				usADCcount = 0;
 				LatchCountTimer++;
 			}
-			raw_adcCount++;
+			usADCcount++;
 		}
 		else{
-			LatchSampling = false;
+			 CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 		}
 	}
   /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
