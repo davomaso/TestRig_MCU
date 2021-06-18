@@ -55,7 +55,7 @@ void ConfigInit() {
 
 	//Async Test for Digital Only Ports
 	asyncDigitalTest.Code = ASYNC_PULSE;
-	asyncDigitalTest.Channels = 1;
+	asyncDigitalTest.Channels = 2;
 	asyncDigitalTest.Options = 0x80;
 	asyncDigitalTest.GateTime = 0;
 
@@ -77,12 +77,12 @@ void ConfigInit() {
 void TestConfig935x(TboardConfig * Board) {
 		// Port Test Array
 	uint32 *tempTestARR[30] = {
-			{ &latchTest, &currentTest,&OnevoltTest, &asyncDigitalTest, &asyncDigitalTest }, //
-			{ &latchTest, &sdi12Test, &TwovoltTest, &asyncDigitalTest, &asyncDigitalTest }, //
-			{ &latchTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest }, //
-			{ &latchTest, &OnevoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest }, //
-			{ &latchTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncDigitalTest }, //
-			{ &latchTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest } //
+			&latchTest, &OnevoltTest,&OnevoltTest, &asyncTest, &asyncDigitalTest, 				//
+			&latchTest, &OnevoltTest, &TwovoltTest, &asyncDigitalTest, &asyncTest,				//
+			&noTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest, 		//
+			&noTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, 				//
+			&noTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncTest, 				//
+			&noTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest		 		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR) );
 	Board->ArrayPtr = 0;
@@ -126,7 +126,7 @@ void TestConfig937x(TboardConfig * Board) {
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 		//Board Type
-	Board->BoardType = 0x9370;
+	Board->BoardType = b937x;
 	Board->Subclass = 'D';
 		//Quantity of each Port type & tests
 	Board->latchPortCount = 2;
@@ -141,21 +141,21 @@ void TestConfig937x(TboardConfig * Board) {
 void TestConfig401x(TboardConfig * Board){
 		// Port Test Array
 	uint32 *tempTestARR[24] = {
-			{ &sdi12Test, &OnevoltTest, &currentTest, &asyncTest },
-			{ &asyncTest, &sdi12Test, &OnevoltTest, &currentTest },
-			{ &currentTest, &asyncTest, &sdi12Test, &OnevoltTest },
-			{ &OnevoltTest, &currentTest, &asyncTest, &sdi12Test },
-			{ &TwovoltTest, &currentTest, &TwovoltTest, &currentTest },
-			{ &currentTest, &TwovoltTest, &currentTest, &TwovoltTest },
+			&asyncDigitalTest, &OnevoltTest, &currentTest, &asyncTest,		//
+			&asyncTest, &sdi12Test, &OnevoltTest, &currentTest,				//
+			&currentTest, &asyncTest, &sdi12Test, &OnevoltTest,				//
+			&OnevoltTest, &currentTest, &asyncTest, &sdi12Test,				//
+			&TwovoltTest, &currentTest, &TwovoltTest, &currentTest,			//
+			&currentTest, &TwovoltTest, &currentTest, &TwovoltTest,			//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 		//Port Code Array
 	uint8 tempPcARR[4][4] = {
-			{ 0xC0, 0xC1, 0xC2, 0xC3 },
-			{ 0xD0, 0xD1, 0xD2, 0xD3 },
-			{ 0xE0, 0xE1, 0xE2, 0xE3 },
-			{ 0xF0, 0xF1, 0xF2, 0xF3 },
+			{ 0xC0, 0xC2, 0xC1, 0xC3 },	//Transmit Control bits first, then channel number
+			{ 0xD0, 0xD2, 0xD1, 0xD3 },
+			{ 0xE0, 0xE2, 0xE1, 0xE3 },
+			{ 0xF0, 0xF2, 0xF1, 0xF3 },
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 		//Board Type
@@ -171,27 +171,27 @@ void TestConfig401x(TboardConfig * Board){
 void TestConfig402x(TboardConfig * Board){
 		//Port Test Array
 	uint32 *tempTestARR[70] = {
-			{ &sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &currentTest, &currentTest, &asyncTest, &asyncTest, &asyncDigitalTest, &outputTest },
-			{ &currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &currentTest, &OnevoltTest, &asyncDigitalTest, &asyncTest, &asyncTest, &outputTest },
-			{ &currentTest, &TwovoltTest, &sdi12Test, &currentTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest },
-			{ &OnevoltTest, &currentTest, &currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &asyncTest, &asyncTest, &asyncDigitalTest, &noTest },
-			{ &TwovoltTest, &currentTest, &currentTest, &currentTest, &sdi12Test, &asyncDigitalTest, &asyncDigitalTest, &asyncTest, &asyncTest, &noTest },
-			{ &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &sdi12Test, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest },
-			{ &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &noTest },
+			&sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &currentTest, &currentTest, &asyncTest, &asyncTest, &asyncDigitalTest, &outputTest,				//
+			&currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &currentTest, &OnevoltTest, &asyncDigitalTest, &asyncTest, &asyncTest, &outputTest,				//
+			&currentTest, &TwovoltTest, &sdi12Test, &currentTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest,					//
+			&OnevoltTest, &currentTest, &currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &asyncTest, &asyncTest, &asyncDigitalTest, &noTest,					//
+			&TwovoltTest, &currentTest, &currentTest, &currentTest, &sdi12Test, &asyncDigitalTest, &asyncDigitalTest, &asyncTest, &asyncTest, &noTest,				//
+			&asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &sdi12Test, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest,				//
+			&asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &noTest,	//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 		//Port Code Array	//Watch PARAMcount on 4021 boards as config on iConfigure had 5 parameters but 0x00 in the 5th config param, may not be required but check results
 	uint8 tempPcARR[10][4] = {
-			{ 0xA0, 0xA1, 0xA2, 0xA3},
-			{ 0xA8, 0xA9, 0xAA, 0xAB},
-			{ 0xB0, 0xB1, 0xB2, 0xB3},
-			{ 0xB8, 0xB9, 0xBA, 0xBB},
-			{ 0xC0, 0xC1, 0xC2, 0xC3},
-			{ 0xC8, 0xC9, 0xCA, 0xCB},
-			{ 0xD0, 0xD1, 0xD2, 0xD3},
-			{ 0xD8, 0xD9, 0xDA, 0xDB},
-			{ 0xE0, 0xE1, 0xE2, 0xE3},
+			{ 0xA0, 0xA2, 0xA1, 0xA3},
+			{ 0xA8, 0xAA, 0xA9, 0xAB},
+			{ 0xB0, 0xB2, 0xB1, 0xB3},
+			{ 0xB8, 0xBA, 0xB9, 0xBB},
+			{ 0xC0, 0xC2, 0xC1, 0xC3},
+			{ 0xC8, 0xCA, 0xC9, 0xCB},
+			{ 0xD0, 0xDA, 0xD1, 0xD3},
+			{ 0xD8, 0xDA, 0xD9, 0xDB},
+			{ 0xE0, 0xE2, 0xE1, 0xE3},
 			{ 0xE8, 0x00, 0x00, 0x00},
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
@@ -210,10 +210,10 @@ void TestConfig402x(TboardConfig * Board){
 //====================================================  OUTPUT EXPANSION BOARDS  ====================================================//
 void TestConfig422x(TboardConfig * Board){
 	uint32 *tempTestARR[16] = {
-			{ &latchTest, &noTest, &noTest, &noTest },
-			{ &noTest, &latchTest, &noTest, &noTest },
-			{ &noTest, &noTest, &latchTest, &noTest },
-			{ &noTest, &noTest, &noTest, &latchTest },
+			&latchTest, &noTest, &noTest, &noTest,		//
+			&noTest, &latchTest, &noTest, &noTest,		//
+			&noTest, &noTest, &latchTest, &noTest,		//
+			&noTest, &noTest, &noTest, &latchTest,		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -227,6 +227,7 @@ void TestConfig422x(TboardConfig * Board){
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
 	Board->BoardType = b422x;
+	Board->Subclass = 0;
 	Board->latchPortCount = 4;
 	Board->analogInputCount = 0;
 	Board->digitalInputCout = 0;
@@ -235,10 +236,10 @@ void TestConfig422x(TboardConfig * Board){
 
 void TestConfig427x(TboardConfig * Board){
 	uint32 *tempTestARR[20] = {
-			{ &latchTest, &noTest, &noTest, &noTest, &OnevoltTest },
-			{ &noTest, &latchTest, &noTest, &noTest, &currentTest },
-			{ &noTest, &noTest, &latchTest, &noTest, &asyncTest },
-			{ &noTest, &noTest, &noTest, &latchTest, &sdi12Test },
+			&latchTest, &noTest, &noTest, &noTest, &OnevoltTest,	//
+			&noTest, &latchTest, &noTest, &noTest, &currentTest,	//
+			&noTest, &noTest, &latchTest, &noTest, &asyncTest,		//
+			&noTest, &noTest, &noTest, &latchTest, &sdi12Test,		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -253,6 +254,7 @@ void TestConfig427x(TboardConfig * Board){
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
 	Board->BoardType = b427x;
+	Board->Subclass = 0;
 	Board->latchPortCount = 4;
 	Board->analogInputCount = 1;
 	Board->digitalInputCout = 0;
@@ -331,11 +333,11 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 					}
 				}
 			}
-			if((Board->BoardType == b935x) || (Board->BoardType == b937x) && (Board->GlobalTestNum == 0)){
+			if( ( (Board->BoardType == b935x) || (Board->BoardType == b937x) ) && (Board->GlobalTestNum == 0)){
 				*Para = 0xA0; (*Count)++; Para++;
-				*Para = 0x00; (*Count)++; Para++;//TODO: Test User Voltage
+				*Para = 0x02; (*Count)++; Para++;
 				*Para = 0xA1; (*Count)++; Para++;
-				*Para = 0x00; (*Count)++; Para++;
+				*Para = 0x01; (*Count)++; Para++;
 				*Para = 0xA2; (*Count)++; Para++;
 				*Para = 0x01; (*Count)++; Para++;
 			}
@@ -352,13 +354,9 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 	uint8 maxTest = Board->testNum;
 	if (Test == maxTest) {
 		sprintf(debugTransmitBuffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
-		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-		HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+		printT(&debugTransmitBuffer);
 		reset_ALL_MUX();
 		reset_ALL_DAC();
-
-		//Unmount SD card
-		Unmount_SD("/");
 
 		LCD_ClearLine(2);
 		LCD_ClearLine(3);

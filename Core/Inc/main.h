@@ -99,7 +99,7 @@ typedef signed char int8;
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-typedef enum {bNone = 0, b935x = 0x9350, b937x = 0x9370, b401x = 0x4011,  b402x = 0x4020, b422x = 0x4220, b427x = 0x4270}TloomConnected;
+typedef enum {bNone = 0, b935x = 0x9350, b937x = 0x9370, b401x = 0x4010,  b402x = 0x4020, b422x = 0x4220, b427x = 0x4270}TloomConnected;
 
 typedef enum {Port_1 = 0, Port_2 = 1, Port_3 = 2, Port_4 = 3, Port_5 = 4, Port_6 = 5, Port_7 = 6, Port_8 = 7, Port_9 = 8}TcalPortConfig;
 TcalPortConfig calPort;
@@ -131,10 +131,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define V12fuseEN_Pin GPIO_PIN_2
-#define V12fuseEN_GPIO_Port GPIOE
-#define Loom_Sel_Pin GPIO_PIN_14
-#define Loom_Sel_GPIO_Port GPIOC
+#define LED3_Pin GPIO_PIN_13
+#define LED3_GPIO_Port GPIOC
+#define PASS_Pin GPIO_PIN_14
+#define PASS_GPIO_Port GPIOC
 #define PASS_FAIL_Pin GPIO_PIN_15
 #define PASS_FAIL_GPIO_Port GPIOC
 #define KP_R1_Pin GPIO_PIN_0
@@ -155,6 +155,10 @@ void Error_Handler(void);
 #define ADC_MUX_A_GPIO_Port GPIOC
 #define ADC_MUX_B_Pin GPIO_PIN_1
 #define ADC_MUX_B_GPIO_Port GPIOC
+#define PIN5EN_Pin GPIO_PIN_2
+#define PIN5EN_GPIO_Port GPIOC
+#define PIN2EN_Pin GPIO_PIN_3
+#define PIN2EN_GPIO_Port GPIOC
 #define ADC_PortA_Pin GPIO_PIN_0
 #define ADC_PortA_GPIO_Port GPIOA
 #define ADC_PortB_Pin GPIO_PIN_1
@@ -167,8 +171,6 @@ void Error_Handler(void);
 #define V12out_GPIO_Port GPIOA
 #define VuOut_Pin GPIO_PIN_5
 #define VuOut_GPIO_Port GPIOA
-#define CurrentSense_Pin GPIO_PIN_7
-#define CurrentSense_GPIO_Port GPIOA
 #define LED1_Pin GPIO_PIN_0
 #define LED1_GPIO_Port GPIOB
 #define LED2_Pin GPIO_PIN_1
@@ -223,14 +225,12 @@ void Error_Handler(void);
 #define RS485_4011EN_GPIO_Port GPIOA
 #define TB_Reset_Pin GPIO_PIN_0
 #define TB_Reset_GPIO_Port GPIOD
-#define res_LoomSel_Pin GPIO_PIN_1
-#define res_LoomSel_GPIO_Port GPIOD
+#define Loom_Sel_Pin GPIO_PIN_1
+#define Loom_Sel_GPIO_Port GPIOD
 #define Radio_EN_Pin GPIO_PIN_4
 #define Radio_EN_GPIO_Port GPIOD
 #define RS485_EN_Pin GPIO_PIN_7
 #define RS485_EN_GPIO_Port GPIOD
-#define V12fuseLatch_Pin GPIO_PIN_9
-#define V12fuseLatch_GPIO_Port GPIOG
 #define SD_Det_Pin GPIO_PIN_1
 #define SD_Det_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */

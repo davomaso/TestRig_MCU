@@ -41,23 +41,26 @@ void runLatchTest(TboardConfig *Board, uint8 Test_Port){
 		}
 	}
 	uint8 Response;
-	runLatchTimeOut();
-	while (!UART2_ReceiveComplete && LatchTimeOut) { //TODO: Return to main(), requires the addition of callback to this function if 0xXX is received.
-
+	runLatchTimeOut(20000);
+	while (LatchTimeOut) { //TODO: Return to main(), requires the addition of callback to this function if 0xXX is received.
+		if (UART2_ReceiveComplete) {
+			communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
+			if (Response == 0x27)
+				break;
+		}
 	}
-	if (UART2_ReceiveComplete)
-		communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
+
 
 	HAL_TIM_Base_Stop(&htim10);
 
 		//Print Results & Error Messages
 //	TransmitResults();
 	PrintLatchResults();
-	LatchState = LatchErrorCheck();
-	if(LatchState)
-		printLatchError(&LatchState);
+	LatchErrorCheck(Board);
+	if(Board->LTR)
+		printLatchError(&Board->LTR);
 
-	if(!LatchState){
+	if(!Board->LTR){
 		printT("\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
 		Board->TestResults[Board->GlobalTestNum][Test_Port] = true;
 	}else{
@@ -68,6 +71,21 @@ void runLatchTest(TboardConfig *Board, uint8 Test_Port){
 //	TransmitResults();
 }
 
-void StoreLatchResults(TlatchResults * res, uint8 currResult) {
-
+void LatchingSolenoidDriverTest(TboardConfig * Board, uint8 Port) {
+	SetTestParam(Board, Board->GlobalTestNum, &Para, &Paralen);
+	TestFunction(Board);
+	switch(Port) {
+		case Port_1:
+				runLatchTest(Board, Port);
+			break;
+		case Port_2:
+				runLatchTest(Board, Port);
+			break;
+		case Port_3:
+				runLatchTest(Board, Port);
+			break;
+		case Port_4:
+				runLatchTest(Board, Port);
+			break;
+	}
 }

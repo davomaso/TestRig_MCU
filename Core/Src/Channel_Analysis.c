@@ -17,15 +17,17 @@ void Decompress_Channels(uns_ch *data, TboardConfig * Board) {
 		Compression_type = (*data & 0xE0);
 		Compression_type >>= 5;
 
-		switch (Compression_type) {
+ 		switch (Compression_type) {
 		case 0x00:
 			data++;
+			Channel_value = 0;
 			for (int i = 0; i < 4; i++) {
 					Channel_value |= (*data++ << 8 * i);
 				}
 			break;
 		case 0x01:
 			data++;
+			Channel_value = 0;
 			for (int i = 0; i < 3; i++)
 				Channel_value |= (*data++ << 8 * i);
 			break;

@@ -26,7 +26,7 @@ void BoardConfig(void);
 void ADC_Init(void);
 void TransmitResults(void);
 void PrintLatchResults(void);
-uint8 LatchErrorCheck(void);
+void LatchErrorCheck(TboardConfig *);
 void printLatchError(uint8 *);
 void ADC_MUXsel(uint8);
 uint32 ReadSerialNumber(uns_ch *, uint16);
@@ -146,6 +146,7 @@ TADCconfig Vfuse;
 TADCconfig Vmos1;
 TADCconfig Vmos2;
 TADCconfig Vin;
+TADCconfig Vuser;
 
 typedef struct{
 	// Latch Pulse Widths and Voltages

@@ -7,7 +7,7 @@
 #include "Programming.h"
 #include "File_Handling.h"
 
-_Bool populatePageBuffer(uns_ch*, uint8*,uns_ch*,uint8*);
+_Bool populatePageBuffer(uns_ch*, uint16*,uns_ch*,uint8*);
 _Bool VerifyPage(uint8 , uns_ch *);
 
 void ProgramTargetBoard (TboardConfig * Board) {
@@ -18,7 +18,7 @@ void ProgramTargetBoard (TboardConfig * Board) {
 	uns_ch LineBuffer[MAX_LINE_LENGTH];
 	uint8 LineBufferPosition;
 	uns_ch PageBuffer[MAX_PAGE_LENGTH];
-	uint8 PageBufferPosition = 0;
+	uint16 PageBufferPosition = 0;
 	uint16 count = 0;
 	uns_ch RecBuffer[MAX_PAGE_LENGTH];
 	uint16 page = 0;
@@ -37,7 +37,7 @@ void ProgramTargetBoard (TboardConfig * Board) {
 		// Divide by the length of each page
 		// Multiply by 70% to get an approximation of the actual data to transmit to the target board
 		ProgressBarTarget = round( (float) ((fileSize / 2) / flashPagelen) * 0.7);
-		while (f_gets(&tempLine, sizeof(tempLine), &fil)) {
+		while (f_gets(&tempLine, sizeof(tempLine), &SDcard.file)) {
 			sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
 			Pos = LineBufferPosition;
 			if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition)) {
@@ -65,10 +65,16 @@ void ProgramTargetBoard (TboardConfig * Board) {
 				page++;
 			}
 		}
-		while (PageBufferPosition != 0) {
+		while (PageBufferPosition < MAX_PAGE_LENGTH) {
 			PageBuffer[PageBufferPosition++] = 0xFF;
 		}
 		PageWrite(&PageBuffer[0], flashPagelen / 2, page);
+		if (!VerifyPage(page, &PageBuffer[0])) {
+			PageWrite(&PageBuffer[0], flashPagelen / 2, page);
+			if (!VerifyPage(page, &PageBuffer[0])) {
+				printT("Failed to Program Board\n");
+			}
+		}
 		printT("Programming Done\n");
 		Close_File(fileLocation);
 
@@ -119,14 +125,14 @@ void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	}
 }
 
-_Bool populatePageBuffer(uns_ch *Page, uint8 *PagePos, uns_ch *Line, uint8 *LinePos) {
+_Bool populatePageBuffer(uns_ch *Page, uint16 *PagePos, uns_ch *Line, uint8 *LinePos) {
 	/*
 	 * Populate the page buffer with a line of data, if the page is populated return true so the page
 	 * can be programmed to the target board.
 	 * Else return false if the whole line is loaded into the buffer so that more data can be loaded into a line
 	 * to be repopulated until the buffer is full.
 	 */
-	if ((*PagePos + *LinePos) < MAX_PAGE_LENGTH) {
+	if ((*PagePos + *LinePos) <= MAX_PAGE_LENGTH) {
 		memcpy(Page, Line, *LinePos);
 		*PagePos += *LinePos;
 		*LinePos = 0;
@@ -256,8 +262,7 @@ void ProgrammingInit() {
 	data[0] = 0xF0;
 	data[1] = 0x00;
 	while (1) {
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		if (((response[3] & 0x01) == 0))
 			break;
 	}
@@ -292,18 +297,15 @@ void ProgrammingInit() {
 		data[1] = 0xA0;		//Fuse Low Byte
 		data[2] = 0x00;
 		data[3] = 0xD2;
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		HAL_Delay(20);
 		data[1] = 0xA8;		//Fuse High Byte
 		data[3] = 0xD7;
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		HAL_Delay(20);
 		data[1] = 0xA4;		//Fuse Extended Byte
 		data[3] = 0xFD;
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		HAL_Delay(20);
 		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
 		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_64);
@@ -459,8 +461,7 @@ _Bool EnableProgramming() {
 	data[0] = 0xF0;
 	data[1] = 0x00;
 	while (ProcessState) {//TODO: Add timeout functionality here if no response is received
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		if (((response[3] & 0x01) == 0))
 			return true;
 	}

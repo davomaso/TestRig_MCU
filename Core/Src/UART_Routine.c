@@ -15,7 +15,7 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 	if (!Sleepstate) {
 		Sleepstate = 1;
 		unsigned char i = 0;
-		while (i < 4) {
+		while (i < 20) {
 			while (i < 2) {
 				//0x55 55 @ start of communication to ensure target board is awake
 				UART2_TXbuffer[UART2_TXcount++] = '\x55';
@@ -36,9 +36,11 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 		Sleepstate = 0;
 	}
 	USART2->CR1 |= USART_CR1_TXEIE;
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
 }
 
 void printT(uns_ch * Text) {
 	// Routine to take string and print it on the debug terminal
-	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
+//	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
+	CDC_Transmit_FS(Text, strlen(Text));
 }

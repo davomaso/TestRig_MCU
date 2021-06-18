@@ -3,7 +3,7 @@
 
 #include "interogate_project.h"
 
-#define CalibrateTimerTo 5000
+#define CalibrateTimerTo 10000
 
 void Calibration();
 float Current_calibration(uint8);

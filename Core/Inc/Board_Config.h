@@ -81,6 +81,7 @@
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
 			uint8 BSR; //Board Status Register
+			uint8 LTR; //Latch Test Register
 	}TboardConfig;
 
 	TboardConfig BoardConnected;

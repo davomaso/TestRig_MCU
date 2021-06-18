@@ -102,10 +102,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     PA3     ------> ADC1_IN3
     PA4     ------> ADC1_IN4
     PA5     ------> ADC1_IN5
-    PA7     ------> ADC1_IN7
     */
     GPIO_InitStruct.Pin = ADC_PortA_Pin|ADC_PortB_Pin|VinOut_Pin|VfuseOut_Pin
-                          |V12out_Pin|VuOut_Pin|CurrentSense_Pin;
+                          |V12out_Pin|VuOut_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -140,10 +139,9 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     PA3     ------> ADC1_IN3
     PA4     ------> ADC1_IN4
     PA5     ------> ADC1_IN5
-    PA7     ------> ADC1_IN7
     */
     HAL_GPIO_DeInit(GPIOA, ADC_PortA_Pin|ADC_PortB_Pin|VinOut_Pin|VfuseOut_Pin
-                          |V12out_Pin|VuOut_Pin|CurrentSense_Pin);
+                          |V12out_Pin|VuOut_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
@@ -629,10 +627,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     /**USART3 GPIO Configuration
     PD8     ------> USART3_TX
     PD9     ------> USART3_RX
-    PD11     ------> USART3_CTS
-    PD12     ------> USART3_RTS
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_11|GPIO_PIN_12;
+    GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -733,10 +729,8 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     /**USART3 GPIO Configuration
     PD8     ------> USART3_TX
     PD9     ------> USART3_RX
-    PD11     ------> USART3_CTS
-    PD12     ------> USART3_RTS
     */
-    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_11|GPIO_PIN_12);
+    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_8|GPIO_PIN_9);
 
     /* USART3 interrupt DeInit */
     HAL_NVIC_DisableIRQ(USART3_IRQn);

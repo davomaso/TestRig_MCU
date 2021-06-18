@@ -24,14 +24,11 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		sprintf(FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
 		sprintf(debugTransmitBuffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
 		if ( Write_File(&FILEname[0], &debugTransmitBuffer[0]) != FR_OK) {
-			Mount_SD("/");
-			HAL_Delay(250);
 			Write_File(&FILEname[0], &debugTransmitBuffer[0]);
 		}
  	}
 	sprintf(debugTransmitBuffer,"\n====================	Test %d	====================\n\n",Board->GlobalTestNum+1);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	printT(&debugTransmitBuffer);
 	LCD_ClearLine(2);
 	LCD_ClearLine(3);
 	LCD_ClearLine(4);
@@ -109,11 +106,9 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		{
 			//Pass
 			sprintf(debugTransmitBuffer,"**Port %d** PASSED\n",currResult+1);
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT(&debugTransmitBuffer);
 			sprintf(debugTransmitBuffer,"Measured Value: %.03f		Set Value: %.03f \n\n",fMeasured , *SetVal); //(float)
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT(&debugTransmitBuffer);
 			sprintf(debugTransmitBuffer, ". ");
 			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			TresultStatus = TRpassed;
@@ -122,11 +117,9 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		{
 			//Fail
 			sprintf(debugTransmitBuffer,"**Port %d** FAILED\n",currResult+1);
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT(&debugTransmitBuffer);
 			sprintf(debugTransmitBuffer,"Measured Value: %.03f		Set Value: %.03f \n\n",fMeasured , *SetVal); //(float)
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT(&debugTransmitBuffer);
 			sprintf(debugTransmitBuffer, "X ");
 			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			CLEAR_BIT(Board->TPR, (1 <<Board->GlobalTestNum) );
@@ -134,9 +127,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		}
 			//Write Results to file
 		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {
-			sprintf(debugTransmitBuffer,
-					"%d,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",
-					Board->BoardType, Board->GlobalTestNum+1,
+			sprintf(debugTransmitBuffer, "%x,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",Board->BoardType, Board->GlobalTestNum+1,
 					(currResult + 1),
 					PortTypes[currResult], TresultStatus, LatchRes.tOn,
 					LatchRes.tOff, LatchRes.PortAhighVoltage,
@@ -146,9 +137,9 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 					LatchRes.FuseLowVoltage, LatchRes.MOSonHigh,
 					LatchRes.MOSonLow, LatchRes.MOSoffHigh, LatchRes.MOSoffLow);
 		} else if ((PortTypes[currResult] != TTNo)){
-			sprintf(debugTransmitBuffer, "%d,%d,%d,%,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,Board->TestResults[Board->GlobalTestNum][currResult],fMeasured);
+			sprintf(debugTransmitBuffer, "%x,%d,%d,%,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,Board->TestResults[Board->GlobalTestNum][currResult],fMeasured);
 		}
-		Open_AppendFile(&FILEname[0]);
+   		Open_AppendFile(&FILEname[0]);
 		Update_File(&FILEname[0], debugTransmitBuffer);
 		*SetVal++;
 	}

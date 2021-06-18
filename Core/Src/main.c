@@ -102,7 +102,6 @@ void LCD_init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /**
@@ -150,6 +149,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
+  HAL_Delay(50);
   HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
   HAL_I2C_Init(&hi2c1);
   LCD_init();
@@ -157,7 +157,7 @@ int main(void)
 
   TestRig_Init();
   SDfileInit();
-//  HAL_TIM_Base_Start_IT(&htim10);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -170,9 +170,8 @@ int main(void)
 
 //=========================================================================================================//
 
-
 //=========================================================================================================//
-	  if ((CurrentState == csIDLE) && (ProcessState == psWaiting) && CheckLoom) {
+ 	  if ((CurrentState == csIDLE) && (ProcessState == psWaiting) && CheckLoom) {
   	  	  /*
   	  	   * If system is in the idle, waiting and checkloom is toggled true by the timeout, the loom
   	  	   * should be scanned with the board that is connected returned.
@@ -188,13 +187,13 @@ int main(void)
 	  	  //Testing Functionality
 	  	  	  //If 1 on the keypad is pressed Testing procedure is to begin
 	  if (KP_1.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
-	  		/*
-	  		 * If 1 is pressed
-	  		 */
+	  		//If 1 is pressed
 		  	KP_1.Pressed = false;
 	  		KP_1.Count = 0;
 	  		TestRig_Init();
 	  		TargetBoardParamInit();
+	  		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+	  		HAL_Delay(3000);
 	  		HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
 	  		LCD_ClearLine(4);
 	  		LCD_ClearLine(3);
@@ -202,6 +201,7 @@ int main(void)
 	  		sprintf(debugTransmitBuffer, "    Interogating    ");
 	  		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  		uns_ch Command = 0x10;
+	  		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 	  		communication_arraySerial(Command, 0, 0);
 	  		setTimeOut(200);
 	  		CurrentState = csInterogating;
@@ -261,6 +261,7 @@ int main(void)
 								ProcessState = psWaiting;
 							}
 						} else {
+							SET_BIT(BoardConnected.BSR, BOARD_INITIALISED);
 							LCD_Clear();
 							TestRig_Init();
 							Command = 0x08;
@@ -281,29 +282,55 @@ int main(void)
 		  	    		LCD_setCursor(2, 0);
 		  	    		sprintf(debugTransmitBuffer, "    Initialising    ");
 		  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-  	            		initialiseTargetBoard();
-  	            		CurrentState = csInitialising;
-	  	    			ProcessState = psWaiting;
+  	            		if (!READ_BIT(BoardConnected.BSR, BOARD_INITIALISED)) {
+							initialiseTargetBoard();
+							CurrentState = csInitialising;
+							ProcessState = psWaiting;
+  	            		} else {
+	  	            		Command = 0x56;
+		  	                SetPara(Command);
+		  	                communication_array(Command,&Para[0], Paralen);
+		  	                CurrentState = csConfiguring;
+		  	                ProcessState = psWaiting;
+  	            		}
 	  	    		} else {
 	  	    			//TODO: add timeout and repeat transmission
 	  	    		}
 	  	    		break;
 	  	        case csInterogating: //0x09 & 0x35
 	  	        	communication_response(&Response, &UART2_RXbuffer[0], UART2_RecPos);
-	  	            if (Response == 0x09) {
+	  	            if (Response == 0x09 ) { //|| Response == 0x27
 	  	            	if (READ_BIT( BoardConnected.BSR, BOARD_CALIBRATED)) {	//Check if board has been calibrated yet
-		  	                Command = 0x56;
-		  	                SetPara(Command);
-		  	                communication_array(Command,&Para[0], Paralen);
-		  	                ProcessState = psWaiting;
-		  	                CurrentState = csConfiguring;
+		  	                if (BoardConnected.BoardType == b422x) {
+		  	                	if ( READ_BIT(BoardConnected.BSR, BOARD_INITIALISED) ) {
+									if (CheckTestNumber(&BoardConnected)) {
+										LatchingSolenoidDriverTest(&BoardConnected, BoardConnected.GlobalTestNum);
+										CompareResults(&BoardConnected, &CHval[BoardConnected.GlobalTestNum]);
+									} else {
+										CurrentState = csIDLE;
+										ProcessState = psWaiting;
+									}
+		  	                	} else {
+		  	                		Command = 0xCC;
+		  	                		SetPara(Command);
+		  	                		communication_array(Command, &Para, Paralen);
+		  	                		CurrentState = csInitialising;
+		  	                		ProcessState = psWaiting;
+		  	                	}
+		  	                } else {
+		  	            		Command = 0x56;
+			  	                SetPara(Command);
+			  	                communication_array(Command,&Para[0], Paralen);
+			  	                CurrentState = csConfiguring;
+			  	                ProcessState = psWaiting;
+		  	                }
 	  	            	} else {
 	  		  	    		LCD_setCursor(2, 0);
 	  		  	    		sprintf(debugTransmitBuffer, "    Calibrating    ");
 	  		  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  	            		switchToCurrent = false;
-	  	            		HAL_Delay(50);
-	  	            		TargetBoardCalibration();
+//	  	            		HAL_Delay(50);
+	  	            		TargetBoardCalibration(&BoardConnected);
 	  	            		CurrentState = csCalibrating;
 	  	            		ProcessState = psWaiting;
 	  	            	}
@@ -339,9 +366,9 @@ int main(void)
 	  	        case csConfiguring: // 0x57
 						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
 						if (Response == 0x57) {
-							if (SDIenabled) {
+							if (SDIenabled)
 								USART6->CR1 |= (USART_CR1_RXNEIE);
-							}
+
 							Command = 0x1A;
 							SetPara(Command);
 							communication_array(Command,&Para, Paralen);
@@ -447,11 +474,13 @@ int main(void)
 
 	  	    }
 	  	} else if (ProcessState == psFailed) {
-	  		sprintf(debugTransmitBuffer, "=========     Timeout Failure     =========\n");
-			HAL_UART_Transmit(&D_UART, &debugTransmitBuffer, strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	  		printT("=========     Timeout Failure     =========\n");
 			uns_ch Command;
 			timeOutEn = false;
 			switch (CurrentState) {
+				case csProgramming:
+					SDfileInit();
+				break;
 				case csInterogating:
 					if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED)) {
 						currentBoardConnected(&BoardConnected);
@@ -466,9 +495,23 @@ int main(void)
 						communication_array(Command, &Para, Paralen);
 						ProcessState = psWaiting;
 					} else {
-						CurrentState = csIDLE;
+						Command = 0x08;
+						SetPara(Command);
+						communication_array(Command, &Para, Paralen);
 						ProcessState = psWaiting;
+//						CurrentState = csIDLE;
+//						ProcessState = psWaiting;
 					}
+					break;
+				case csInitialising:
+					Command = 0xCC;
+					communication_array(Command, &Para, Paralen);
+					ProcessState = psWaiting;
+					break;
+				case csConfiguring:
+					Command = 0x56;
+  	                communication_array(Command,&Para[0], Paralen);
+  	                ProcessState = psWaiting;
 					break;
 				default:
 					CurrentState = csIDLE;
@@ -564,10 +607,10 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 192;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLQ = 8;
   RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -1024,7 +1067,7 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
   huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart3) != HAL_OK)
   {
@@ -1079,21 +1122,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, V12fuseEN_Pin|MUX_WRodd3_Pin|MUX_WReven3_Pin|MUX_A0_Pin
-                          |MUX_A1_Pin|MUX_RS_Pin|MUX_EN_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, PASS_FAIL_Pin|ADC_MUX_A_Pin|ADC_MUX_B_Pin|Buffer_OE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LED3_Pin|PASS_Pin|PASS_FAIL_Pin|ADC_MUX_A_Pin
+                          |ADC_MUX_B_Pin|PIN5EN_Pin|PIN2EN_Pin|Buffer_OE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOF, KP_R1_Pin|KP_R2_Pin|KP_R3_Pin|KP_R4_Pin
@@ -1106,32 +1146,23 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOG, MUX_WRodd2_Pin|MUX_WReven2_Pin|ASYNC3_Pin|ASYNC4_Pin
                           |ASYNC5_Pin|ASYNC6_Pin|ASYNC7_Pin|ASYNC8_Pin
-                          |ASYNC9_Pin|V12fuseLatch_Pin, GPIO_PIN_RESET);
+                          |ASYNC9_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|res_LoomSel_Pin
-                          |Radio_EN_Pin|RS485_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, MUX_WRodd3_Pin|MUX_WReven3_Pin|MUX_A0_Pin|MUX_A1_Pin
+                          |MUX_RS_Pin|MUX_EN_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Radio_EN_Pin
+                          |RS485_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : V12fuseEN_Pin MUX_WRodd3_Pin MUX_WReven3_Pin MUX_A0_Pin
-                           MUX_A1_Pin MUX_RS_Pin MUX_EN_Pin */
-  GPIO_InitStruct.Pin = V12fuseEN_Pin|MUX_WRodd3_Pin|MUX_WReven3_Pin|MUX_A0_Pin
-                          |MUX_A1_Pin|MUX_RS_Pin|MUX_EN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : Loom_Sel_Pin */
-  GPIO_InitStruct.Pin = Loom_Sel_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(Loom_Sel_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PASS_FAIL_Pin ADC_MUX_A_Pin ADC_MUX_B_Pin Buffer_OE_Pin */
-  GPIO_InitStruct.Pin = PASS_FAIL_Pin|ADC_MUX_A_Pin|ADC_MUX_B_Pin|Buffer_OE_Pin;
+  /*Configure GPIO pins : LED3_Pin PASS_Pin PASS_FAIL_Pin ADC_MUX_A_Pin
+                           ADC_MUX_B_Pin PIN5EN_Pin PIN2EN_Pin Buffer_OE_Pin */
+  GPIO_InitStruct.Pin = LED3_Pin|PASS_Pin|PASS_FAIL_Pin|ADC_MUX_A_Pin
+                          |ADC_MUX_B_Pin|PIN5EN_Pin|PIN2EN_Pin|Buffer_OE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1163,19 +1194,26 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : MUX_WRodd2_Pin MUX_WReven2_Pin ASYNC3_Pin ASYNC4_Pin
                            ASYNC5_Pin ASYNC6_Pin ASYNC7_Pin ASYNC8_Pin
-                           ASYNC9_Pin V12fuseLatch_Pin */
+                           ASYNC9_Pin */
   GPIO_InitStruct.Pin = MUX_WRodd2_Pin|MUX_WReven2_Pin|ASYNC3_Pin|ASYNC4_Pin
                           |ASYNC5_Pin|ASYNC6_Pin|ASYNC7_Pin|ASYNC8_Pin
-                          |ASYNC9_Pin|V12fuseLatch_Pin;
+                          |ASYNC9_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin TB_Reset_Pin res_LoomSel_Pin
-                           Radio_EN_Pin RS485_EN_Pin */
-  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|res_LoomSel_Pin
-                          |Radio_EN_Pin|RS485_EN_Pin;
+  /*Configure GPIO pins : MUX_WRodd3_Pin MUX_WReven3_Pin MUX_A0_Pin MUX_A1_Pin
+                           MUX_RS_Pin MUX_EN_Pin */
+  GPIO_InitStruct.Pin = MUX_WRodd3_Pin|MUX_WReven3_Pin|MUX_A0_Pin|MUX_A1_Pin
+                          |MUX_RS_Pin|MUX_EN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin Radio_EN_Pin RS485_EN_Pin */
+  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin|Radio_EN_Pin|RS485_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1187,6 +1225,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RS485_4011EN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : TB_Reset_Pin */
+  GPIO_InitStruct.Pin = TB_Reset_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(TB_Reset_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Loom_Sel_Pin */
+  GPIO_InitStruct.Pin = Loom_Sel_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Loom_Sel_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SD_Det_Pin */
   GPIO_InitStruct.Pin = SD_Det_Pin;

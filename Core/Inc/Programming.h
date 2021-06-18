@@ -15,7 +15,6 @@ char Ascii2hex(char *);
 
 #define LOW 0
 #define HIGH 1
-
 uint16 current_page(void);
 void write_flash_pages(uint8 *, int);
 void spi_transaction(uint8, uint8, uint8, uint8);

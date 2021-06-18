@@ -77,7 +77,7 @@ void scanLoom(TboardConfig *Board){
 			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 			break;
-		case 6:
+		case 0x0A: //change to 6 when loom is fixed
 			Board->BoardType = b422x;
 			LCD_Clear();
 			LCD_setCursor(1, 0);
@@ -117,14 +117,13 @@ void currentBoardConnected(TboardConfig * Board) {
 					return;
 			} else if (Board->BoardType == b422x) {
 					TestConfig422x(Board);
+					SET_BIT(Board->BSR, BOARD_CALIBRATED);
 					return;
 			} else if (Board->BoardType == b427x) {
 					TestConfig427x(Board);
 					return;
 			} else{
-				sprintf(debugTransmitBuffer, "BoardConfig Error/Loom Connected Error");
-				CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-				HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+				printT("\n BoardConfig Error/Loom Connected Error \n");
 			}
 			return;
 }

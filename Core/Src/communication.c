@@ -76,8 +76,9 @@ void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
 		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 	 } else if((BoardConnected.BoardType == b401x) || (BoardConnected.BoardType == b422x)) {
 		 USART2->CR1 &= ~(USART_CR1_RE);
-		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
-		 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
+//		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
+		 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+		 delay_us(50);
 	 } else if((BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b427x)) {
 		 if(BoardConnected.GlobalTestNum < 4){
 			 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
@@ -108,7 +109,7 @@ void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 							switch(*Response) {
 							case 0x09:
 										sprintf(debugTransmitBuffer,"====Interogation Complete====\n");
-										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+										CDC_Transmit_FS(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 										HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 										ptr = data + 15;
 										BoardConnected.Network =	*ptr++;
@@ -117,40 +118,42 @@ void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 										BoardConnected.Module += (*ptr++ << 8);
 
 								break;
-							case 0x35:
-										ptr = data + 15;
-										Board = *ptr++;
-										Board += (*ptr++ << 8); //LSB board number coming in
-										Version = *ptr++; //version currently installed on board
-										Flags = *ptr++;		//
-										Subclass = *ptr++;//if a 93xx board is connected, what variety is it C, M, X, F...
-
-										ptr = data + (arraysize-3);
-										Samplerate = *ptr++;	//Sample rate for period of time between samples
-										Samplerate += (*ptr++ << 8);
-										//Print Board Info //Transmit Info To Terminal
-										sprintf(debugTransmitBuffer, "=====Board Info=====\n");
-										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-										  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-											//Network
-										sprintf(debugTransmitBuffer, "Network :	 %i \n",BoardConnected.Network);
-										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-										  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-											//Module
-										sprintf(debugTransmitBuffer, "Module :	 %i \n",BoardConnected.Module);
-										  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-											//Board
-										sprintf(debugTransmitBuffer, "Board :		 %x \n",Board);
-										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-										  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-											//Version
-										sprintf(debugTransmitBuffer, "Version :	 %x \n",Version);
-										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-										  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-								break;
+//							case 0x35:
+//										ptr = data + 15;
+//										Board = *ptr++;
+//										Board += (*ptr++ << 8); //LSB board number coming in
+//										Version = *ptr++; //version currently installed on board
+//										Flags = *ptr++;		//
+//										Subclass = *ptr++;//if a 93xx board is connected, what variety is it C, M, X, F...
+//
+//										ptr = data + (arraysize-3);
+//										Samplerate = *ptr++;	//Sample rate for period of time between samples
+//										Samplerate += (*ptr++ << 8);
+//										//Print Board Info //Transmit Info To Terminal
+//										sprintf(debugTransmitBuffer, "=====Board Info=====\n");
+//										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+//										HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+//											//Network
+//										sprintf(debugTransmitBuffer, "Network :	 %i \n",BoardConnected.Network);
+//										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+//										HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+//											//Module
+//										sprintf(debugTransmitBuffer, "Module :	 %i \n",BoardConnected.Module);
+//										HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+//										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+//											//Board
+//										sprintf(debugTransmitBuffer, "Board :		 %x \n",Board);
+//										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+//										HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+//											//Version
+//										sprintf(debugTransmitBuffer, "Version :	 %x \n",Version);
+//										CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+//										HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+//								break;
 							case 0x57:
-									HAL_Delay(250); //Delay for the reset of board, as to stop interference with ADC measurements
+									if (BoardConnected.BoardType != b422x)
+										CLEAR_BIT(BoardConnected.BSR, BOARD_INITIALISED);
+									HAL_Delay(300); //Delay for the reset of board, as to stop interference with ADC measurements
 									printT("===Board Configuration Successful===\n");
 									TestFunction(&BoardConnected);
 									if(LatchPort1)
@@ -185,7 +188,7 @@ void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 									samplesUploading = true;
 									sampleTime = sampleTime > 100 ? 100 : sampleTime;
 									//Uploading begun
-									sprintf(debugTransmitBuffer,"Waitng : %.2f seconds....\n", (float)sampleTime/100 );
+									sprintf(debugTransmitBuffer,"Waitng : %.2f seconds....\n", (float)sampleTime/1000 );
 									printT(&debugTransmitBuffer);
 									break;
 
@@ -231,11 +234,9 @@ void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 								  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 									//Version
 								sprintf(debugTransmitBuffer, "Version :	 %x \n",BoardConnected.Version);
-								CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-								  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+								printT(&debugTransmitBuffer[0]);
+								HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 								break;
-//							case 0x12:
-//								break;
 				}
 			} else {
 			sprintf(debugTransmitBuffer, "CRC ERROR...\n\n");
@@ -299,12 +300,8 @@ void SetPara(uns_ch Command)
 				break;
 			case 0x56:
 						sprintf(debugTransmitBuffer, "\nConfiguring Board...\n");
-//						CDC_Transmit_FS(&Buffer[0], strlen(Buffer));
-						HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-
+						printT(&debugTransmitBuffer);
 						SetTestParam(&BoardConnected, BoardConnected.GlobalTestNum, &Para[0], &Paralen);
-						communication_array(Command, &Para[0], Paralen);
-
 						if( BoardConnected.GlobalTestNum == 0) {
 							LCD_ClearLine(1);
 							LCD_setCursor(1, 0);
@@ -350,7 +347,22 @@ void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewS
 	Com_buffer[Comlen-1] = (Crc >> 8);
 
  	 	 //Switch Comms to Radio or RS485 depending on Board Connected
-
+	if((BoardConnected.BoardType == b935x) || (BoardConnected.BoardType == b937x)) {
+		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+	 } else if((BoardConnected.BoardType == b401x) || (BoardConnected.BoardType == b422x)) {
+		 USART2->CR1 &= ~(USART_CR1_RE);
+//		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
+		 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+		 delay_us(50);
+	 } else if((BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b427x)) {
+		 if(BoardConnected.GlobalTestNum < 4){
+			 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+		 } else {
+			 USART2->CR1 &= ~(USART_CR1_RE);
+			 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
+			 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
+		 }
+	 }
 	 UART2_transmit(&Com_buffer[0], Comlen);
 	 USART2->CR1  |= USART_CR1_RXNEIE;
 }

@@ -19,7 +19,7 @@
 #define VOLTAGE_GAIN (1.0+V_R1/V_Rf)
 #define DAC_MAX_VOLTAGE (DAC_MAX_OUT * VOLTAGE_GAIN)	//MAX Voltage possible at V out
 
-#define DAC_1volt (round( (1/DAC_MAX_VOLTAGE) * DAC_RESOLUTION))
+#define DAC_1volt (round( (1.0/DAC_MAX_VOLTAGE) * DAC_RESOLUTION))
 #define DAC_05volt (round( (0.5/DAC_MAX_VOLTAGE) * DAC_RESOLUTION))
 #define DAC_24volt (round( (2.4/DAC_MAX_VOLTAGE) * DAC_RESOLUTION))
 

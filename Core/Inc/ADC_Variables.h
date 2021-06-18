@@ -30,6 +30,30 @@ Latch Port Input________|________/\/\/\______________OPAMP
 #define LATCH_LOW_VOLTAGE_THRESHOLD ( (V_SOURCE * 0.2 ) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH low voltage is below 10% of source voltage
 
 
+// Input Voltages
+/*
+ 	  	  	  	  	  _____ Vsource
+						|
+						/
+						\  INPUT_ADC_R1
+						/
+Latch Port Input________|________/\/\/\______________OPAMP
+					|	  INPUT_ADC_R2        |
+					|		  	  	  	  	  |
+					/		  	  	  	  	  /
+					\ _ADC_R4	  	  	  	  \ INPUT_ADC_R3
+					/		  	  	  	  	  /
+					|		  	  	  	  	  |
+				   GND		 	 	 	 	 GND
+*/
+
+#define INPUT_ADC_R1 5000
+#define INPUT_ADC_R2 4020
+#define INPUT_ADC_R3 1000
+#define INPUT_ADC_R4 100	//Not required for calculations
+#define MAX_SOURCE_VALUE ( (ADC_VREF * (INPUT_ADC_R2 + INPUT_ADC_R3) ) / INPUT_ADC_R3 )
+
+
 	//Latch Test Registers
 #define PORT_A_PULSEWIDTH_ERROR 1
 #define PORT_A_VOLTAGE_ERROR 	2

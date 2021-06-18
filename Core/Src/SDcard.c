@@ -29,23 +29,31 @@
 //}
 
 void SDfileInit() {
-	Mount_SD("/");
+	if (SDcard.fatfs.last_clst == 0)
+		Mount_SD("/");
 	Check_SD_Space();
-	Create_Dir("TEST_RESULTS");
+	SDcard.fresult = Create_Dir("TEST_RESULTS");
+	if (SDcard.fresult == 12) {
+		while (1) {
+			Mount_SD("/");
+			if (SDcard.fresult == FR_OK) {
+				break;
+			}
+		}
+	}
 }
 
-void FindBoardFile(TboardConfig *Board, char * fileLocation) {	//TODO: Change to _Bool
+_Bool FindBoardFile(TboardConfig *Board, char * fileLocation) {
 	   	if(Board->Subclass)
 	   		sprintf(fileLocation,"%x%c", Board->BoardType, Board->Subclass);
-	   	else sprintf(fileLocation, '%x', Board->BoardType);
-
-		if (Find_File("/FIRMWARE", fileLocation)) {
-					char * tempDir;
-					tempDir = "/FIRMWARE/";
-					strcpy(fileLocation, tempDir);
-					strcat(fileLocation, fno.fname);
-					return true;
-			} else {
+	   	else sprintf(fileLocation, "%x", Board->BoardType);
+		if (Find_File(&SDcard, "FIRMWARE", fileLocation)) {
+			char * tempDir;
+			tempDir = "/FIRMWARE/";
+			strcpy(fileLocation, tempDir);
+			strcat(fileLocation, SDcard.fileInfo.fname);
+			return true;
+		} else {
 			sprintf(debugTransmitBuffer, "hex file not found");
 			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			printT(debugTransmitBuffer[0]);

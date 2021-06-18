@@ -11,7 +11,7 @@
 
 void TestRig_Init() {
 	  sprintf(debugTransmitBuffer,"==========TestRig========== \n");
-	  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	  CDC_Transmit_FS(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
@@ -28,7 +28,7 @@ void TestRig_Init() {
 
 	  UART2_RecPos = 0;
 	  samplesUploading = false;
-	  HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
+
 	  //Set DAC to zero
 	  reset_ALL_DAC();
 	  HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_GPIO_Port, GPIO_PIN_SET);
@@ -59,9 +59,6 @@ void TestRig_Init() {
 
 	  timeOutCount = 0;
 	  timeOutEn = false;
-
-      HAL_GPIO_WritePin(V12fuseEN_GPIO_Port, V12fuseEN_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin(V12fuseLatch_GPIO_Port, V12fuseLatch_Pin, GPIO_PIN_RESET);
 }
 
 void initialiseTargetBoard() {
@@ -69,6 +66,13 @@ void initialiseTargetBoard() {
 		Command = 0xCC;
 		SetPara(Command);
 		communication_array(Command, &Para[0], Paralen);
+}
+
+void interrogateTargetBoard() {
+	uns_ch Command;
+	Command = 0x08;
+	SetPara(Command);
+	communication_array(Command, &Para, Paralen);
 }
 
 void TargetBoardParamInit() {

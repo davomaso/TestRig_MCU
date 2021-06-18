@@ -70,13 +70,19 @@ void TestFunction(TboardConfig *Board) {
 		}
 	}
 	//====================== Digital Test Count ======================//
-	for (currPort = 7; currPort < Board->digitalInputCout+7; currPort++) {
+	for (currPort = 6; currPort < Board->digitalInputCout+6; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case ASYNC_PULSE:
 			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(currPort);
 			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
 			break;
 		}
+	}
+	if (Board->BoardType == b402x) {
+		if (currPort == 9 && Board->TestCode[totalPortCount] == 0x01) {
+			CHval[Board->GlobalTestNum][totalPortCount++] = 1;//RunOutputTest();
+		} else
+			CHval[Board->GlobalTestNum][totalPortCount++] = 0;
 	}
 }
 //	==================================================================================	//
@@ -95,7 +101,7 @@ int twoWireLatching(uint8 Test_Port,_Bool state) {
 			LatchPort3 = (Test_Port == Port_3) && state ? true : false;
 			break;
 		case Port_4:
-			LatchPort4 = (Test_Port == Port_4) && state ? true : false;
+			return LatchPort4 = (Test_Port == Port_4) && state ? true : false;
 			break;
 		}
 	return state;
@@ -273,6 +279,7 @@ float asyncPulse(uint8 Test_Port) {
 	switch (Test_Port) {
 	//Port 2
 	case Port_1:
+		HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_SET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -294,6 +301,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 		//Port 3
 	case Port_2:
+		HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_SET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -315,6 +323,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 		//Port 4
 	case Port_3:
+		HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_SET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -336,6 +345,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 		//Port 5
 	case Port_4:
+		HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_SET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -356,6 +366,7 @@ float asyncPulse(uint8 Test_Port) {
 		return (float) Async_Port4.FilterEnabled ?  Async_Port4.PulseCount : (11*Async_Port4.PulseCount);
 		break;
 	case Port_5:
+		HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_SET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -377,6 +388,7 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 
 	case Port_6:
+		HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_SET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -397,7 +409,7 @@ float asyncPulse(uint8 Test_Port) {
 		return (float) Async_Port6.FilterEnabled ?  Async_Port6.PulseCount : (11*Async_Port6.PulseCount);
 		break;
 
-	case 6:
+	case Port_7:
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -418,7 +430,7 @@ float asyncPulse(uint8 Test_Port) {
 		return (float) Async_Port7.PulseCount;
 		break;
 
-	case 7:
+	case Port_8:
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -438,7 +450,7 @@ float asyncPulse(uint8 Test_Port) {
 		Async_Port8.PulseState = true;
 		return (float) Async_Port8.PulseCount;
 		break;
-	case 8:
+	case Port_9:
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -507,6 +519,26 @@ float sdiTwelve(uint8 Test_Port){
 		break;
 	}
 
+}
+//	===================================================================================	//
+
+
+//	=================================    Run Output    ===============================  //
+_Bool RunOutputTest() {
+	/*
+	 * Run test on the output of the input board, The output is connected to the Vfuse as
+	 * the output and fuse will share the same voltage
+	 *
+	 * Test is to run for 50ms to ensure that the output is correct and operates in a stable manner
+	 */
+	uns_ch Command = 0x26;
+	Para[0] = 0x87;
+	Paralen = 1;
+	communication_array(Command, &Para, Paralen);
+	while(1) {
+
+	}
+	return 1;
 }
 //	===================================================================================	//
 
@@ -638,7 +670,7 @@ void reset_ALL_MUX() {
 //	=================================    ADC    =====================================//
 void ADC_Init(){
 	CLEAR_REG(LatchTestStatusRegister);
-	stableVoltageCount = 10;
+	stableVoltageCount = 25;
 	LatchCountTimer = 0;
 		//Low Voltage Reset
 	Vfuse.lowVoltage = 4096;
@@ -731,15 +763,15 @@ void PrintLatchResults(){
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 		//Vin Voltage
-	Vin.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	Vin.steadyState *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vin.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
+	Vin.steadyState *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %f Min: %f   ==============\n", Vin.steadyState, Vin.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 		//Fuse Voltage
-	Vfuse.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	Vfuse.steadyState *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vfuse.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
+	Vfuse.steadyState *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %f Min: %f   ==============\n", Vfuse.steadyState, Vfuse.lowVoltage);
 	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);

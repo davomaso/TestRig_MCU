@@ -58,3 +58,27 @@ void ADC_Ch3sel() {
 	    Error_Handler();
 	  }
 }
+	//12V
+void ADC_Ch4sel() {
+	ADC_ChannelConfTypeDef sConfig = {0};
+
+	  sConfig.Channel = ADC_CHANNEL_4;
+	  sConfig.Rank = 1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
+	  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}
+	//Vuser
+void ADC_Ch5sel() {
+	ADC_ChannelConfTypeDef sConfig = {0};
+
+	  sConfig.Channel = ADC_CHANNEL_5;
+	  sConfig.Rank = 1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
+	  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}

@@ -223,8 +223,8 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		 * the current on all ports.
 		 * In the event of a failure set the ProcessState to psFailed to halt process
 		 */
+
 		if (CalibratingTimer < CalibrateTimerTo) {
-			ADC_Ch0sel();
 			HAL_ADC_Start(&hadc1);
 			HAL_ADC_PollForConversion(&hadc1, 100);
 			calibrateADCval.total += HAL_ADC_GetValue(&hadc1);
@@ -237,14 +237,13 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				calibrateADCval.total = 0;
 				usADCcount = 0;
 
-				if (calibrateADCval.average <= 100) {
+				if (calibrateADCval.average <= 100 || calibrateADCval.average >= 2700 ) { //  ||
 					if (!(--CalibrationCountdown)) {
 						switchToCurrent = true;
 						TargetBoardCalibration();
-
 						}
 				} else {
-					CalibrationCountdown = 10;
+					CalibrationCountdown = 25;
 					}
 			}
 		} else
@@ -325,9 +324,9 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
 					 * set LatchSampling to false so that the process is halted and the test fails
 					 */
-					if( (Vfuse.average > 3000) && (Vfuse.average > 0.75*Vin.average) ) stableVoltageCount--;
+					if( (Vfuse.average > 2700) && (Vfuse.average > 0.75*Vin.average) ) stableVoltageCount--;
 					else stableVoltageCount++;
-					if( stableVoltageCount > 75)
+					if( stableVoltageCount > 100)
 						CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 					else if (stableVoltageCount == 0)
 						SET_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
@@ -490,6 +489,7 @@ void USART2_IRQHandler(void)
 				if (UART2_RecPos == (UART2_Length + 3)) {
 					UART2_Recdata = false;
 					UART2_ReceiveComplete = true;
+					timeOutEn = false;
 					ProcessState = psComplete;		//Set process to complete to flag that communications were received and continue with testing
 					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 					USART2->CR1  &= ~(USART_CR1_RXNEIE);
@@ -511,7 +511,7 @@ void USART2_IRQHandler(void)
 				USART2->CR1 |= (USART_CR1_TCIE);
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
-			setTimeOut(2500);
+			setTimeOut(10000);
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
 		}
@@ -871,22 +871,27 @@ void TIM6_IRQHandler(void)
   /* USER CODE END TIM6_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_IRQn 1 */
-  if(samplesUploading)
-  {
+  if(samplesUploading) {
 	  /*
 	   * Timer that is set when samples begin uploading to determine when to send
 	   * the 0x18 Command to fetch results
 	   * Set the processState to complete so that the next step can begin
 	   */
-	  if(sampleCount == sampleTime)
-	  {
-		  samplesUploading = false;
-		  ProcessState = psComplete;
-		  sampleCount = 0;
-	  }	else
-		  sampleCount++;
-
-  }
+		  if(sampleCount >= sampleTime) {
+			  samplesUploading = false;
+			  ProcessState = psComplete;
+			  Vuser.average = Vuser.total / sampleCount;
+			  sampleCount = 0;
+			  Vuser.total = 0;
+		  }	else {
+			  ADC_Ch5sel();
+			  HAL_ADC_Start(&hadc1);
+			  HAL_ADC_PollForConversion(&hadc1, 1);
+			  Vuser.total += HAL_ADC_GetValue(&hadc1);
+			  HAL_ADC_Stop(&hadc1);
+			  sampleCount++;
+		  }
+	  }
   /* USER CODE END TIM6_IRQn 1 */
 }
 
