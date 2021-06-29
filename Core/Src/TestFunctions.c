@@ -208,7 +208,7 @@ float threeVolt(uint8 Test_Port, uint8 TestCode) {
 	uint16 DAC_Value;
 	switch (TestCode) {
 		case ONE_VOLT:
-				voltage = 0.5;
+				voltage = 0.50;
 				DAC_Value = DAC_05volt;
 			break;
 		case TWOFIVE_VOLT:
@@ -279,29 +279,30 @@ float asyncPulse(uint8 Test_Port) {
 	switch (Test_Port) {
 	//Port 2
 	case Port_1:
-		HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
-			Async_Port1.PulseCount = 12;
+			Async_Port1.PulseCount = 10;
 			break;
 		case 2:
 		case 3:
-			Async_Port1.PulseCount = 12;
+			Async_Port1.PulseCount = 10;
 			break;
 		case 4:
 		case 5:
-			Async_Port1.PulseCount = 6;
+			Async_Port1.PulseCount = 10;
 			break;
 		}
 		MUX_Sel(Test_Port, ASYNC_PULSE);
+		HAL_Delay(5);
 		Async_Port1.fcount = 5;
 		Async_Port1.PulseState = true;
 		return (float) Async_Port1.FilterEnabled ?  Async_Port1.PulseCount : (11*Async_Port1.PulseCount);
 		break;
 		//Port 3
 	case Port_2:
-		HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -317,13 +318,14 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 		}
 		MUX_Sel(Test_Port, ASYNC_PULSE);
+		HAL_Delay(5);
 		Async_Port2.fcount = 5;
 		Async_Port2.PulseState = true;
 		return (float) Async_Port2.FilterEnabled ?  Async_Port2.PulseCount : (11*Async_Port2.PulseCount);
 		break;
 		//Port 4
 	case Port_3:
-		HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -339,13 +341,14 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 		}
 		MUX_Sel(Test_Port, ASYNC_PULSE);
+		HAL_Delay(5);
 		Async_Port3.fcount = 5;
 		Async_Port3.PulseState = true;
 		return (float) Async_Port3.FilterEnabled ?  Async_Port3.PulseCount : (11*Async_Port3.PulseCount);
 		break;
 		//Port 5
 	case Port_4:
-		HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -361,12 +364,13 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 		}
 		MUX_Sel(Test_Port, ASYNC_PULSE);
+		HAL_Delay(5);
 		Async_Port4.fcount = 5;
 		Async_Port4.PulseState = true;
 		return (float) Async_Port4.FilterEnabled ?  Async_Port4.PulseCount : (11*Async_Port4.PulseCount);
 		break;
 	case Port_5:
-		HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -382,13 +386,14 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 		}
 		MUX_Sel(Test_Port, ASYNC_PULSE);
+		HAL_Delay(5);
 		Async_Port5.fcount = 5;
 		Async_Port5.PulseState = true;
 		return (float) Async_Port5.FilterEnabled ?  Async_Port5.PulseCount : (11*Async_Port5.PulseCount);
 			break;
 
 	case Port_6:
-		HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
 		switch (BoardConnected.GlobalTestNum) {
 		case 0:
 		case 1:
@@ -404,6 +409,7 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 		}
 		MUX_Sel(Test_Port, ASYNC_PULSE);
+		HAL_Delay(5);
 		Async_Port6.fcount = 5;
 		Async_Port6.PulseState = true;
 		return (float) Async_Port6.FilterEnabled ?  Async_Port6.PulseCount : (11*Async_Port6.PulseCount);
@@ -618,47 +624,24 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 }
 void reset_ALL_MUX() {
 	//MUX 1
-	HAL_GPIO_WritePin(MUX_WRodd1_GPIO_Port, MUX_WRodd1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_WRodd1_GPIO_Port, MUX_WRodd1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
+	MUX_Sel(Port_1, ASYNC_PULSE);
 	//MUX 2
-	HAL_GPIO_WritePin(MUX_WReven1_GPIO_Port, MUX_WReven1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_WReven1_GPIO_Port, MUX_WReven1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
+	MUX_Sel(Port_2, ASYNC_PULSE);
 	//MUX 3
-	HAL_GPIO_WritePin(MUX_WRodd2_GPIO_Port, MUX_WRodd2_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_WRodd2_GPIO_Port, MUX_WRodd2_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
+	MUX_Sel(Port_3, ASYNC_PULSE);
 	//MUX 4
-	HAL_GPIO_WritePin(MUX_WReven2_GPIO_Port, MUX_WReven2_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_WReven2_GPIO_Port, MUX_WReven2_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
+	MUX_Sel(Port_4, ASYNC_PULSE);
 	//MUX 5
-	HAL_GPIO_WritePin(MUX_WRodd3_GPIO_Port, MUX_WRodd3_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_WRodd3_GPIO_Port, MUX_WRodd3_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
+	MUX_Sel(Port_5, ASYNC_PULSE);
 	//MUX 6
-	HAL_GPIO_WritePin(MUX_WReven3_GPIO_Port, MUX_WReven3_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(MUX_WReven3_GPIO_Port, MUX_WReven3_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
+	MUX_Sel(Port_6, ASYNC_PULSE);
+	HAL_Delay(2000);
 }
 //	=================================================================================//
 

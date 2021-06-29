@@ -94,10 +94,14 @@ void scanLoom(TboardConfig *Board){
 			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 
 		}
-		  LCD_setCursor(4, 0);
-		  LCD_CursorOn_Off(false);
-		  sprintf(debugTransmitBuffer,"   1 - Begin Test ");
-		  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		if(strlen(previousTestBuffer) > 1){
+			LCD_setCursor(2, 0);
+			LCD_printf(&previousTestBuffer[0], strlen(previousTestBuffer));
+		}
+		LCD_setCursor(4, 0);
+		LCD_CursorOn_Off(false);
+		sprintf(debugTransmitBuffer,"   1 - Begin Test ");
+		LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	}
 
 }
@@ -128,13 +132,15 @@ void currentBoardConnected(TboardConfig * Board) {
 			return;
 }
 
-void checkLoomConnected() {
-	uint8 ADCreading;
-	ADC_Ch3sel();
-	HAL_ADC_Start(&hadc1);
-	HAL_ADC_PollForConversion(&hadc1, 100);
-	ADCreading = HAL_ADC_GetValue(&hadc1);
-	HAL_ADC_Stop(&hadc1);
-	if(ADCreading < 10)
-		HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
-}
+//void checkLoomConnected() {
+//	uint8 ADCreading;
+//	ADC_Ch3sel();
+//	HAL_ADC_Start(&hadc1);
+//	HAL_ADC_PollForConversion(&hadc1, 100);
+//	ADCreading = HAL_ADC_GetValue(&hadc1);
+//	HAL_ADC_Stop(&hadc1);
+////	if(ADCreading < 10)
+////		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);
+////		HAL_GPIO_WritePin(PASS_GPIO_Port, PASS_Pin, GPIO_PIN_RESET);
+////		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+//}

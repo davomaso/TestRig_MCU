@@ -18,16 +18,16 @@ void LatchErrorCheck(TboardConfig * Board){
 		if((adc2.highVoltage <= 9.8) || (adc2.lowVoltage > 0.7) || (adc2.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	} else {
-		if((adc1.highVoltage <= 10.5)  || (adc1.lowVoltage >= 0.7) || (adc1.highVoltage == 0))
+		if((adc1.highVoltage <= 10.2)  || (adc1.lowVoltage >= 0.7) || (adc1.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if((adc2.highVoltage < 10.5 ) || (adc2.lowVoltage > 0.7) || (adc2.highVoltage == 0))
+		if((adc2.highVoltage < 10.2 ) || (adc2.lowVoltage > 0.7) || (adc2.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	}
 		//ADC2 Check
 	if( ( (adc2.HighPulseWidth > 52) || (adc2.HighPulseWidth < 48) ) || ( (adc2.LowPulseWidth > 52) || (adc2.LowPulseWidth < 48) ) )
 		SET_BIT(Board->LTR, PORT_B_PULSEWIDTH_ERROR);
 		//Vin Check
-	if( Vin.steadyState < 11 )
+	if( Vin.steadyState < 10.8 )
 		SET_BIT(Board->LTR, INPUT_VOLTAGE_ERROR);
 		//Vfuse Check
 	if(Vfuse.steadyState < 0.95*Vin.steadyState  || Vfuse.lowVoltage < 0.9*Vin.lowVoltage)

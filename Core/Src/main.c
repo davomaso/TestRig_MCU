@@ -167,21 +167,11 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
 //=========================================================================================================//
 
-//=========================================================================================================//
- 	  if ((CurrentState == csIDLE) && (ProcessState == psWaiting) && CheckLoom) {
-  	  	  /*
-  	  	   * If system is in the idle, waiting and checkloom is toggled true by the timeout, the loom
-  	  	   * should be scanned with the board that is connected returned.
-  	  	   */
-		  scanLoom(&BoardConnected);
-		  checkLoomConnected(&BoardConnected);
-		  ConfigInit();
+	  if (ProcessState == psComplete) {
+		  retryCount = 0;
 	  }
-//=========================================================================================================//
-
 
 //=========================================================================================================//
 	  	  //Testing Functionality
@@ -193,20 +183,47 @@ int main(void)
 	  		TestRig_Init();
 	  		TargetBoardParamInit();
 	  		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-	  		HAL_Delay(3000);
-	  		HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
+	  		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);
+	  		HAL_GPIO_WritePin(PASS_GPIO_Port, PASS_Pin, GPIO_PIN_RESET);
+	  		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	  		CurrentState = csInterogating;
+	  		ProcessState = psWaiting;
+	  		HAL_TIM_Base_Start_IT(&htim10);
+	  		sprintf(&debugTransmitBuffer,"Board Power Test");
+			LCD_setCursor(2, 0);
+			LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+	  		InputVoltageTimer = 0;
+	  		while(1) {
+	  			if (InputVoltageStable){
+	  				sprintf(&debugTransmitBuffer,"Input Voltage Stable");
+	  				LCD_setCursor(2, 0);
+	  				LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+	  				printT("Input Voltage Stable...\n");
+	  				break;
+	  			} else if (InputVoltageTimer > 5000) {
+	  				HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
+	  				printT("Input Voltage Failure...\n");
+	  				CurrentState = csIDLE;
+	  			  	ProcessState = psFailed;
+	  			  	break;
+	  			}
+	  		}
+	  		HAL_Delay(1000);
+	  		HAL_TIM_Base_Stop_IT(&htim10);
 	  		LCD_ClearLine(4);
 	  		LCD_ClearLine(3);
 	  		LCD_setCursor(2, 1);
 	  		sprintf(debugTransmitBuffer, "    Interogating    ");
 	  		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 	  		uns_ch Command = 0x10;
-	  		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 	  		communication_arraySerial(Command, 0, 0);
-	  		setTimeOut(200);
-	  		CurrentState = csInterogating;
-	  		ProcessState = psWaiting;
 	  }
+//=========================================================================================================//
+
+
+//=========================================================================================================//
+	  if (ProcessState == psComplete)
+		  retryCount = 0;
 //=========================================================================================================//
 
 
@@ -216,310 +233,43 @@ int main(void)
 	   * will return here to continue with the testing procedure, resetting the current state and resetting
 	   * the process state to waiting.
 	   */
-	  	if (ProcessState == psComplete) {
-	  		uns_ch Response;
-	  		uns_ch Command;
 	  	    switch(CurrentState) {
 	  	    	case csInitialising:
-	  	    		/*
-	  	    		 * Following the testing procedure this will configure the baord to be placed into stock
-	  	    		 */
-	  	    		if (READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
-	  	    			SET_BIT( BoardConnected.BSR, BOARD_INITIALISED );
-	  	    			communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
-	  	    			if (!READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {
-							Command = 0x10;
-							communication_arraySerial(Command, 0, 0);
-							CurrentState = csSerialise;
-							ProcessState = psWaiting;
-	  	    			} else {
-	  	    				timeOutEn = false;
-	  	    				LCD_setCursor(2, 0);
-	  	    				sprintf(debugTransmitBuffer, "Previous Test Passed");
-	  	    				LCD_ClearLine(2);
-	  	    				LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-	  	    				CurrentState = csIDLE;
-	  	    				ProcessState = psWaiting;
-	  	    			}
-					} else {
-							//Refresh LCD screen
-						if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED)) {	// when board is not serialised prompt user for user input
-							LCD_ClearLine(2);
-							LCD_ClearLine(3);
-							LCD_ClearLine(4);
-							LCD_setCursor(2, 0);
-							sprintf(debugTransmitBuffer, "Enter Serial Number:");
-							LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-							printT("Enter Serial Number: \n");
-							BoardConnected.SerialNumber = read_serial();
-							SET_BIT(BoardConnected.BSR, BOARD_SERIALISED);	// Set board register serialised bit to set
-							if (BoardConnected.SerialNumber) {
-								Command = 0x10;
-								communication_arraySerial(Command, 0, 0);
-								CurrentState = csSerialise;
-								ProcessState = psWaiting;
-							}
-						} else {
-							SET_BIT(BoardConnected.BSR, BOARD_INITIALISED);
-							LCD_Clear();
-							TestRig_Init();
-							Command = 0x08;
-							SetPara(Command);
-							communication_array(Command, &Para, Paralen);
-							CurrentState = csInterogating;
-							ProcessState = psWaiting;
-						}
-					}
+	  	    		// Following the testing procedure this will configure the baord to be placed into stock
+	  	    			handleInitialising(&BoardConnected, &ProcessState);
 	  	    		break;
 	  	    	case csProgramming:
-	  	    		ProgramTargetBoard(&BoardConnected);
+	  	    			handleProgramming(&BoardConnected, &ProcessState);
 	  	    		break;
 	  	    	case csCalibrating:
-	  	    		//TODO: Implement calibration counter here for if the calibration fails, retry 3 times,
-	  	    		communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
-	  	    		if ( Response == 0xC1 ) {
-		  	    		LCD_setCursor(2, 0);
-		  	    		sprintf(debugTransmitBuffer, "    Initialising    ");
-		  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-  	            		if (!READ_BIT(BoardConnected.BSR, BOARD_INITIALISED)) {
-							initialiseTargetBoard();
-							CurrentState = csInitialising;
-							ProcessState = psWaiting;
-  	            		} else {
-	  	            		Command = 0x56;
-		  	                SetPara(Command);
-		  	                communication_array(Command,&Para[0], Paralen);
-		  	                CurrentState = csConfiguring;
-		  	                ProcessState = psWaiting;
-  	            		}
-	  	    		} else {
-	  	    			//TODO: add timeout and repeat transmission
-	  	    		}
+	  	    			handleCalibrating(&BoardConnected, &ProcessState);
 	  	    		break;
 	  	        case csInterogating: //0x09 & 0x35
-	  	        	communication_response(&Response, &UART2_RXbuffer[0], UART2_RecPos);
-	  	            if (Response == 0x09 ) { //|| Response == 0x27
-	  	            	if (READ_BIT( BoardConnected.BSR, BOARD_CALIBRATED)) {	//Check if board has been calibrated yet
-		  	                if (BoardConnected.BoardType == b422x) {
-		  	                	if ( READ_BIT(BoardConnected.BSR, BOARD_INITIALISED) ) {
-									if (CheckTestNumber(&BoardConnected)) {
-										LatchingSolenoidDriverTest(&BoardConnected, BoardConnected.GlobalTestNum);
-										CompareResults(&BoardConnected, &CHval[BoardConnected.GlobalTestNum]);
-									} else {
-										CurrentState = csIDLE;
-										ProcessState = psWaiting;
-									}
-		  	                	} else {
-		  	                		Command = 0xCC;
-		  	                		SetPara(Command);
-		  	                		communication_array(Command, &Para, Paralen);
-		  	                		CurrentState = csInitialising;
-		  	                		ProcessState = psWaiting;
-		  	                	}
-		  	                } else {
-		  	            		Command = 0x56;
-			  	                SetPara(Command);
-			  	                communication_array(Command,&Para[0], Paralen);
-			  	                CurrentState = csConfiguring;
-			  	                ProcessState = psWaiting;
-		  	                }
-	  	            	} else {
-	  		  	    		LCD_setCursor(2, 0);
-	  		  	    		sprintf(debugTransmitBuffer, "    Calibrating    ");
-	  		  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-	  	            		switchToCurrent = false;
-//	  	            		HAL_Delay(50);
-	  	            		TargetBoardCalibration(&BoardConnected);
-	  	            		CurrentState = csCalibrating;
-	  	            		ProcessState = psWaiting;
-	  	            	}
-	  	            } else if (Response == 0x11) {
-						currentBoardConnected(&BoardConnected);
-	  	            	if (BoardConnected.Version < getCurrentVersion(BoardConnected.BoardType) ) {
-	  	            		CurrentState = csProgramming;
-	  	            		ProcessState = psComplete;
-	  	            	} else { //TODO: Put the user choice to reprogram the board here
-	  	            		if (ContinueWithCurrentProgram() ) {
-	  							currentBoardConnected(&BoardConnected);
-		  	            		CurrentState = csProgramming;
-		  	            		ProcessState = psComplete;
-		  	            		LCD_ClearLine(4);
-		  	            		break;
-	  	            		}
-	  	            	}
-	  	            		if( ContinueWithCurrentSerial() ) {
-	  	            			Command = 0x08;
-	  	            			SetPara(Command);
-	  	            			communication_array(Command, &Para, Paralen);
-				  	    		LCD_setCursor(2, 0);
-				  	    		sprintf(debugTransmitBuffer, "   Interrogating    ");
-				  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-	  	            			CurrentState = csInterogating;
-	  	            			ProcessState = psWaiting;
-	  	            		} else {
-	  	            			CurrentState = csInitialising;
-	  	            			ProcessState = psComplete;
-	  	            		}
-	  	            }
+	  	        		handleInterogating(&BoardConnected, &ProcessState);
 	  	            break;
 	  	        case csConfiguring: // 0x57
-						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
-						if (Response == 0x57) {
-							if (SDIenabled)
-								USART6->CR1 |= (USART_CR1_RXNEIE);
-
-							Command = 0x1A;
-							SetPara(Command);
-							communication_array(Command,&Para, Paralen);
-							ProcessState = psWaiting;
-							CurrentState = csSampling;
-						}
+	  	        		handleConfiguring(&BoardConnected, &ProcessState);
 	  	            break;
 	  	        case csSampling: // 0x1B
-						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
-						printT("Samples Uploaded\n\n");
-						printT("Requesting Results\n\n");
-						ProcessState = psWaiting;
-						CurrentState = csUploading;
+	  	        		handleSampling(&BoardConnected, &ProcessState);
 	  	            break;
 	  	        case csUploading: // 0x19
-						Command = 0x18;
-						SetPara(Command);
-						communication_array(Command,&Para, Paralen);
-						ProcessState = psWaiting;
-						CurrentState = csSortResults;
+	  	        		handleUploading(&BoardConnected, &ProcessState);
 	  	            break;
 	  	        case csSortResults:
-						communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
-						if(Response == 0x03) {
-							CurrentState = csUploading;
-							ProcessState = psWaiting;
-						} else if (BoardConnected.GlobalTestNum <= BoardConnected.testNum) {
-							if( CheckTestNumber(&BoardConnected)) {
-								Command = 0x56;
-								ProcessState = psWaiting;
-								CurrentState = csConfiguring;
-								SetPara(Command);
-								communication_array(Command,&Para, Paralen);
-							} else {
-							if(READ_BIT( BoardConnected.BSR, BOARD_TEST_PASSED )) {
-								LCD_setCursor(2, 0);
-								sprintf(debugTransmitBuffer, "    Test Passed    ");
-								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_SET);
-								timeOutEn = false;
-				  	    		LCD_setCursor(2, 0);
-				  	    		sprintf(debugTransmitBuffer, "    Initialising    ");
-				  	    		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-		  	            		initialiseTargetBoard();
-		  	            		CurrentState = csInitialising;
-			  	    			ProcessState = psWaiting;
-							} else {
-								LCD_setCursor(2, 0);
-								sprintf(debugTransmitBuffer, "    Test Failed    ");
-								LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-								HAL_GPIO_WritePin(PASS_FAIL_GPIO_Port, PASS_FAIL_Pin, GPIO_PIN_RESET);
-								timeOutEn = false;
-								ProcessState = psWaiting;
-								CurrentState = csIDLE;
-									}
-								}
-						}
+						handleSortResults(&BoardConnected, &ProcessState);
 	  	        	break;
 	  	        case csSerialise:
-					if (Command == 0x10) {
-						uint32 tempSerial;
-						uint32 CurrentSerial;
-						uint32 NewSerial;
-						tempSerial = ReadSerialNumber(&UART2_RXbuffer[0], UART2_RecPos);
-							//Load Current Serial Number
-						memcpy(&CurrentSerial, &tempSerial, 4);
-							//Write New Serial Number
-						memcpy(&NewSerial, &(BoardConnected.SerialNumber), 4);
-						Command = 0x12;
-						communication_arraySerial(Command, CurrentSerial, NewSerial);
-						ProcessState = psWaiting;
-					} else if (Command == 0x12) {
-						uint32 tempSerial;
-						tempSerial = ReadSerialNumber(&UART2_RXbuffer[0], UART2_RecPos);
-						if(tempSerial != BoardConnected.SerialNumber) {
-							Command = 0x10;
-							communication_arraySerial(Command, 0, 0);
-							ProcessState = psWaiting;
-						} else {
-							SET_BIT( BoardConnected.BSR, BOARD_SERIALISED );
-							sprintf(debugTransmitBuffer, "=====     Board Serialised     =====\n");
-							HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-							sprintf(debugTransmitBuffer, "Serial number %d loaded into board\n", BoardConnected.SerialNumber);
-							HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-
-							Command = 0x08;
-							SetPara(Command);
-							HAL_Delay(50);
-							communication_array(Command,&Para, Paralen);
-							sprintf(debugTransmitBuffer,"Interogating...\n");
-							HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-
-							CurrentState = csInterogating;
-							ProcessState = psWaiting;
-						}
-					}
+	  	        		handleSerialise(&BoardConnected, &ProcessState);
 	  	        	break;
 	  	        case csIDLE:
-	  	        		  initialiseTargetBoard();
-	  	        		  CurrentState = csInitialising;
-	  	        		  ProcessState = psWaiting;
+	  	        		handleIdle(&BoardConnected, &ProcessState);
 	  	        	break;
-
 	  	    }
-	  	} else if (ProcessState == psFailed) {
-	  		printT("=========     Timeout Failure     =========\n");
-			uns_ch Command;
-			timeOutEn = false;
-			switch (CurrentState) {
-				case csProgramming:
-					SDfileInit();
-				break;
-				case csInterogating:
-					if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED)) {
-						currentBoardConnected(&BoardConnected);
-						LCD_ClearLine(1);
-						sprintf(debugTransmitBuffer, "    Programming    ");
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-						CurrentState = csProgramming;
-						ProcessState = psComplete;
-					} else if ( !READ_BIT(BoardConnected.BSR, BOARD_SERIALISED) ) {
-						Command = 0x08;
-						SetPara(Command);
-						communication_array(Command, &Para, Paralen);
-						ProcessState = psWaiting;
-					} else {
-						Command = 0x08;
-						SetPara(Command);
-						communication_array(Command, &Para, Paralen);
-						ProcessState = psWaiting;
-//						CurrentState = csIDLE;
-//						ProcessState = psWaiting;
-					}
-					break;
-				case csInitialising:
-					Command = 0xCC;
-					communication_array(Command, &Para, Paralen);
-					ProcessState = psWaiting;
-					break;
-				case csConfiguring:
-					Command = 0x56;
-  	                communication_array(Command,&Para[0], Paralen);
-  	                ProcessState = psWaiting;
-					break;
-				default:
-					CurrentState = csIDLE;
-					ProcessState = psWaiting;
-					break;
-			}
-	  	}
+//=========================================================================================================//
 
+
+ //=========================================================================================================//
 	  		// Quit
 	  	if (KP_star.Pressed) {
 			KP_star.Pressed = false;
@@ -529,30 +279,22 @@ int main(void)
   				LCD_Clear();
   				TestRig_Init();
   				TestRig_MainMenu();
+				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
   				QuitCount = 0;
   			}
 	  	}
-	  			// Scan I2C
-		  if (KP_5.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
-			  	KP_5.Pressed = KP_5.Count = 0;
-			  	sprintf(debugTransmitBuffer, "Scanning I2C bus:\r\n");
-			  	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-				  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-			  	HAL_StatusTypeDef result;
-			  	uint8_t i;
-			  	for (i=1; i<128; i++) {
-			  	  result = HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(i<<1), 2, 2);
-			  	  if (result != HAL_OK) {// HAL_ERROR or HAL_BUSY or HAL_TIMEOUT
-			  		  sprintf(debugTransmitBuffer, "."); // No ACK received at that address
-			  		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-			  	  }
-			  	  if (result == HAL_OK) {
-			  		  sprintf(debugTransmitBuffer, "0x%X", i); // Received an ACK at that address
-			  	  }
-				  	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-					  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-			  	}
-		  }
+//=========================================================================================================//
+
+
+//=========================================================================================================//
+	  	if ((strlen(previousTestBuffer) > 0) && (CurrentState == csIDLE) ) {
+		  	//Display previous Test results
+	  	}
+//=========================================================================================================//
+
+
+//=========================================================================================================//
 		  	  //Calibration Routine
 		  if((KP_7.Pressed && KP_9.Pressed) && (CurrentState == csIDLE) && (ProcessState == psWaiting)){
 			  KP_7.Count = KP_7.Pressed = 0;
@@ -583,6 +325,10 @@ int main(void)
 			  HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 		  }
   }
+//=========================================================================================================//
+
+
+//=========================================================================================================//
   /* USER CODE END 3 */
 }
 
@@ -1132,7 +878,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LED3_Pin|PASS_Pin|PASS_FAIL_Pin|ADC_MUX_A_Pin
+  HAL_GPIO_WritePin(GPIOC, LED3_Pin|PASS_Pin|FAIL_Pin|ADC_MUX_A_Pin
                           |ADC_MUX_B_Pin|PIN5EN_Pin|PIN2EN_Pin|Buffer_OE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -1159,9 +905,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LED3_Pin PASS_Pin PASS_FAIL_Pin ADC_MUX_A_Pin
+  /*Configure GPIO pins : LED3_Pin PASS_Pin FAIL_Pin ADC_MUX_A_Pin
                            ADC_MUX_B_Pin PIN5EN_Pin PIN2EN_Pin Buffer_OE_Pin */
-  GPIO_InitStruct.Pin = LED3_Pin|PASS_Pin|PASS_FAIL_Pin|ADC_MUX_A_Pin
+  GPIO_InitStruct.Pin = LED3_Pin|PASS_Pin|FAIL_Pin|ADC_MUX_A_Pin
                           |ADC_MUX_B_Pin|PIN5EN_Pin|PIN2EN_Pin|Buffer_OE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -1261,8 +1007,25 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
   while (1)
   {
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+	  HAL_Delay(500);
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  HAL_Delay(500);
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  HAL_Delay(20);
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+	  HAL_Delay(20);
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  HAL_Delay(20);
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+	  HAL_Delay(20);
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  HAL_Delay(20);
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+	  HAL_Delay(20);
   }
   /* USER CODE END Error_Handler_Debug */
 }

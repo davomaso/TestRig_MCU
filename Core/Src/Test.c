@@ -382,7 +382,6 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		if ( (Board->TPR == 0xFFFF) )
 			SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		return false;
-		HAL_Delay(500);
 	}
 	return true;
 }

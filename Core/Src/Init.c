@@ -56,12 +56,17 @@ void TestRig_Init() {
 	  PrevLoomState = bNone;
 	  read_correctionFactors();
 
+	  InputVoltageStable = false;
 
 	  timeOutCount = 0;
 	  timeOutEn = false;
 }
 
 void initialiseTargetBoard() {
+		LCD_setCursor(2, 0);
+		sprintf(debugTransmitBuffer, "    Initialising    ");
+		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+
 		uns_ch Command;
 		Command = 0xCC;
 		SetPara(Command);
@@ -69,10 +74,21 @@ void initialiseTargetBoard() {
 }
 
 void interrogateTargetBoard() {
+		LCD_setCursor(2, 0);
+		sprintf(debugTransmitBuffer, "   Interrogating    ");
+		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+
+		uns_ch Command;
+		Command = 0x08;
+		SetPara(Command);
+		communication_array(Command, &Para, Paralen);
+}
+
+void configureTargetBoard() {
 	uns_ch Command;
-	Command = 0x08;
+	Command = 0x56;
 	SetPara(Command);
-	communication_array(Command, &Para, Paralen);
+	communication_array(Command, &Para[0], Paralen);
 }
 
 void TargetBoardParamInit() {
@@ -89,9 +105,8 @@ void TargetBoardParamInit() {
 	Vin.steadyState = 0;
 }
 
-uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
+uint32 ReadSerialNumber(uint8 * Response, uns_ch * data, uint16 length) {
 	uns_ch *ptr;
-	uns_ch Response;
 	uint32 SerialNumberRead = 0;
 	uint16 Length;
 	//Stop re-entry into communication Routines
@@ -101,9 +116,9 @@ uint32 ReadSerialNumber(uns_ch * data, uint16 length) {
 		//Length
 		Length = *(data + 2);
 		//	C/R will determine how the system will behave following
-		Response = *(data + 7);
+		*Response = *(data + 7);
 		ptr = data + 8;
-		switch (Response) {
+		switch (*Response) {
 		case 0x11:
 		case 0x13:
 				memcpy(&SerialNumberRead, ptr, 4);

@@ -298,13 +298,6 @@ void Calibration(){
 
 void TargetBoardCalibration(TboardConfig * Board) {
 	uint16 DACval;
-		if(Board->BoardType == b401x) {
-			ADC_Ch5sel();
-		} else if (Board->BoardType == b402x) {
-			ADC_Ch3sel();
-		} else {
-			ADC_Ch0sel();
-		}
 		if (!switchToCurrent) {
 				uns_ch Command;
 
@@ -338,7 +331,7 @@ void TargetBoardCalibration(TboardConfig * Board) {
 				for (int i = Port_1; i <= Port_6; i++) {
 						MUX_Sel(i, THREE_VOLT);
 					}
-				ADC_MUXsel(0);	//Depending on board connected switch what port is being watched by ADC
+				ADC_MUXsel(Port_1);	//Depending on board connected switch what port is being watched by ADC
 				calibrateADCval.total = calibrateADCval.average = 0;
 				currentlyCalibrating = true;
 

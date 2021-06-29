@@ -115,6 +115,7 @@ TprocessState ProcessState;
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 uns_ch debugTransmitBuffer[256];
+uns_ch previousTestBuffer[21];
 uns_ch lcdBuffer[80];
 
 /* USER CODE END EC */
@@ -135,8 +136,8 @@ void Error_Handler(void);
 #define LED3_GPIO_Port GPIOC
 #define PASS_Pin GPIO_PIN_14
 #define PASS_GPIO_Port GPIOC
-#define PASS_FAIL_Pin GPIO_PIN_15
-#define PASS_FAIL_GPIO_Port GPIOC
+#define FAIL_Pin GPIO_PIN_15
+#define FAIL_GPIO_Port GPIOC
 #define KP_R1_Pin GPIO_PIN_0
 #define KP_R1_GPIO_Port GPIOF
 #define KP_R2_Pin GPIO_PIN_1

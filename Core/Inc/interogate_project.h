@@ -29,7 +29,7 @@ void PrintLatchResults(void);
 void LatchErrorCheck(TboardConfig *);
 void printLatchError(uint8 *);
 void ADC_MUXsel(uint8);
-uint32 ReadSerialNumber(uns_ch *, uint16);
+//uint32 ReadSerialNumber(uns_ch, uns_ch *, uint16);
 
 //Constant Defines
 #define LRGBUFFER 254
@@ -38,6 +38,8 @@ uint32 ReadSerialNumber(uns_ch *, uint16);
 
 
 int intBuffer;
+
+uint16 errorCounter;
 
 //variables for communication.c
 //variables for communication array/command
@@ -210,9 +212,17 @@ _Bool BarcodeScanned;
 bool timeOutEn;
 uint32 timeOutCount;
 
+uint8 retryCount;
+
 bool latchTimeOutEn;
 bool LatchTimeOut;
 uint16 latchTimeOutCount;
 
+bool InputVoltageStable;
+uint32 InputVoltageCounter;
+uint32 InputVoltageTimer;
 
+uint16 LEDcounter;
+bool LED1active;
+bool LED2active;
 #endif /* INC_INTEROGATE_PROJECT_H_ */

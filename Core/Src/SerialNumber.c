@@ -72,6 +72,7 @@ uint32 read_serial() {
 			} else if (SerialCount) {
 				LCD_ClearLine(4);
 				LCD_setCursor(4,0);
+				printT("\n");
 				sprintf(debugTransmitBuffer, " * - Bspc   # - Ent");
 				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
@@ -89,7 +90,7 @@ uint32 read_serial() {
 				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 				LCD_setCursor(3, SerialCount+1);
 				sprintf(debugTransmitBuffer, "\x8 \x8");
-				CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				printT(&debugTransmitBuffer[0]);
 				if (SerialCount == 0) {
 					LCD_ClearLine(4);
 					LCD_setCursor(4,0);
@@ -110,6 +111,7 @@ uint32 read_serial() {
 			for (int i = 0; i < BarcodeCount; i++) {
 				SerialNumber[i] = BarcodeBuffer[i];
 			}
+			printT(&SerialNumber);
 			SerialCount = BarcodeCount;
 			BarcodeCount = 0;
 			USART3->CR1 |= (USART_CR1_RXNEIE);
@@ -128,25 +130,29 @@ uint32 read_serial() {
 		LCD_CursorOn_Off(false);
 		USART3->CR1 &= ~(USART_CR1_RXNEIE);
 		sprintf(debugTransmitBuffer, "\n\n\n", 1);
-		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		printT(&debugTransmitBuffer[0]);
 		SerialCount = 0;
 	}
 	return tempSerialNumber;
 }
 
-void ContinueWithCurrentSerial() {
+bool ContinueWithCurrentSerial() {
 	LCD_ClearLine(2);
 	sprintf(lcdBuffer, "    S/N Detected    ");
+	printT(&lcdBuffer);
 	LCD_setCursor(2, 0);
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
 
 	LCD_ClearLine(3);
 	sprintf(lcdBuffer, "      %d",BoardConnected.SerialNumber);
+	printT(&lcdBuffer);
 	LCD_setCursor(3, 0);
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
 
+
 	LCD_ClearLine(4);
 	sprintf(lcdBuffer, "*-Renew       #-Keep");
+	printT(&lcdBuffer);
 	LCD_setCursor(4, 0);
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
 	while(1) {
@@ -163,4 +169,5 @@ void ContinueWithCurrentSerial() {
 			return false;
 		}
 	}
+	return false;
 }

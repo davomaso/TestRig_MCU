@@ -95,12 +95,15 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+	printT("\n\n\nHard Fault Reset Device!!!!...\n");
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
+	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  HAL_Delay(100);
+	  /* USER CODE END W1_HardFault_IRQn 0 */
   }
 }
 
@@ -215,7 +218,21 @@ void SysTick_Handler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
-//	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+
+
+	if ( (CurrentState == csInterogating) && !InputVoltageStable) {
+		ADC_Ch2sel();
+		HAL_ADC_Start(&hadc1);
+		HAL_ADC_PollForConversion(&hadc1, 10);
+		Vin.average = HAL_ADC_GetValue(&hadc1);
+		HAL_ADC_Stop(&hadc1);
+		if (Vin.average >= 3500) {
+			InputVoltageCounter++;
+			if (InputVoltageCounter > 2000)
+				InputVoltageStable = true;
+		}
+		InputVoltageTimer++;
+	}
 	if (CurrentState == csCalibrating) {
 		/*
 		 * Read the ADC to determine when the Port that the calibration is connected to falls to GND,
@@ -225,6 +242,13 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		 */
 
 		if (CalibratingTimer < CalibrateTimerTo) {
+			if(BoardConnected.BoardType == b401x) {
+				ADC_Ch4sel();
+			} else if (BoardConnected.BoardType == b402x) {
+				ADC_Ch3sel();
+			} else {
+				ADC_Ch0sel();
+			}
 			HAL_ADC_Start(&hadc1);
 			HAL_ADC_PollForConversion(&hadc1, 100);
 			calibrateADCval.total += HAL_ADC_GetValue(&hadc1);
@@ -237,7 +261,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				calibrateADCval.total = 0;
 				usADCcount = 0;
 
-				if (calibrateADCval.average <= 100 || calibrateADCval.average >= 2700 ) { //  ||
+				if ( (calibrateADCval.average <= 100) || (calibrateADCval.average >= 3000) ) {
 					if (!(--CalibrationCountdown)) {
 						switchToCurrent = true;
 						TargetBoardCalibration();
@@ -416,6 +440,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 void TIM1_TRG_COM_TIM11_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
+
 	  if(timeOutEn) {
 		  /*
 		   * Timeout routine to be run throughout the program,
@@ -451,6 +476,7 @@ void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
 	if (USART2->SR & USART_SR_RXNE) {
+		errorCounter++;
 		/*
 		 * Board Comms receive routine to handle the data from the RS485 or Radio
 		 * The Routine should sort through the string of data determining whether the string
@@ -468,6 +494,7 @@ void USART2_IRQHandler(void)
 			//if data is equal to the header and Receive data is not active, set the flag and begin storing data.
 			//what will be allowed to pass: B2 Receive data not Active!
 			//								21 Receive data Active!
+
 			if ((data == 0xB2 && !UART2_Recdata) || (data == 0x21 && UART2_RecPos == 1) || (data == 0x0F && UART2_RecPos == 1) ) {
 				//reset the position of Receive position to 0, length of buffer 254
 				if (data == 0xB2) {
@@ -505,13 +532,17 @@ void USART2_IRQHandler(void)
 		 * turn the interrupts off and continue as expected.
 		 * Following the transmission of a string/interrupt turned off use settimeout() to determine whether communications are operating correctly
 		 */
+
 		if (UART2_TXpos == UART2_TXcount) {
+			if (UART2_TXpos != 0)
+				errorCounter = 0;
 			//disable interrupts
 			if (UART2_TXcount > 0)
 				USART2->CR1 |= (USART_CR1_TCIE);
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
-			setTimeOut(10000);
+			setTimeOut(2500);
+
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
 		}
@@ -862,6 +893,14 @@ void TIM6_IRQHandler(void)
 	 * Timer every 2s check the loom to determine whether a different loom has been
 	 * connected to test a different variant of boards
 	 */
+	if (LEDcounter++ > 110) {
+		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+		LED1active = true;
+		LEDcounter = 0;
+	} else if (LED1active && (LEDcounter > 10) ) {
+		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+		LED1active = false;
+	}
   if(LoomChecking){
 	  if(LoomCheckCount == 200){
 		  CheckLoom = true;

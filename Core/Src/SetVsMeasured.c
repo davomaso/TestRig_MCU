@@ -137,7 +137,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 					LatchRes.FuseLowVoltage, LatchRes.MOSonHigh,
 					LatchRes.MOSonLow, LatchRes.MOSoffHigh, LatchRes.MOSoffLow);
 		} else if ((PortTypes[currResult] != TTNo)){
-			sprintf(debugTransmitBuffer, "%x,%d,%d,%,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus,Board->TestResults[Board->GlobalTestNum][currResult],fMeasured);
+			sprintf(debugTransmitBuffer, "%x,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus, CHval[Board->GlobalTestNum][currResult],fMeasured);
 		}
    		Open_AppendFile(&FILEname[0]);
 		Update_File(&FILEname[0], debugTransmitBuffer);

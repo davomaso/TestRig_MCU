@@ -66,9 +66,23 @@ void runLatchTest(TboardConfig *Board, uint8 Test_Port){
 	}else{
 		printT("\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
 		Board->TestResults[Board->GlobalTestNum][Test_Port] = false;
+		if(Board->BoardType == b422x) {
+				switch (Test_Port) {
+				case Port_1:
+					CLEAR_BIT(Board->TPR, TEST_ONE_PASSED);
+					break;
+				case Port_2:
+					CLEAR_BIT(Board->TPR, TEST_TWO_PASSED);
+					break;
+				case Port_3:
+					CLEAR_BIT(Board->TPR, TEST_THREE_PASSED);
+					break;
+				case Port_4:
+					CLEAR_BIT(Board->TPR, TEST_FOUR_PASSED);
+					break;
+				}
+			}
 		}
-
-//	TransmitResults();
 }
 
 void LatchingSolenoidDriverTest(TboardConfig * Board, uint8 Port) {

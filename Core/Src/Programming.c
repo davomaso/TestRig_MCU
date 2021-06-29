@@ -415,6 +415,7 @@ _Bool ContinueWithCurrentProgram() {
 	 */
 	LCD_ClearLine(2);
 	sprintf(lcdBuffer, "  Update Program?");
+	printT(&lcdBuffer);
 	LCD_setCursor(2, 0);
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
 
@@ -422,9 +423,13 @@ _Bool ContinueWithCurrentProgram() {
 	sprintf(lcdBuffer, "Current Version:  %x", BoardConnected.Version);
 	LCD_setCursor(3, 0);
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	printT(&lcdBuffer);
+//	printT(" \n");
 
 	LCD_ClearLine(4);
 	sprintf(lcdBuffer, "*-Reprogram   #-Keep");
+	printT(&lcdBuffer);
+//	printT(" \n");
 	LCD_setCursor(4, 0);
 	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
 	while (1) {

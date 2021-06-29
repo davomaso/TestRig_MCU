@@ -284,6 +284,8 @@ void Close_File(char * name) {
 		sprintf (buf, "ERROR No. %d in closing file *%s*\n\n", SDcard.fresult, name);
 		printT(buf);
 		free(buf);
+		if (SDcard.fresult == 1 || SDcard.fresult == 9 || SDcard.fresult == 16)
+			Close_File(name);
 	} else {
 		char *buf = malloc(100*sizeof(char));
 		sprintf (buf, "File *%s* CLOSED successfully\n", name);

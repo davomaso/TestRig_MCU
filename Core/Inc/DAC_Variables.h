@@ -26,10 +26,13 @@
 	//Current Calculations
 #define I_R1 10000.0
 #define I_R2 20000.0
-#define I_Rp 180.0
-#define CURRENT_GAIN ((I_R2+I_Rp) / I_R1)
-#define DAC_MAX_CURRENT ( (DAC_MAX_OUT * CURRENT_GAIN) / I_Rp * 1000)
+#define I_Rp 150.0
 
+
+#define CURRENT_GAIN ((I_R2+I_Rp) / I_R1)
+#define DAC_MAX_CURRENT ( (DAC_MAX_OUT * CURRENT_GAIN) / I_Rp * 1000) //Maximum DAC output multiplied by the current gain of the pump, divided by the pump resistance times 1000 to get in mA base
+
+//Using the value calculated above the DAC values required to generate the uncorrected current values below can be determined
 #define DAC_4amp ( (4.0 / DAC_MAX_CURRENT) * DAC_RESOLUTION)
 #define DAC_175amp  ( (17.5 / DAC_MAX_CURRENT) * DAC_RESOLUTION)
 #define DAC_20amp ( (20.0 / DAC_MAX_CURRENT) * DAC_RESOLUTION)
