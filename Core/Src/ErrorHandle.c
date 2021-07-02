@@ -15,12 +15,12 @@ void LatchErrorCheck(TboardConfig * Board){
 	if (Board->BoardType == b935x || Board->BoardType == b937x) {
 		if((adc1.highVoltage <= 9.8)  || (adc1.lowVoltage >= 0.7) || (adc1.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if((adc2.highVoltage <= 9.8) || (adc2.lowVoltage > 0.7) || (adc2.highVoltage == 0))
+		if((adc2.highVoltage <= 9.8) || (adc2.lowVoltage >= 0.7) || (adc2.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	} else {
-		if((adc1.highVoltage <= 10.2)  || (adc1.lowVoltage >= 0.7) || (adc1.highVoltage == 0))
+		if((adc1.highVoltage <= 9.2)  || (adc1.lowVoltage >= 0.7) || (adc1.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if((adc2.highVoltage < 10.2 ) || (adc2.lowVoltage > 0.7) || (adc2.highVoltage == 0))
+		if((adc2.highVoltage <= 9.2 ) || (adc2.lowVoltage >= 0.7) || (adc2.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	}
 		//ADC2 Check

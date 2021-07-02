@@ -35,6 +35,7 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 		}
 		Sleepstate = 0;
 	}
+	ReceiveState = RxWaiting;
 	USART2->CR1 |= USART_CR1_TXEIE;
 	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
 }

@@ -77,7 +77,13 @@ void LCD_setCursor(uint8 Row, uint8 Col) {
 	HAL_Delay(1);
 }
 
-void LCD_printf(uint8 *data, uint8 len) {
+void LCD_printf(uint8* data, uint8 Row, uint8 Col) {
+	LCD_ClearLine(Row);
+	LCD_setCursor(Row, Col);
+	LCD_displayString(data, strlen(data));
+}
+
+void LCD_displayString(uint8 *data, uint8 len) {
 	for (int i = 0; i < len; i++) {
 		HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0xC0, 0x01, data++, 1, HAL_MAX_DELAY);
 		delay_us(50);
@@ -106,7 +112,7 @@ void TestRig_MainMenu() {
 	  LCD_Clear();
 	  LCD_setCursor(1, 6);
 	  sprintf(debugTransmitBuffer,"Test Rig");
-	  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	  LCD_setCursor(3, 0);
 	  LCD_CursorOn_Off(false);
 }
@@ -114,7 +120,7 @@ void TestRig_MainMenu() {
 void LCD_ClearLine(uint8 Line) {
 	sprintf(debugTransmitBuffer, "                    ");
 	LCD_setCursor(Line, 0);
-	LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 }
 
 void ChangeCharacterSet(uns_ch Set) {

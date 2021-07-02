@@ -3,7 +3,6 @@
  *  Author: David  */
 #include "main.h"
 #include "stdbool.h"
-#include "SDcard.h"
 #include "Board_Config.h"
 #include "File_Handling.h"
 #include "ff.h"
@@ -55,7 +54,7 @@ _Bool FindBoardFile(TboardConfig *Board, char * fileLocation) {
 			return true;
 		} else {
 			sprintf(debugTransmitBuffer, "hex file not found");
-			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			printT(debugTransmitBuffer[0]);
 			return false;
 			}

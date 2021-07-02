@@ -220,7 +220,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
 
 
-	if ( (CurrentState == csInterogating) && !InputVoltageStable) {
+	if (!InputVoltageStable) {
 		ADC_Ch2sel();
 		HAL_ADC_Start(&hadc1);
 		HAL_ADC_PollForConversion(&hadc1, 10);
@@ -260,14 +260,18 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				calibrateADCval.average = calibrateADCval.total / usADCcount;
 				calibrateADCval.total = 0;
 				usADCcount = 0;
-
-				if ( (calibrateADCval.average <= 100) || (calibrateADCval.average >= 3000) ) {
+				if ( (BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b401x) || (calibrateADCval.average >= 3000) ) {
+					if (!(--CalibrationCountdown)) {
+						switchToCurrent = true;
+						TargetBoardCalibration();
+						}
+				} else if ( (calibrateADCval.average <= 100) ) {
 					if (!(--CalibrationCountdown)) {
 						switchToCurrent = true;
 						TargetBoardCalibration();
 						}
 				} else {
-					CalibrationCountdown = 25;
+					CalibrationCountdown = 10;
 					}
 			}
 		} else
@@ -328,7 +332,6 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				/*
 				 * Average the results from the previous 1ms of data collected
 				 */
-				HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 				adc1.average = adc1.total / usADCcount;
 				adc1.avg_Buffer[LatchCountTimer] = adc1.average;
 
@@ -422,8 +425,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				LatchCountTimer++;
 			}
 			usADCcount++;
-		}
-		else{
+		} else{
 			 CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 		}
 	}
@@ -440,7 +442,29 @@ void TIM1_UP_TIM10_IRQHandler(void)
 void TIM1_TRG_COM_TIM11_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
+		// 1ms Interrupt timer
 
+	  if(samplesUploading) {
+		  /*
+		   * Timer that is set when samples begin uploading to determine when to send
+		   * the 0x18 Command to fetch results
+		   * Set the processState to complete so that the next step can begin
+		   */
+			  if(sampleCount >= sampleTime) {
+				  samplesUploading = false;
+				  samplesUploaded = true;
+				  Vuser.average = Vuser.total / sampleCount;
+				  sampleCount = 0;
+				  Vuser.total = 0;
+			  }	else {
+				  ADC_Ch5sel();
+				  HAL_ADC_Start(&hadc1);
+				  HAL_ADC_PollForConversion(&hadc1, 1);
+				  Vuser.total += HAL_ADC_GetValue(&hadc1);
+				  HAL_ADC_Stop(&hadc1);
+				  sampleCount++;
+			  }
+		  }
 	  if(timeOutEn) {
 		  /*
 		   * Timeout routine to be run throughout the program,
@@ -449,7 +473,6 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		   */
 		 if ( (--timeOutCount) == 0) {
 			 ProcessState = psFailed;
-			 HAL_TIM_Base_Stop(&htim11);
 		 }
 	  }
 
@@ -459,7 +482,6 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		   */
 		  if (--latchTimeOutCount) {
 			  LatchTimeOut = false;
-			  HAL_TIM_Base_Stop;
 		  }
 	  }
   /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 0 */
@@ -515,9 +537,17 @@ void USART2_IRQHandler(void)
 				//else set receive data to false. to stop flow of data into the buffer
 				if (UART2_RecPos == (UART2_Length + 3)) {
 					UART2_Recdata = false;
-					UART2_ReceiveComplete = true;
-					timeOutEn = false;
-					ProcessState = psComplete;		//Set process to complete to flag that communications were received and continue with testing
+ 					if (CRC_Check(&UART2_RXbuffer[0], UART2_RecPos)) {
+						if (UART2_RXbuffer[1] == 0x0F) {
+							Datalen = UART2_RecPos-5;
+							memcpy(&Data_Buffer[0],&UART2_RXbuffer[3], Datalen );
+						} else {
+							Datalen = UART2_RecPos - 16;
+							memcpy(&Data_Buffer[0],&UART2_RXbuffer[14], (UART2_RecPos) );
+						}
+						ReceiveState = RxGOOD;
+					} else
+						ReceiveState = RxBAD;
 					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 					USART2->CR1  &= ~(USART_CR1_RXNEIE);
 				}
@@ -525,7 +555,7 @@ void USART2_IRQHandler(void)
 				UART2_Recdata = false;				//catch all statement for anything that makes it this far.
 		}
 
-	if (USART2->SR & USART_SR_TXE) {
+	if ((USART2->SR & USART_SR_TXE) && UART2_TXcount) {
 		/*
 		 * Transmit Interrupt Routine
 		 * Populate the UART transmit register with the data that is in the TXbuffer, if the end condition is met
@@ -541,7 +571,8 @@ void USART2_IRQHandler(void)
 				USART2->CR1 |= (USART_CR1_TCIE);
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
-			setTimeOut(2500);
+			ReceiveState = RxWaiting;
+			setTimeOut(5000);
 
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
@@ -551,7 +582,6 @@ void USART2_IRQHandler(void)
 		USART2->CR1 |= (USART_CR1_RE);
 		USART2->CR1 &= ~(USART_CR1_TCIE);
 		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
-
 	}
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
@@ -910,27 +940,7 @@ void TIM6_IRQHandler(void)
   /* USER CODE END TIM6_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_IRQn 1 */
-  if(samplesUploading) {
-	  /*
-	   * Timer that is set when samples begin uploading to determine when to send
-	   * the 0x18 Command to fetch results
-	   * Set the processState to complete so that the next step can begin
-	   */
-		  if(sampleCount >= sampleTime) {
-			  samplesUploading = false;
-			  ProcessState = psComplete;
-			  Vuser.average = Vuser.total / sampleCount;
-			  sampleCount = 0;
-			  Vuser.total = 0;
-		  }	else {
-			  ADC_Ch5sel();
-			  HAL_ADC_Start(&hadc1);
-			  HAL_ADC_PollForConversion(&hadc1, 1);
-			  Vuser.total += HAL_ADC_GetValue(&hadc1);
-			  HAL_ADC_Stop(&hadc1);
-			  sampleCount++;
-		  }
-	  }
+
   /* USER CODE END TIM6_IRQn 1 */
 }
 

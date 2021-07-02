@@ -17,7 +17,7 @@
 #include "ADC_Variables.h"
 #include "DAC_Variables.h"
 
-int twoWireLatching(uint8,bool);
+_Bool twoWireLatching(TboardConfig*,uint8,_Bool);
 float twentyAmp(uint8);
 float threeVolt(uint8, uint8);
 float asyncPulse(uint8);
@@ -38,10 +38,10 @@ void TestFunction(TboardConfig *Board) {
 	for (currPort = 0; currPort < Board->latchPortCount; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 				case TWO_WIRE_LATCHING:
-					CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(currPort,1);
+					CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(Board, currPort,1);
 					break;
 				case NOTEST:
-					CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(currPort,0);
+					CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(Board, currPort,0);
 					break;
 		}
 	}
@@ -89,19 +89,23 @@ void TestFunction(TboardConfig *Board) {
 
 
 //	=================================   Two Wire   =================================	//
-int twoWireLatching(uint8 Test_Port,_Bool state) {
+_Bool twoWireLatching(TboardConfig *Board, uint8 Test_Port,_Bool state) {
 		switch(Test_Port){
 		case Port_1:
-			LatchPort1 = (Test_Port == Port_1) && state ? true : false;
+				if (state)
+					SET_BIT(Board->LatchTestPort, LATCH_PORT_ONE);
 			break;
 		case Port_2:
-			LatchPort2 = (Test_Port == Port_2) && state ? true : false;
+				if (state)
+					SET_BIT(Board->LatchTestPort, LATCH_PORT_TWO);
 			break;
 		case Port_3:
-			LatchPort3 = (Test_Port == Port_3) && state ? true : false;
+				if (state)
+					SET_BIT(Board->LatchTestPort, LATCH_PORT_THREE);
 			break;
 		case Port_4:
-			return LatchPort4 = (Test_Port == Port_4) && state ? true : false;
+				if (state)
+					SET_BIT(Board->LatchTestPort, LATCH_PORT_FOUR);
 			break;
 		}
 	return state;
@@ -641,7 +645,7 @@ void reset_ALL_MUX() {
 	//MUX 6
 	HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
 	MUX_Sel(Port_6, ASYNC_PULSE);
-	HAL_Delay(2000);
+//	HAL_Delay(2000);
 }
 //	=================================================================================//
 
@@ -714,13 +718,9 @@ void ADC_MUXsel(uint8 ADCport){
 void PrintLatchResults(){
 	float LatchCurrent1;
 	float LatchCurrent2;
-	sprintf(debugTransmitBuffer, "\n\n =======================  Latch Test  =======================\n\n");
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	printT("\n\n =======================  Latch Test  =======================\n\n");
 	sprintf(debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n", adc1.HighPulseWidth, adc1.LowPulseWidth);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-
+	printT(&debugTransmitBuffer);
 
 		//Port A Voltage
 	adc1.highVoltage = adc1.HighPulseWidth > 0 ? adc1.highVoltage/adc1.HighPulseWidth:0;
@@ -728,13 +728,11 @@ void PrintLatchResults(){
 	adc1.lowVoltage /= adc1.LowPulseWidth;
 	adc1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 	sprintf(debugTransmitBuffer, "\n==============   Port A Voltage:   High: %f Low: %f   ==============\n\n", adc1.highVoltage, adc1.lowVoltage);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	printT(&debugTransmitBuffer);
 
 		//Port B Latch Time
 	sprintf(debugTransmitBuffer, "==============   Port B Latch time:   High: %d  Low: %d   ==============\n", adc2.HighPulseWidth, adc2.LowPulseWidth);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	printT(&debugTransmitBuffer);
 
 		//Port B Voltage
 	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;

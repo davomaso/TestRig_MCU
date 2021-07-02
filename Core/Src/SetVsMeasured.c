@@ -34,7 +34,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 	LCD_ClearLine(4);
 	LCD_setCursor(2, 0);
 	sprintf(debugTransmitBuffer, "       Test %d       ", Board->GlobalTestNum+1);
-	LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	LCD_ClearLine(3);
 	LCD_setCursor(3, 0);
 
@@ -110,7 +110,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 			sprintf(debugTransmitBuffer,"Measured Value: %.03f		Set Value: %.03f \n\n",fMeasured , *SetVal); //(float)
 			printT(&debugTransmitBuffer);
 			sprintf(debugTransmitBuffer, ". ");
-			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			TresultStatus = TRpassed;
 		}
 		else
@@ -121,7 +121,7 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 			sprintf(debugTransmitBuffer,"Measured Value: %.03f		Set Value: %.03f \n\n",fMeasured , *SetVal); //(float)
 			printT(&debugTransmitBuffer);
 			sprintf(debugTransmitBuffer, "X ");
-			LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			CLEAR_BIT(Board->TPR, (1 <<Board->GlobalTestNum) );
 			TresultStatus = TRfailed;
 		}
@@ -143,7 +143,5 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		Update_File(&FILEname[0], debugTransmitBuffer);
 		*SetVal++;
 	}
-//	Close_File(&FILEname[0]);
-//	WriteSDresults(&PortTypes[0] ,&SetResults[0], &MeasuredResults[0]);
-	Board->GlobalTestNum++;
+
 }

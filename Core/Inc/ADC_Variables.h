@@ -70,6 +70,8 @@ uint8 LatchTestErrorRegister;
 #define LATCH_ON_COMPLETE 		2
 #define LATCH_OFF_COMPLETE		4
 #define LATCH_SAMPLING			8
+#define LATCH_ON_SAMPLING		16
+#define LATCH_OFF_SAMPLING		32
 
 uint8 LatchTestStatusRegister;
 

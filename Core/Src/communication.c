@@ -14,7 +14,7 @@
 #include "UART_Routine.h"
 #include "Board_Config.h"
 #include "Test.h"
-#include "Channel_Analysis.h"
+
 
 _Bool CRC_Check(uns_ch *, uns_ch);
 
@@ -82,121 +82,74 @@ void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
 
 void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 {
-	uint16 Length;
-	unsigned char *ptr;
-	uint32 SerialNum;
-	//Stop re-entry into communication Routines
-	UART2_ReceiveComplete = false;
-	if (CRC_Check(data, arraysize)) {	//from here break the Receive Buffer array down
-						//Length
-					Length = *(data + 2);
-					*Response = ( *(data+1) == 0x21 ) ? *(data + 14): *(data+7);
-							switch(*Response) {
-							case 0x09:
-										sprintf(debugTransmitBuffer,"====Interogation Complete====\n");
-										CDC_Transmit_FS(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-										HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-										ptr = data + 15;
-										BoardConnected.Network =	*ptr++;
-										BoardConnected.Network += (*ptr++ << 8);
-										BoardConnected.Module = *ptr++;
-										BoardConnected.Module += (*ptr++ << 8);
+	switch(*Response) {
+		case 0x11:	//Serialise Command, Used to check the version of the board
+				memcpy(&BoardConnected.SerialNumber, data, 4);
+				data += 4;
+				if ( (BoardConnected.SerialNumber != 0) && (~(BoardConnected.SerialNumber) != 0) )
+					SET_BIT(BoardConnected.BSR, BOARD_SERIALISED);
+				Board = *data++;
+				Board += (*data++ << 8); //LSB board number coming in
+				BoardConnected.Version = *data++; //version currently installed on board
+				BoardConnected.Subclass = *data++;//if a 93xx board is connected, what variety is it C, M, X, F...
+				printT("====Interogation Complete====\n");
+				memcpy(&BoardConnected.Network, data, 2);
+				data += 2;
+				memcpy(&BoardConnected.Module, data, 2);
+				//Print Board Info //Transmit Info To Terminal
+				printT("=====Board Info=====\n");
+				//Board
+				sprintf(debugTransmitBuffer, "Board :		 %x%c \n",BoardConnected.BoardType,BoardConnected.Subclass);
+				printT(&debugTransmitBuffer);
+				delay_us(50);
+				//Version
+				sprintf(debugTransmitBuffer, "Version :	 %x \n",BoardConnected.Version);
+				printT(&debugTransmitBuffer);
+				delay_us(50);
+				//Network
+				sprintf(debugTransmitBuffer, "Network :	 %d \n",BoardConnected.Network);
+				printT(&debugTransmitBuffer);
+				delay_us(50);
+				//Module
+				sprintf(debugTransmitBuffer, "Module :	 %d \n",BoardConnected.Module);
+				printT(&debugTransmitBuffer);
+				delay_us(50);
+			break;
+		case 0x57:
+				HAL_Delay(100); //Delay for the reset of board, as to stop interference with ADC measurements
+				printT("===Board Configuration Successful===\n");
+				TestFunction(&BoardConnected);
+			break;
 
-								break;
-							case 0x57:
-									if (BoardConnected.BoardType != b422x)
-										CLEAR_BIT(BoardConnected.BSR, BOARD_INITIALISED);
-									HAL_Delay(300); //Delay for the reset of board, as to stop interference with ADC measurements
-									printT("===Board Configuration Successful===\n");
-									TestFunction(&BoardConnected);
-									if(LatchPort1)
-										runLatchTest(&BoardConnected, Port_1);
-									if(LatchPort2)
-										runLatchTest(&BoardConnected, Port_2);
-									if(LatchPort3)
-										runLatchTest(&BoardConnected, Port_3);
-									if(LatchPort4)
-										runLatchTest(&BoardConnected, Port_4);
-									AsyncComplete = false;
-									Async_Port1.Active = Async_Port1.PulseCount ? true:false;
-									Async_Port2.Active = Async_Port2.PulseCount ? true:false;
-									Async_Port3.Active = Async_Port3.PulseCount ? true:false;
-									Async_Port4.Active = Async_Port4.PulseCount ? true:false;
-									Async_Port5.Active = Async_Port5.PulseCount ? true:false;
-									Async_Port6.Active = Async_Port6.PulseCount ? true:false;
-									Async_Port7.Active = Async_Port7.PulseCount ? true:false;
-									Async_Port8.Active = Async_Port8.PulseCount ? true:false;
-									Async_Port9.Active = Async_Port9.PulseCount ? true:false;
+		case 0x1B:
+				sampleTime = *data++;
+				sampleTime |= (*data++ << 8);
+				sampleTime *= 100;
+				sampleCount = 0;
+				samplesUploading = true;
+				samplesUploaded = false;
+				sampleTime = sampleTime > 500 ? 500 : sampleTime;
+				//Uploading begun
+				sprintf(debugTransmitBuffer,"Waiting : %.2f seconds....\n", (float)sampleTime/1000 );
+				printT(&debugTransmitBuffer);
+			break;
 
-									while(!AsyncComplete){
-									}
-									break;
+		case 0x19:
+				printT("=====Sampling Complete=====\n");
+				printT( "Starting Test Procedure...\n\n");
+				memcpy(&sampleBuffer[0], data, (arraysize) );
+			break;
+		case 0x03:	//Board Busy
+				samplesUploading = true;
+				samplesUploaded = false;
+				sampleCount = 0;
+				sampleTime = 10;
+			break;
+		case 0xCD:	// Initialise board command
+				printT("\n=====     Board Initialised     =====\n");
+			break;
 
-							case 0x1B:
-									ptr = data +15;
-									sampleTime = *ptr++;
-									sampleTime |= (*ptr++ << 8);
-									sampleTime *= 10;
-									sampleCount = 0;
-									samplesUploading = true;
-									sampleTime = sampleTime > 100 ? 100 : sampleTime;
-									//Uploading begun
-									sprintf(debugTransmitBuffer,"Waitng : %.2f seconds....\n", (float)sampleTime/1000 );
-									printT(&debugTransmitBuffer);
-									break;
-
-							case 0x19:
-									printT("=====Sampling Complete=====\n");
-									printT( "Starting Test Procedure...\n\n");
-									ptr = data + 15;
-									memcpy(&sampleBuffer[0], ptr, (arraysize-17) );
-									Decompress_Channels(&sampleBuffer,&BoardConnected); //Returns the ammount of channels sampled
-									CompareResults(&BoardConnected, &CHval[BoardConnected.GlobalTestNum][0]);
-								break;
-							case 0x03:	//Board Busy
-									samplesUploading = true;
-									sampleCount = 0;
-									sampleTime = 100;
-								break;
-							case 0xC1:	//Calibrate board command
-									SET_BIT( BoardConnected.BSR, BOARD_CALIBRATED );
-									printT("=====     Board Calibrated     =====\n");
-								break;
-							case 0xCD:	// Initialise board command
-									printT("\n=====     Board Initialised     =====\n");
-								break;
-							case 0x11:	//Serialise Command, Used to check the version of the board
-								ptr = data + 8;
-								BoardConnected.SerialNumber = *ptr++;
-								BoardConnected.SerialNumber += (*ptr++ << 8);
-								BoardConnected.SerialNumber += (*ptr++ << 16);
-								BoardConnected.SerialNumber += (*ptr++ << 24);
-								Board = *ptr++;
-								Board += (*ptr++ << 8); //LSB board number coming in
-								BoardConnected.Version = *ptr++; //version currently installed on board
-								Subclass = *ptr++;//if a 93xx board is connected, what variety is it C, M, X, F...
-
-								//Print Board Info //Transmit Info To Terminal
-								sprintf(debugTransmitBuffer, "=====Board Info=====\n");
-								CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-								  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-									//Board
-								sprintf(debugTransmitBuffer, "Board :		 %x%c \n",Board,Subclass);
-								CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-								  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-									//Version
-								sprintf(debugTransmitBuffer, "Version :	 %x \n",BoardConnected.Version);
-								printT(&debugTransmitBuffer[0]);
-								HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-								break;
-				}
-			} else {
-			printT("CRC ERROR...\n\n");
-			HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-			UART2_RecPos = 0;
-			UART2_Length = 0;
-			UART2_ReceiveComplete = false;
-		}
+	}
 }
 
 _Bool CRC_Check(uns_ch *input, uint8 length)
@@ -221,47 +174,38 @@ void SetPara(uns_ch Command)
 	 * This function will determine what is sent with the command passed to it
 	 */
 			//Set parameters 00 - 0F sample inputs, command
-		switch (Command)
-		{
-			case 0x08:
-				Paralen = 0;
-				Para[0] = 0;
-				break;
-			case 0x18:
+	switch (Command) {
+		case 0x18:
 				for	(uint8 i = 0; i <= 15; i++)	{
 						Para[i] = i;
 						Paralen = i+1;
 					}
-				break;
-			case 0x1A:
+			break;
+		case 0x1A:
 				for (uint8 i = 0; i <= 15; i++) {
 						Para[i] = i;
 						Paralen = i+1;
 					}
-				sprintf(debugTransmitBuffer,"Target Board Uploading Samples...\n");
-				CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-				HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-				break;
-			case 0x56:
-						sprintf(debugTransmitBuffer, "\nConfiguring Board...\n");
-						printT(&debugTransmitBuffer);
-						SetTestParam(&BoardConnected, BoardConnected.GlobalTestNum, &Para[0], &Paralen);
-						if( BoardConnected.GlobalTestNum == 0) {
-							LCD_ClearLine(1);
-							LCD_setCursor(1, 0);
-							sprintf(debugTransmitBuffer,"%x%c S/N: %d  ", BoardConnected.BoardType,Subclass, BoardConnected.SerialNumber);
-							LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-							}
-				break;
-			case 0xCC:
-					Para[0] = 0x49;
-					Paralen = 1;
-				break;
-			case 0xC0:
-					Para[0] = 0x50;
-					Paralen = 1;
-				break;
-		}
+				printT("Target Board Uploading Samples...\n");
+			break;
+		case 0x56:
+				sprintf(debugTransmitBuffer, "\nConfiguring Board...\n");
+				printT(&debugTransmitBuffer);
+				SetTestParam(&BoardConnected, BoardConnected.GlobalTestNum, &Para[0], &Paralen);
+				if( BoardConnected.GlobalTestNum == 0) {
+					sprintf(&lcdBuffer,"%x%c   S/N: %d  ", BoardConnected.BoardType, BoardConnected.Subclass, BoardConnected.SerialNumber);
+					LCD_printf(&lcdBuffer[0], 1,0);
+					}
+			break;
+		case 0xCC:
+				Para[0] = 0x49;
+				Paralen = 1;
+			break;
+		case 0xC0:
+				Para[0] = 0x50;
+				Paralen = 1;
+			break;
+	}
 }
 
 void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewSerial)
@@ -292,6 +236,7 @@ void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewS
 
  	 	 //Switch Comms to Radio or RS485 depending on Board Connected
 	switchCommsProtocol(&BoardConnected);
+
 	 UART2_transmit(&Com_buffer[0], Comlen);
 	 USART2->CR1  |= USART_CR1_RXNEIE;
 }

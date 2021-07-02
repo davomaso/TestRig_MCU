@@ -31,6 +31,9 @@ bool UART2_Recdata;					//flag for whether data can be received
 uint8 UART2_Length;			//length of the Receiving array minus the header
 bool UART2_ReceiveComplete;			//Flag given once reception of data is complete
 
+typedef enum {RxBAD = 0, RxGOOD = 1, RxWaiting = 2}TcommsReceive;
+TcommsReceive ReceiveState;
+
 //Sleep/Wake function
 bool Sleepstate;				//Sleep state for when transmitting data on UART2, Wakes target board with 55 & 00
 

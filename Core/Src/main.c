@@ -117,7 +117,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -168,62 +168,9 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 //=========================================================================================================//
-
 	  if (ProcessState == psComplete) {
 		  retryCount = 0;
 	  }
-
-//=========================================================================================================//
-	  	  //Testing Functionality
-	  	  	  //If 1 on the keypad is pressed Testing procedure is to begin
-	  if (KP_1.Pressed && (CurrentState == csIDLE) && (ProcessState == psWaiting)) {
-	  		//If 1 is pressed
-		  	KP_1.Pressed = false;
-	  		KP_1.Count = 0;
-	  		TestRig_Init();
-	  		TargetBoardParamInit();
-	  		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-	  		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);
-	  		HAL_GPIO_WritePin(PASS_GPIO_Port, PASS_Pin, GPIO_PIN_RESET);
-	  		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
-	  		CurrentState = csInterogating;
-	  		ProcessState = psWaiting;
-	  		HAL_TIM_Base_Start_IT(&htim10);
-	  		sprintf(&debugTransmitBuffer,"Board Power Test");
-			LCD_setCursor(2, 0);
-			LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-	  		InputVoltageTimer = 0;
-	  		while(1) {
-	  			if (InputVoltageStable){
-	  				sprintf(&debugTransmitBuffer,"Input Voltage Stable");
-	  				LCD_setCursor(2, 0);
-	  				LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-	  				printT("Input Voltage Stable...\n");
-	  				break;
-	  			} else if (InputVoltageTimer > 5000) {
-	  				HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
-	  				printT("Input Voltage Failure...\n");
-	  				CurrentState = csIDLE;
-	  			  	ProcessState = psFailed;
-	  			  	break;
-	  			}
-	  		}
-	  		HAL_Delay(1000);
-	  		HAL_TIM_Base_Stop_IT(&htim10);
-	  		LCD_ClearLine(4);
-	  		LCD_ClearLine(3);
-	  		LCD_setCursor(2, 1);
-	  		sprintf(debugTransmitBuffer, "    Interogating    ");
-	  		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-	  		uns_ch Command = 0x10;
-	  		communication_arraySerial(Command, 0, 0);
-	  }
-//=========================================================================================================//
-
-
-//=========================================================================================================//
-	  if (ProcessState == psComplete)
-		  retryCount = 0;
 //=========================================================================================================//
 
 
@@ -247,6 +194,15 @@ int main(void)
 	  	        case csInterogating: //0x09 & 0x35
 	  	        		handleInterogating(&BoardConnected, &ProcessState);
 	  	            break;
+	  	        case csTestBegin:
+	  	        		handleTestBegin(&BoardConnected, &ProcessState);
+	  	        	break;
+	  	        case csLatchTest:
+	  	        		handleLatchTest(&BoardConnected, &ProcessState);
+	  	        	break;
+	  	        case csAsyncTest:
+	  	        		handleAsyncTest(&BoardConnected, &ProcessState);
+	  	        	break;
 	  	        case csConfiguring: // 0x57
 	  	        		handleConfiguring(&BoardConnected, &ProcessState);
 	  	            break;
@@ -303,15 +259,15 @@ int main(void)
 			  LCD_Clear();
 			  LCD_setCursor(1, 6);
 			  sprintf(debugTransmitBuffer,"Test Rig");
-			  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
 			  LCD_setCursor(2, 0);
 			  sprintf(debugTransmitBuffer, "Calibrate Test Rig");
-			  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
 			  LCD_setCursor(3, 5);
 			  sprintf(debugTransmitBuffer, "1V - Port 1");
-			  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
 			  sprintf(debugTransmitBuffer,"\n\n==========  Calibration Routine  ==========\n");
 			  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));

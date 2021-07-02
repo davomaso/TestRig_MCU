@@ -20,7 +20,7 @@ void Mount_SD (const TCHAR* path) {
 		printT("SD CARD mounted successfully...\n");
 		LCD_setCursor(2, 0);
 		sprintf(debugTransmitBuffer, " SD card Connected  ");
-		LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	}
 }
 
@@ -284,7 +284,7 @@ void Close_File(char * name) {
 		sprintf (buf, "ERROR No. %d in closing file *%s*\n\n", SDcard.fresult, name);
 		printT(buf);
 		free(buf);
-		if (SDcard.fresult == 1 || SDcard.fresult == 9 || SDcard.fresult == 16)
+		if (SDcard.fresult == FR_DISK_ERR || SDcard.fresult == FR_INVALID_OBJECT || SDcard.fresult == FR_LOCKED)
 			Close_File(name);
 	} else {
 		char *buf = malloc(100*sizeof(char));
@@ -322,7 +322,6 @@ FRESULT Update_File (char *name, char *data)
 	    	free(buf);
 	    }
 	}
-//	delay_us(50);
 	Close_File(name);
     return SDcard.fresult;
 }
@@ -386,6 +385,6 @@ void Check_SD_Space ()
     free_space /= 1000;
     LCD_setCursor(3, 0);
     sprintf (debugTransmitBuffer, "%d mb Free", free_space);
-    LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+    LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 }
 

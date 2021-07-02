@@ -61,42 +61,42 @@ void Calibration(){
 						printT("==========Calibrating 1V========== \n\n");
 						LCD_setCursor(3, 0);
 						sprintf(debugTransmitBuffer, "    1V - Port %d     ", (calPort+1));
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 						break;
 				case V_05:
 						printT("==========Calibrating 0.5V========== \n\n");
 						DACval = DAC_05volt;
 						LCD_setCursor(3, 0);
 						sprintf(debugTransmitBuffer, "   0.5V - Port %d    ", (calPort+1));
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					break;
 				case V_24:
 						printT("==========Calibrating 2.4V========== \n\n");
 						DACval = DAC_24volt;
 						LCD_setCursor(3, 0);
 						sprintf(debugTransmitBuffer, "   2.4V - Port %d    ", (calPort+1));
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					break;
 				case I_20:
 						printT("==========Calibrating 20mA========== \n\n");
 						DACval = DAC_20amp;
 						LCD_setCursor(3, 0);
 						sprintf(debugTransmitBuffer, "   20mA - Port %d    ", (calPort+1));
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					break;
 				case I_4:
 						printT("==========Calibrating 4mA========== \n\n");
 						DACval = DAC_4amp;
 						LCD_setCursor(3, 0);
 						sprintf(debugTransmitBuffer, "    4mA - Port %d    ", (calPort+1));
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					break;
 				case I_175:
 						printT("==========Calibrating 17.5mA========== \n\n");
 						DACval = DAC_175amp;
 						LCD_setCursor(3, 0);
 						sprintf(debugTransmitBuffer, "   17.5mA - Port %d  ", (calPort+1));
-						LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+						LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					break;
 				case Done:
 					printT("==========	Done ========== \n\n");
@@ -143,7 +143,7 @@ void Calibration(){
 							CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 							  LCD_setCursor(3, 0);
 							  sprintf(debugTransmitBuffer, "    1V - Port %d     ", (calPort+1));
-							  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 							break;
 					case V_05:
 							sprintf(debugTransmitBuffer, "==========Calibrating 0.5V========== \n\n");
@@ -151,7 +151,7 @@ void Calibration(){
 							DACval = DAC_05volt;
 							  LCD_setCursor(3, 0);
 							  sprintf(debugTransmitBuffer, "   0.5V - Port %d    ", (calPort+1));
-							  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 						break;
 					case V_24:
 							sprintf(debugTransmitBuffer, "==========Calibrating 2.4V========== \n\n");
@@ -159,7 +159,7 @@ void Calibration(){
 							DACval = DAC_24volt;
 							  LCD_setCursor(3, 0);
 							  sprintf(debugTransmitBuffer, "   2.4V - Port %d    ", (calPort+1));
-							  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 						break;
 					case I_20:
 							sprintf(debugTransmitBuffer, "==========Calibrating 20mA========== \n\n");
@@ -167,7 +167,7 @@ void Calibration(){
 							DACval = DAC_20amp;
 							  LCD_setCursor(3, 0);
 							  sprintf(debugTransmitBuffer, "   20mA - Port %d    ", (calPort+1));
-							  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 						break;
 					case I_4:
 							sprintf(debugTransmitBuffer, "==========Calibrating 4mA========== \n\n");
@@ -175,7 +175,7 @@ void Calibration(){
 							DACval = DAC_4amp;
 							  LCD_setCursor(3, 0);
 							  sprintf(debugTransmitBuffer, "   4mA - Port %d    ", (calPort+1));
-							  LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 						break;
 					case I_175:
 							sprintf(debugTransmitBuffer, "==========Calibrating 17.5mA========== \n\n");
@@ -183,7 +183,7 @@ void Calibration(){
 							DACval = DAC_175amp;
 							LCD_setCursor(3, 0);
 							sprintf(debugTransmitBuffer, "   17.5mA - Port %d  ", (calPort+1));
-							LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+							LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 						break;
 					case Done:
 						sprintf(debugTransmitBuffer, "==========	Done ========== \n\n");
@@ -300,10 +300,8 @@ void TargetBoardCalibration(TboardConfig * Board) {
 	uint16 DACval;
 		if (!switchToCurrent) {
 				uns_ch Command;
-
 				Command = 0xC0;
 				SetPara(Command);
-
 					//Set Port 1
 				DACval = DAC_1volt + Port1.CalibrationFactor[V_1];
 				DACval += 0x3000;

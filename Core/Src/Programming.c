@@ -25,14 +25,12 @@ void ProgramTargetBoard (TboardConfig * Board) {
 	uint8 Percentage = 0;
 	char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
 
-	ProgrammingInit();
-
 	if (FindBoardFile(Board, fileLocation)) {
 		OpenFile(fileLocation);
 		TestRig_MainMenu();
 		LCD_setCursor(2, 5);
 		sprintf(debugTransmitBuffer, "Programming");
-		LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+		LCD_displayString(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 		// File size divide by two as .hex file is in ascii character form
 		// Divide by the length of each page
 		// Multiply by 70% to get an approximation of the actual data to transmit to the target board
@@ -57,6 +55,7 @@ void ProgramTargetBoard (TboardConfig * Board) {
 						break;
 					}
 				}
+
 				PageBufferPosition = 0;
 				if (LineBufferPosition)
 					populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[Pos - LineBufferPosition], &LineBufferPosition);
@@ -64,6 +63,12 @@ void ProgramTargetBoard (TboardConfig * Board) {
 				ProgressBar(Percentage);
 				page++;
 			}
+		}
+		if (ProcessState == psFailed) {
+			printT("Programming Done\n");
+			Close_File(fileLocation);
+			printT("I Made it\n");
+			return;
 		}
 		while (PageBufferPosition < MAX_PAGE_LENGTH) {
 			PageBuffer[PageBufferPosition++] = 0xFF;
@@ -84,13 +89,7 @@ void ProgramTargetBoard (TboardConfig * Board) {
 		SetClkAndLck();
 		//HAL_Delay(100); // check if required
 		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-
 		SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
-		Command = 0x08;
-		SetPara(Command);
-		communication_array(Command, &Para, Paralen);
-		CurrentState = csInterogating;
-		ProcessState = psWaiting;
 	} else {
 		printT("Could not find hex file...\n");
 		CurrentState = csProgramming;
@@ -394,12 +393,13 @@ void PollReady() {
 	uns_ch data[4];
 	uns_ch receive[4];
 	receive[3] = 0xFF;
+	setTimeOut(1000);
 
 	data[0] = 0xF0;
 	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
-	while ((receive[3] & 0x01) != 0) {
+	while ( ((receive[3] & 0x01) != 0) && (ProcessState != psFailed) ) {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
 	}
 }
@@ -417,12 +417,12 @@ _Bool ContinueWithCurrentProgram() {
 	sprintf(lcdBuffer, "  Update Program?");
 	printT(&lcdBuffer);
 	LCD_setCursor(2, 0);
-	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 
 	LCD_ClearLine(3);
 	sprintf(lcdBuffer, "Current Version:  %x", BoardConnected.Version);
 	LCD_setCursor(3, 0);
-	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 	printT(&lcdBuffer);
 //	printT(" \n");
 
@@ -431,7 +431,7 @@ _Bool ContinueWithCurrentProgram() {
 	printT(&lcdBuffer);
 //	printT(" \n");
 	LCD_setCursor(4, 0);
-	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 	while (1) {
 		if (KP_hash.Pressed) {
 			KP_hash.Count = KP_hash.Pressed = 0;
@@ -513,35 +513,35 @@ void ProgressBar(uint8 Percentage) {
 		if (!(Percentage & 0x01)) {
 			LCD_setCursor(4, 9);
 			sprintf(debugTransmitBuffer, "%d", Percentage);
-			LCD_printf(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+			LCD_displayString(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 			Byte = 0x25;
-			LCD_printf(&Byte, 1);
+			LCD_displayString(&Byte, 1);
 			switch (Percentage % 10) {
 			case 0:
 				Byte = 0xD0;
 				LCD_setCursor(3, (5 + (Percentage / 10)));
-				LCD_printf(&Byte, 1);
+				LCD_displayString(&Byte, 1);
 				Pos++;
 				break;
 			case 2:
 				Byte = 0xD4;
 				LCD_setCursor(3, (6 + (Percentage / 10)));
-				LCD_printf(&Byte, 1);
+				LCD_displayString(&Byte, 1);
 				break;
 			case 4:
 				Byte = 0xD3;
 				LCD_setCursor(3, (6 + (Percentage / 10)));
-				LCD_printf(&Byte, 1);
+				LCD_displayString(&Byte, 1);
 				break;
 			case 6:
 				Byte = 0xD2;
 				LCD_setCursor(3, (6 + (Percentage / 10)));
-				LCD_printf(&Byte, 1);
+				LCD_displayString(&Byte, 1);
 				break;
 			case 8:
 				Byte = 0xD1;
 				LCD_setCursor(3, (6 + (Percentage / 10)));
-				LCD_printf(&Byte, 1);
+				LCD_displayString(&Byte, 1);
 				break;
 			}
 		}

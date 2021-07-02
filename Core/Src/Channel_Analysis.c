@@ -4,10 +4,9 @@
  *      Author: David
  */
 #include "main.h"
-#include "Channel_Analysis.h"
 #include "interogate_project.h"
 
-void Decompress_Channels(uns_ch *data, TboardConfig * Board) {
+void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	uint8 CH_count = 0;
 	uint32 Channel_value;
 	uint8 Compression_type;

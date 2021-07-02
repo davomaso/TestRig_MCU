@@ -2,10 +2,8 @@
 #include "interogate_project.h"
 uint32 read_serial() {
 	USART3->CR1 |= (USART_CR1_RXNEIE);
-	LCD_ClearLine(4);
-	LCD_setCursor(4,0);
-	sprintf(debugTransmitBuffer, " * - Esc    # - Ent ");
-	LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	LCD_printf("Enter Serial Number ", 2, 0);
+	LCD_printf(" * - Esc    # - Ent ",4,0);
 	LCD_setCursor(3, 0);
 	LCD_CursorOn_Off(true);
 	SerialCount = 0;
@@ -74,11 +72,11 @@ uint32 read_serial() {
 				LCD_setCursor(4,0);
 				printT("\n");
 				sprintf(debugTransmitBuffer, " * - Bspc   # - Ent");
-				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
 			LCD_ClearLine(3);
 			LCD_setCursor(3, 0);
-			LCD_printf(&SerialNumber[0], SerialCount);
+			LCD_displayString(&SerialNumber[0], SerialCount);
 			keyPressed = false;
 		}
 		if(KP_star.Pressed && SerialCount < 9){
@@ -87,7 +85,7 @@ uint32 read_serial() {
 				SerialNumber[SerialCount--] = 0x08;
 				LCD_setCursor(3, SerialCount+1);
 				sprintf(debugTransmitBuffer, "  ");
-				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 				LCD_setCursor(3, SerialCount+1);
 				sprintf(debugTransmitBuffer, "\x8 \x8");
 				printT(&debugTransmitBuffer[0]);
@@ -95,7 +93,7 @@ uint32 read_serial() {
 					LCD_ClearLine(4);
 					LCD_setCursor(4,0);
 					sprintf(debugTransmitBuffer, " * - Esc    # - Ent");
-					LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+					LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 					LCD_setCursor(3,SerialCount+1);
 				}
 			} else {
@@ -107,7 +105,7 @@ uint32 read_serial() {
 			BarcodeScanned = false;
 			LCD_ClearLine(3);
 			LCD_setCursor(3,0);
-			LCD_printf(&BarcodeBuffer[0], BarcodeCount);
+			LCD_displayString(&BarcodeBuffer[0], BarcodeCount);
 			for (int i = 0; i < BarcodeCount; i++) {
 				SerialNumber[i] = BarcodeBuffer[i];
 			}
@@ -141,20 +139,20 @@ bool ContinueWithCurrentSerial() {
 	sprintf(lcdBuffer, "    S/N Detected    ");
 	printT(&lcdBuffer);
 	LCD_setCursor(2, 0);
-	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 
 	LCD_ClearLine(3);
 	sprintf(lcdBuffer, "      %d",BoardConnected.SerialNumber);
 	printT(&lcdBuffer);
 	LCD_setCursor(3, 0);
-	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 
 
 	LCD_ClearLine(4);
 	sprintf(lcdBuffer, "*-Renew       #-Keep");
 	printT(&lcdBuffer);
 	LCD_setCursor(4, 0);
-	LCD_printf(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 	while(1) {
 		if(KP_hash.Pressed){
 			KP_hash.Count = KP_hash.Pressed = 0;

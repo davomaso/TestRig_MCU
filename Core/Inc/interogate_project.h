@@ -43,10 +43,12 @@ uint16 errorCounter;
 
 //variables for communication.c
 //variables for communication array/command
-uns_ch Comlen;
+uint8 Comlen;
 uns_ch Com_buffer[LRGBUFFER];
+uint8 Datalen;
+uns_ch Data_Buffer[LRGBUFFER];
 uint8 Paralen;
-uns_ch Para[SMLBUFFER];
+uns_ch Para[LRGBUFFER];
 
 //communication response
 uint16 Board;
@@ -69,6 +71,7 @@ uint16 Samplerate;
 uint16 sampleTime;
 uint16 sampleCount;
 _Bool samplesUploading;
+_Bool samplesUploaded;
 unsigned char sampleBuffer[256];
 
 //Async Variables
@@ -115,13 +118,10 @@ typedef enum {SDSundef, SDSquery, SDSaddress, SDSc, SDSdPending, SDSd}TsdiState;
 TsdiState SDSstate;
 
 //Latch Variables
-_Bool LatchPort1;
-_Bool LatchPort2;
-_Bool LatchPort3;
-_Bool LatchPort4;
 uint16_t LatchCountTimer;
 uint8_t stableVoltageCount;
 uint16_t latchCountTo;
+uint8 LatchTestPort;
 
 #define ADC_BUF_LEN 2048
 

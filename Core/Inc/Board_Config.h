@@ -41,6 +41,12 @@
 	#define TEST_SEVEN_PASSED 	(1 << 6)
 	#define TEST_EIGHT_PASSED 	(1 << 7)
 
+	//============		LATCH TEST VARIABLES		===========//
+	#define LATCH_PORT_ONE 		(1 << 0)
+	#define LATCH_PORT_TWO 		(1 << 1)
+	#define LATCH_PORT_THREE 	(1 << 2)
+	#define LATCH_PORT_FOUR 	(1 << 3)
+
 	typedef struct {
 			//=== Port Code ===//
 			unsigned char Code;
@@ -77,6 +83,7 @@
 			uint8 PortCodes[MAX_PORT_CODE_ARRAY_SIZE];
 			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
 			uint32 TestResults[8][16];
+			uint8 LatchTestPort;
 			uint16 TPR; //TestPassedRegister;
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;

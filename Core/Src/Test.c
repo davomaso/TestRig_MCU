@@ -78,7 +78,7 @@ void TestConfig935x(TboardConfig * Board) {
 		// Port Test Array
 	uint32 *tempTestARR[30] = {
 			&latchTest, &OnevoltTest,&OnevoltTest, &asyncTest, &asyncDigitalTest, 				//
-			&latchTest, &OnevoltTest, &TwovoltTest, &asyncDigitalTest, &asyncTest,				//
+			&noTest, &OnevoltTest, &TwovoltTest, &asyncDigitalTest, &asyncTest,				//
 			&noTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest, 		//
 			&noTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, 				//
 			&noTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncTest, 				//
@@ -88,11 +88,11 @@ void TestConfig935x(TboardConfig * Board) {
 	Board->ArrayPtr = 0;
 		// Port Code Array
 	uint8 tempPcARR[5][4] = {
-			{ 0x80, 0x81, 0x82, 0x83 },
-			{ 0xC0, 0xC1, 0xC2, 0xC3 },
-			{ 0xD0, 0xD1, 0xD2, 0xD3 },
-			{ 0xE0, 0xE1, 0xE2, 0x00 },
-			{ 0xF0, 0xF1, 0xF2, 0x00 },
+			 0x80, 0x81, 0x82, 0x83 ,	//
+			 0xC0, 0xC1, 0xC2, 0xC3 ,	//
+			 0xD0, 0xD1, 0xD2, 0xD3 ,	//
+			 0xE0, 0xE1, 0xE2, 0x00 ,	//
+			 0xF0, 0xF1, 0xF2, 0x00 ,	//
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
@@ -363,7 +363,7 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		LCD_ClearLine(4);
 		LCD_setCursor(2, 0);
 		sprintf(debugTransmitBuffer, "    Test Results    ");
-		LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 		uint8 spacing = (20 - (Test) - (Test-1));
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
@@ -371,11 +371,11 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		for (uint8 i = 0; i < Test; i++) {
 			if ( ( Board->TPR & (1 << i) ) == false) {
 				sprintf(debugTransmitBuffer, "X ");
-				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 				CLEAR_BIT( Board->BSR, BOARD_TEST_PASSED );
 			} else {
 				sprintf(debugTransmitBuffer, ". ");
-				LCD_printf(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
 		}
 			//Not 100% required
@@ -385,6 +385,27 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 	}
 	return true;
 }
+//	=================================================================================//
+
+
+//	=================================================================================//
+void run422xTest(TboardConfig *Board, TprocessState * State) {
+	if ( READ_BIT(Board->BSR, BOARD_INITIALISED) ) {
+		if (CheckTestNumber(Board)) {
+			LatchingSolenoidDriverTest(Board, Board->GlobalTestNum);
+			CompareResults(Board, &CHval[Board->GlobalTestNum]);
+			} else {
+				TestComplete(Board);
+				CurrentState = csIDLE;
+				*State = psWaiting;
+								}
+	  	} else {
+	  		initialiseTargetBoard();
+	  		CurrentState = csInitialising;
+	  		*State = psWaiting;
+	  	  }
+}
+
 //	=================================================================================//
 //	=================================================================================//
 //	=================================================================================//
