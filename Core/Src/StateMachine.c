@@ -5,9 +5,10 @@
 #include "calibration.h"
 
 void handleIdle(TboardConfig *Board, TprocessState * State) {
+
 	switch (*State) {
 		case psInitalisation:
-
+				*State = psWaiting;
 			break;
 		case psWaiting:
 			if (CheckLoom) {
@@ -16,9 +17,9 @@ void handleIdle(TboardConfig *Board, TprocessState * State) {
 		  	  	   * should be scanned with the board that is connected returned.
 		  	  	   */
 				  scanLoom(&BoardConnected);
-				  ConfigInit();
 			}
 			if (KP_1.Pressed) {
+						HAL_Delay(50);
 				  		//If 1 is pressed
 					  	KP_1.Pressed = false;
 				  		KP_1.Count = 0;
@@ -28,13 +29,12 @@ void handleIdle(TboardConfig *Board, TprocessState * State) {
 				  		clearTestStatusLED();
 				  		testInputVoltage();
 				  		HAL_Delay(1200);
-				  		HAL_TIM_Base_Stop_IT(&htim10);
 				  		CurrentState = csInterogating;
 				  		*State = psInitalisation;
 				  }
 			break;
 		case psComplete:
-    		  initialiseTargetBoard();
+    		  initialiseTargetBoard(Board);
     		  CurrentState = csInitialising;
     		  ProcessState = psWaiting;
 			break;
@@ -51,7 +51,7 @@ void handleInitialising(TboardConfig *Board, TprocessState * State) {
 	switch (*State) {
 	case psInitalisation:
 			if (READ_BIT(Board->BSR, BOARD_TEST_PASSED) || !READ_BIT(Board->BSR, BOARD_INITIALISED)) {
-				initialiseTargetBoard();
+				initialiseTargetBoard(Board);
 				*State = psWaiting;
 			} else {
 				*State = psComplete;
@@ -73,7 +73,7 @@ void handleInitialising(TboardConfig *Board, TprocessState * State) {
 			if (READ_BIT(Board->BSR, BOARD_TEST_PASSED)) {
 				TestComplete(Board);
 				CurrentState = csIDLE;
-				*State = psWaiting;
+				*State = psInitalisation;
 			} else {
 				CurrentState = csTestBegin;
 				*State = psInitalisation;
@@ -81,7 +81,7 @@ void handleInitialising(TboardConfig *Board, TprocessState * State) {
 		break;
 	case psFailed:
 			retryCount++;
-			initialiseTargetBoard();
+			initialiseTargetBoard(Board);
 			ProcessState = psWaiting;
 		break;
 	}
@@ -95,10 +95,8 @@ void handleTestBegin(TboardConfig *Board, TprocessState * State) {
 		LCD_printf(&lcdBuffer[0], 1, 0);
 		sprintf(&lcdBuffer, "    S/N  %d",Board->SerialNumber);
 		LCD_printf(&lcdBuffer,2,0);
-		sprintf(&lcdBuffer, "1 - Reprog  Exit - *");
-		LCD_printf(&lcdBuffer, 3, 0);
-		sprintf(&lcdBuffer, "3 - New SN  Test - #");
-		LCD_printf(&lcdBuffer,4,0);
+		LCD_printf("1 - Reprog  Exit - *",3,0);
+		LCD_printf("3 - New SN  Test - #",4,0);
 		*State = psWaiting;
 		break;
 	case psWaiting:
@@ -221,7 +219,6 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 void handleInterogating(TboardConfig *Board, TprocessState * State) {
 	uns_ch Command;
 	uns_ch Response;
-
 	switch (*State) {
 	case psInitalisation:
 			interrogateTargetBoard();
@@ -239,10 +236,10 @@ void handleInterogating(TboardConfig *Board, TprocessState * State) {
 			}
 		break;
 	case psComplete:
-		communication_response(&Response, &Data_Buffer[5], strlen(Data_Buffer));
-		currentBoardConnected(Board);
-		CurrentState = csCalibrating;
-		*State = psInitalisation;
+			communication_response(Board,&Response, &Data_Buffer[5], strlen(Data_Buffer));
+			currentBoardConnected(Board);
+			CurrentState = csCalibrating;
+			*State = psInitalisation;
 		break;
 
 	case psFailed:
@@ -267,22 +264,23 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 	uns_ch Response;
 	switch (*State) {
 		case psInitalisation:
-				configureTargetBoard();
+				configureTargetBoard(Board);
 				*State = psWaiting;
 			break;
 		case psWaiting:
 				if (ReceiveState == RxGOOD) {
 					Response = Data_Buffer[0];
-					if(Response == 0x57)
+					if(Response == 0x57) {
+						HAL_Delay(250);
 						*State = psComplete;
-					else
+					} else
 						*State = psFailed;
 				} else if (ReceiveState == RxBAD) {
 					*State = psFailed;
 				}
 			break;
 		case psComplete:
-				communication_response(&Response, &UART2_RXbuffer, UART2_RecPos);
+				communication_response(Board,&Response, &UART2_RXbuffer, UART2_RecPos);
 				if (SDIenabled)
 					USART6->CR1 |= (USART_CR1_RXNEIE);
 
@@ -313,7 +311,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 					*State = psComplete;
 			break;
 		case psWaiting:
-			if (LatchCountTimer > latchCountTo) {
+			if (LatchCountTimer < latchCountTo) {
 				if(READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {	//If input voltage is stable
 						if (!READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
 								//Begin Latch on sampling
@@ -327,7 +325,6 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 									Response = Data_Buffer[0];
 									if (Response == 0x27) {
 										CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
-
 										CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
 										stableVoltageCount = 25;
 									}
@@ -372,14 +369,15 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 						HAL_TIM_Base_Stop(&htim10);
 					//Print Results & Error Messages
 					//		TransmitResults();
+						normaliseLatchResults();
 						PrintLatchResults();
 						LatchErrorCheck(Board);
-						if(Board->LTR)
-							printLatchError(&Board->LTR);
-						if(!Board->LTR){
-							printT("\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
+						if(!(Board->LTR) ) {
+							sprintf(debugTransmitBuffer,"\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
+							CDC_Transmit_FS(&debugTransmitBuffer, strlen(debugTransmitBuffer));
 							Board->TestResults[Board->GlobalTestNum][LatchTestPort] = true;
 						} else {
+							printLatchError(&Board->LTR);
 							printT("\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
 							Board->TestResults[Board->GlobalTestNum][LatchTestPort] = false;
 							if(Board->BoardType == b422x) { //TODO: Check if this needs to be here with code changes
@@ -401,7 +399,10 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 						}
 						CLEAR_REG(Board->LatchTestPort);
 					}
-				CurrentState = csAsyncTest;
+				if (Board->BoardType == b422x)
+					CurrentState = csSampling;
+				else
+					CurrentState = csAsyncTest;
 				*State = psInitalisation;
 			break;
 		case psFailed:
@@ -462,7 +463,7 @@ void handleSampling(TboardConfig *Board, TprocessState * State) {
 	case psInitalisation:
 			LCD_printf("      Sampling      ", 2, 0);
 			Command = 0x1A;
-			SetPara(Command);
+			SetPara(Board, Command);
 			communication_array(Command,&Para, Paralen);
 			*State = psWaiting;
 		break;
@@ -470,7 +471,7 @@ void handleSampling(TboardConfig *Board, TprocessState * State) {
 			if (ReceiveState == RxGOOD) {
 				Response = Data_Buffer[0];
 				if(Response == 0x1B || Response == 0x03)	//TODO: change this to wait until samples uploaded!
-					communication_response(&Response, &Data_Buffer[1], Datalen);
+					communication_response(Board, &Response, &Data_Buffer[1], Datalen);
 				ReceiveState = RxWaiting;
 			} else if (ReceiveState == RxBAD) {
 				*State = psFailed;
@@ -512,9 +513,7 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 	switch (*State) {
 	case psInitalisation:
 			LCD_printf("     Uploading      ", 2, 0);
-			Command = 0x18;
-			SetPara(Command);
-			communication_array(Command,&Para, Paralen);
+			uploadSamplesTargetBoard(Board);
 			*State = psWaiting;
 		break;
 	case psWaiting:
@@ -522,13 +521,23 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 				Response = Data_Buffer[0];
 				if(Response == 0x19)	//TODO: change this to wait until samples uploaded!
 					*State = psComplete;
+				if(Response == 0x03)
+					communication_response(Board,&Response, &Data_Buffer, Datalen);
 				ReceiveState = RxWaiting;
 			} else if (ReceiveState == RxBAD) {
 				*State = psFailed;
 			}
+			if (samplesUploaded) {
+				sampleCount = 0;
+				samplesUploading = false;
+				samplesUploaded = false;
+				uploadSamplesTargetBoard(Board);
+				ReceiveState = RxWaiting;
+			}
+
 		break;
 	case psComplete:
-			communication_response(&Response, &Data_Buffer[1], Datalen-1);
+			communication_response(Board,&Response, &Data_Buffer[1], Datalen-1);
 			*State = psInitalisation;
 			CurrentState = csSortResults;
 		break;
@@ -543,7 +552,8 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 			ProcessState = psWaiting;
 		} else {
 			retryCount++;
-			*State = psInitalisation;
+			uploadSamplesTargetBoard(Board);
+			*State = psWaiting;
 		}
 		break;
 	}
@@ -568,7 +578,6 @@ void handleSortResults(TboardConfig *Board, TprocessState * State) {
 				CurrentState = csConfiguring;
 			} else {
 				if(READ_BIT( Board->BSR, BOARD_TEST_PASSED )) {
-					initialiseTargetBoard();
 					CurrentState = csInitialising;
 					*State = psInitalisation;
 				} else {
@@ -636,7 +645,6 @@ void handleSerialise(TboardConfig *Board, TprocessState * State) {
 					printT("=====     Board Serialised     =====\n");
 						sprintf(debugTransmitBuffer, "Serial number %d loaded into board\n", BoardConnected.SerialNumber);
 						printT(&debugTransmitBuffer[0]);
-
 						CurrentState = csInitialising;
 						*State = psInitalisation;
 				}

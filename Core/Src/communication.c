@@ -80,45 +80,45 @@ void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
  	USART2->CR1  |= USART_CR1_RXNEIE;
  }
 
-void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
+void communication_response(TboardConfig * Board, uns_ch * Response, uns_ch *data, uint8 arraysize)
 {
 	switch(*Response) {
 		case 0x11:	//Serialise Command, Used to check the version of the board
-				memcpy(&BoardConnected.SerialNumber, data, 4);
+
+				memcpy(&Board->SerialNumber, data, 4);
 				data += 4;
-				if ( (BoardConnected.SerialNumber != 0) && (~(BoardConnected.SerialNumber) != 0) )
-					SET_BIT(BoardConnected.BSR, BOARD_SERIALISED);
-				Board = *data++;
-				Board += (*data++ << 8); //LSB board number coming in
-				BoardConnected.Version = *data++; //version currently installed on board
-				BoardConnected.Subclass = *data++;//if a 93xx board is connected, what variety is it C, M, X, F...
+				if ( (Board->SerialNumber != 0) && (~(Board->SerialNumber) != 0) )
+					SET_BIT(Board->BSR, BOARD_SERIALISED);
+				data += 2;  //LSB board number coming in
+				Board->Version = *data++; //version currently installed on board
+				Board->Subclass = *data++;//if a 93xx board is connected, what variety is it C, M, X, F...
 				printT("====Interogation Complete====\n");
-				memcpy(&BoardConnected.Network, data, 2);
+				memcpy(&Board->Network, data, 2);
 				data += 2;
-				memcpy(&BoardConnected.Module, data, 2);
+				memcpy(&Board->Module, data, 2);
 				//Print Board Info //Transmit Info To Terminal
 				printT("=====Board Info=====\n");
 				//Board
-				sprintf(debugTransmitBuffer, "Board :		 %x%c \n",BoardConnected.BoardType,BoardConnected.Subclass);
+				sprintf(&debugTransmitBuffer, "Board :		 %x%c \n",Board->BoardType,Board->Subclass);
 				printT(&debugTransmitBuffer);
 				delay_us(50);
 				//Version
-				sprintf(debugTransmitBuffer, "Version :	 %x \n",BoardConnected.Version);
+				sprintf(&debugTransmitBuffer, "Version :	 %x \n",Board->Version);
 				printT(&debugTransmitBuffer);
 				delay_us(50);
 				//Network
-				sprintf(debugTransmitBuffer, "Network :	 %d \n",BoardConnected.Network);
+				sprintf(&debugTransmitBuffer, "Network :	 %d \n",Board->Network);
 				printT(&debugTransmitBuffer);
 				delay_us(50);
 				//Module
-				sprintf(debugTransmitBuffer, "Module :	 %d \n",BoardConnected.Module);
+				sprintf(&debugTransmitBuffer, "Module :	 %d \n",Board->Module);
 				printT(&debugTransmitBuffer);
 				delay_us(50);
 			break;
 		case 0x57:
 				HAL_Delay(100); //Delay for the reset of board, as to stop interference with ADC measurements
 				printT("===Board Configuration Successful===\n");
-				TestFunction(&BoardConnected);
+				TestFunction(Board);
 			break;
 
 		case 0x1B:
@@ -128,9 +128,9 @@ void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 				sampleCount = 0;
 				samplesUploading = true;
 				samplesUploaded = false;
-				sampleTime = sampleTime > 500 ? 500 : sampleTime;
+				sampleTime = sampleTime > 2000 ? 2000 : sampleTime;
 				//Uploading begun
-				sprintf(debugTransmitBuffer,"Waiting : %.2f seconds....\n", (float)sampleTime/1000 );
+				sprintf(&debugTransmitBuffer,"Waiting : %.2f seconds....\n", (float)sampleTime/1000 );
 				printT(&debugTransmitBuffer);
 			break;
 
@@ -143,7 +143,7 @@ void communication_response(uns_ch * Response, uns_ch *data, uint8 arraysize)
 				samplesUploading = true;
 				samplesUploaded = false;
 				sampleCount = 0;
-				sampleTime = 10;
+				sampleTime = 2000;
 			break;
 		case 0xCD:	// Initialise board command
 				printT("\n=====     Board Initialised     =====\n");
@@ -166,7 +166,7 @@ _Bool CRC_Check(uns_ch *input, uint8 length)
 		return false;
 }
 
-void SetPara(uns_ch Command)
+void SetPara(TboardConfig * Board, uns_ch Command)
 {
 	/*
 	 * Set Communication Parameters Routine
@@ -191,9 +191,12 @@ void SetPara(uns_ch Command)
 		case 0x56:
 				sprintf(debugTransmitBuffer, "\nConfiguring Board...\n");
 				printT(&debugTransmitBuffer);
-				SetTestParam(&BoardConnected, BoardConnected.GlobalTestNum, &Para[0], &Paralen);
+				SetTestParam(Board, Board->GlobalTestNum, &Para[0], &Paralen);
 				if( BoardConnected.GlobalTestNum == 0) {
-					sprintf(&lcdBuffer,"%x%c   S/N: %d  ", BoardConnected.BoardType, BoardConnected.Subclass, BoardConnected.SerialNumber);
+					if (Board->Subclass)
+						sprintf(&lcdBuffer,"%x%c   S/N: %d  ", Board->BoardType, Board->Subclass, Board->SerialNumber);
+					else
+						sprintf(&lcdBuffer,"%x   S/N: %d  ", Board->BoardType, Board->SerialNumber);
 					LCD_printf(&lcdBuffer[0], 1,0);
 					}
 			break;
@@ -247,15 +250,16 @@ void switchCommsProtocol(TboardConfig *Board) {
 	 } else if((Board->BoardType == b401x) || (Board->BoardType == b422x)) {
 		 USART2->CR1 &= ~(USART_CR1_RE);
 		 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
-		 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
-		 delay_us(50);
+		 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
 	 } else if((Board->BoardType == b402x) || (Board->BoardType == b427x)) {
-		 if(Board->GlobalTestNum < 4){
+		 if(Board->GlobalTestNum > 3){
 			 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+			 HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_RESET);
 		 } else {
 			 USART2->CR1 &= ~(USART_CR1_RE);
 			 HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 			 HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
+			 HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_SET);
 		 }
 	 }
 }

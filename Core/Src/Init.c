@@ -44,44 +44,46 @@ void TestRig_Init() {
 
 	HAL_TIM_Base_Start_IT(&htim6);
 	HAL_TIM_Base_Start_IT(&htim7);
-	HAL_TIM_Base_Start(&htim10);
+	HAL_TIM_Base_Start_IT(&htim10);
 	HAL_TIM_Base_Start_IT(&htim14);
 	HAL_TIM_Base_Start_IT(&htim11);
 
 	LoomChecking = true;
 	LoomState = bNone;
 	PrevLoomState = bNone;
-	read_correctionFactors();
 
 	timeOutCount = 0;
 	timeOutEn = false;
 }
 
-void initialiseTargetBoard() {
-	LCD_setCursor(2, 0);
-	sprintf(debugTransmitBuffer, "    Initialising    ");
-	LCD_displayString(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+void initialiseTargetBoard(TboardConfig * Board) {
+	LCD_printf("    Initialising    ",2,0);
 
 	uns_ch Command;
 	Command = 0xCC;
-	SetPara(Command);
+	SetPara(Board, Command);
 	communication_array(Command, &Para[0], Paralen);
 }
 
 void interrogateTargetBoard() {
-	LCD_setCursor(2, 0);
-	sprintf(debugTransmitBuffer, "   Interrogating    ");
-	LCD_displayString(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+	LCD_printf("   Interrogating    ",2,0);
 
 	uns_ch Command;
 	Command = 0x10;
 	communication_arraySerial(Command, 0, 0);
 }
 
-void configureTargetBoard() {
+void configureTargetBoard(TboardConfig * Board) {
 	uns_ch Command;
 	Command = 0x56;
-	SetPara(Command);
+	SetPara(Board, Command);
+	communication_array(Command, &Para[0], Paralen);
+}
+
+void uploadSamplesTargetBoard(TboardConfig * Board) {
+	uns_ch Command;
+	Command = 0x18;
+	SetPara(Board, Command);
 	communication_array(Command, &Para[0], Paralen);
 }
 
@@ -95,8 +97,8 @@ void TargetBoardParamInit() {
 	BoardConnected.GlobalTestNum = 0;
 	CLEAR_REG(BoardConnected.BSR);
 	BoardConnected.TPR = 0xFFFF;
-	Vfuse.steadyState = 0;
-	Vin.steadyState = 0;
+	Vfuse.average = 0;
+	Vin.average = 0;
 }
 
 uint32 ReadSerialNumber(uint8 * Response, uns_ch * data, uint16 length) {

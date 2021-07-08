@@ -3,7 +3,6 @@
 
 void scanLoom(TboardConfig *Board){
 		//First Wire
-//	HAL_GPIO_WritePin(Loom_Sel_GPIO_Port, Loom_Sel_Pin, GPIO_PIN_SET);
 	CheckLoom = false;
 	PrevLoomState = LoomState;
 	LoomState = 0x00;
@@ -17,91 +16,53 @@ void scanLoom(TboardConfig *Board){
 		}
 	}
 	if(LoomState != PrevLoomState || LoomState == bNone){
+		LCD_Clear();
 		switch(LoomState){
 		case 0:
-			sprintf(debugTransmitBuffer, "Connect A Loom...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-			Board->BoardType = bNone;
-			LCD_setCursor(1, 0);
-			sprintf(debugTransmitBuffer,"Connect A Loom");
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			LCD_printf("Connect A Loom",1,0);
+			printT("Connect A Loom...\n");
 			break;
 		case 1:
 			Board->BoardType = b935x;
-			LCD_Clear();
-			sprintf(debugTransmitBuffer, "9352 Connected...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-			LCD_setCursor(1, 0);
-			sprintf(debugTransmitBuffer,"9352 Loom Connected");
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			LCD_printf("9352 Loom Connected",1,0);
+			printT("9352 Connected...\n");
 			break;
 		case 2:
 			Board->BoardType = b937x;
-			LCD_Clear();
-			LCD_setCursor(1, 0);
-			sprintf(debugTransmitBuffer,"9371 Loom Connected");
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			sprintf(debugTransmitBuffer, "9371 Connected...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			LCD_printf("9371 Loom Connected",1,0);
+			printT("9371 Connected...\n");
 			break;
 		case 3:
 			Board->BoardType = b401x;
-			LCD_Clear();
-			LCD_setCursor(1, 0);
-			sprintf(debugTransmitBuffer,"4011 Loom Connected");
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			sprintf(debugTransmitBuffer, "4011 Connected...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			LCD_printf("4012 Loom Connected",1,0);
+			printT("401x Connected...\n");
 			break;
 		case 4:
 			Board->BoardType = b402x;
-			LCD_Clear();
-			LCD_setCursor(1, 0);
-			sprintf(debugTransmitBuffer,"4021 Loom Connected");
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			sprintf(debugTransmitBuffer, "4021 Connected...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			LCD_printf("4022 Loom Connected",1,0);
+			printT("4022 Connected...\n");
 			break;
 		case 5:
 			Board->BoardType = b427x;
-			LCD_Clear();
-			LCD_setCursor(1, 0);
-			sprintf(debugTransmitBuffer,"4271 Loom Connected");
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			sprintf(debugTransmitBuffer, "4271 Connected...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			LCD_printf("4271 Loom Connected",1,0);
+			printT("4271 Connected...\n");
 			break;
 		case 0x0A: //change to 6 when loom is fixed
 			Board->BoardType = b422x;
-			LCD_Clear();
-			LCD_setCursor(1, 0);
-			sprintf(debugTransmitBuffer,"4220 Loom Connected");
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			sprintf(debugTransmitBuffer, "422x Connected...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			LCD_printf("4220 Loom Connected",1,0);
+			printT("4220 Connected...\n");
 			break;
 		default:
 			Board->BoardType = bNone;
-			sprintf(debugTransmitBuffer, "Connect A Loom...\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-
+			LCD_printf("Connect A Loom",1,0);
+			printT("Connect A Loom...\n");
 		}
 		if(strlen(previousTestBuffer) > 1){
 			LCD_setCursor(2, 0);
 			LCD_displayString(&previousTestBuffer[0], strlen(previousTestBuffer));
 		}
-		LCD_setCursor(4, 0);
-		LCD_CursorOn_Off(false);
-		sprintf(debugTransmitBuffer,"   1 - Begin Test ");
-		LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		LCD_printf("   1 - Begin Test ",4,0);
+		printT("Press 1 - Begin Test \n");
 	}
 
 }

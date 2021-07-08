@@ -22,16 +22,10 @@ TportCalibration Port5;
 TportCalibration Port6;
 
 //Calibration Enums
-
-
 typedef enum {V_1 = 0, V_05 = 1, V_24 = 2, I_20 = 3, I_4 = 4, I_175 = 5, Done = 6}TcalTestConfig;
-
-bool currentlyCalibrating;
 uint16 CalibratingTimer;
-
 uint8 CalibrationCountdown;
 bool switchToCurrent;
-
 
 typedef struct {
 	uint32_t total;

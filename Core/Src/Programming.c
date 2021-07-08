@@ -280,12 +280,12 @@ void ProgrammingInit() {
 	if ((SignatureByte[0] == 0x1E) && (SignatureByte[1] == 0x96)
 			&& (SignatureByte[2] == 0x09)) {
 		TBmicro = Tatmega644;
-		flashPagelen = 256;
+//		flashPagelen = 256;
 		eepromPagelen = 8;
 	} else if ((SignatureByte[0] == 0x1E) && (SignatureByte[1] == 0x96)
 			&& (SignatureByte[2] == 0x0A)) {
 		TBmicro = Tatmega644p;
-		flashPagelen = 256;
+//		flashPagelen = 256;
 		eepromPagelen = 8;
 	} else {
 		TBmicro = Tnone;

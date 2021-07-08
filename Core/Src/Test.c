@@ -353,17 +353,14 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 	uint8 Test = Board->GlobalTestNum;
 	uint8 maxTest = Board->testNum;
 	if (Test == maxTest) {
-		sprintf(debugTransmitBuffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
+		sprintf(&debugTransmitBuffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
 		printT(&debugTransmitBuffer);
 		reset_ALL_MUX();
 		reset_ALL_DAC();
 
-		LCD_ClearLine(2);
 		LCD_ClearLine(3);
 		LCD_ClearLine(4);
-		LCD_setCursor(2, 0);
-		sprintf(debugTransmitBuffer, "    Test Results    ");
-		LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		LCD_printf("    Test Results    ",2,0);
 		uint8 spacing = (20 - (Test) - (Test-1));
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
@@ -389,22 +386,22 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 
 
 //	=================================================================================//
-void run422xTest(TboardConfig *Board, TprocessState * State) {
-	if ( READ_BIT(Board->BSR, BOARD_INITIALISED) ) {
-		if (CheckTestNumber(Board)) {
-			LatchingSolenoidDriverTest(Board, Board->GlobalTestNum);
-			CompareResults(Board, &CHval[Board->GlobalTestNum]);
-			} else {
-				TestComplete(Board);
-				CurrentState = csIDLE;
-				*State = psWaiting;
-								}
-	  	} else {
-	  		initialiseTargetBoard();
-	  		CurrentState = csInitialising;
-	  		*State = psWaiting;
-	  	  }
-}
+//void run422xTest(TboardConfig *Board, TprocessState * State) {
+//	if ( READ_BIT(Board->BSR, BOARD_INITIALISED) ) {
+//		if (CheckTestNumber(Board)) {
+//			LatchingSolenoidDriverTest(Board, Board->GlobalTestNum);
+//			CompareResults(Board, &CHval[Board->GlobalTestNum]);
+//			} else {
+//				TestComplete(Board);
+//				CurrentState = csIDLE;
+//				*State = psWaiting;
+//								}
+//	  	} else {
+//	  		initialiseTargetBoard();
+//	  		CurrentState = csInitialising;
+//	  		*State = psWaiting;
+//	  	  }
+//}
 
 //	=================================================================================//
 //	=================================================================================//

@@ -37,11 +37,12 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 	}
 	ReceiveState = RxWaiting;
 	USART2->CR1 |= USART_CR1_TXEIE;
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
 }
 
 void printT(uns_ch * Text) {
 	// Routine to take string and print it on the debug terminal
 //	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
+
 	CDC_Transmit_FS(Text, strlen(Text));
+	HAL_Delay(10);
 }

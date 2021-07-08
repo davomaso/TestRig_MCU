@@ -60,6 +60,7 @@ SD_HandleTypeDef hsd;
 
 SPI_HandleTypeDef hspi3;
 
+TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
@@ -93,6 +94,7 @@ static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM11_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 uint32 read_serial(void);
 void read_correctionFactors(void);
@@ -117,7 +119,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -148,15 +150,20 @@ int main(void)
   MX_TIM10_Init();
   MX_USART1_UART_Init();
   MX_TIM11_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   HAL_Delay(50);
   HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
   HAL_I2C_Init(&hi2c1);
   LCD_init();
   ChangeCharacterSet('A');
+  flashPagelen = 256;
+  hexAddress = 59;
 
   TestRig_Init();
   SDfileInit();
+  ConfigInit();
+  read_correctionFactors();
 
   /* USER CODE END 2 */
 
@@ -360,7 +367,7 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ENABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
@@ -379,7 +386,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -491,6 +498,55 @@ static void MX_SPI3_Init(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_IC_InitTypeDef sConfigIC = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  sConfigIC.ICFilter = 0;
+  if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
   * @brief TIM6 Initialization Function
   * @param None
   * @retval None
@@ -508,9 +564,9 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 4799;
+  htim6.Init.Prescaler = 999;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 99;
+  htim6.Init.Period = 479;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -574,9 +630,9 @@ static void MX_TIM10_Init(void)
 
   /* USER CODE END TIM10_Init 1 */
   htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 1;
+  htim10.Init.Prescaler = 239;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 119;
+  htim10.Init.Period = 99;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
@@ -636,9 +692,9 @@ static void MX_TIM13_Init(void)
 
   /* USER CODE END TIM13_Init 1 */
   htim13.Instance = TIM13;
-  htim13.Init.Prescaler = 48;
+  htim13.Init.Prescaler = 23;
   htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim13.Init.Period = 50;
+  htim13.Init.Period = 1;
   htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
@@ -885,14 +941,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED1_Pin LED2_Pin DAC_CS3_Pin DAC_CS2_Pin
-                           DAC_CS1_Pin */
-  GPIO_InitStruct.Pin = LED1_Pin|LED2_Pin|DAC_CS3_Pin|DAC_CS2_Pin
-                          |DAC_CS1_Pin;
+  /*Configure GPIO pins : LED1_Pin DAC_CS3_Pin DAC_CS2_Pin DAC_CS1_Pin */
+  GPIO_InitStruct.Pin = LED1_Pin|DAC_CS3_Pin|DAC_CS2_Pin|DAC_CS1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LED2_Pin */
+  GPIO_InitStruct.Pin = LED2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(LED2_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : MUX_WRodd2_Pin MUX_WReven2_Pin ASYNC3_Pin ASYNC4_Pin
                            ASYNC5_Pin ASYNC6_Pin ASYNC7_Pin ASYNC8_Pin

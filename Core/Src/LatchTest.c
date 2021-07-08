@@ -3,12 +3,10 @@
 #include "UART_Routine.h"
 
 uint8 runLatchTest(TboardConfig *Board, uint8 Test_Port){
-
-	HAL_TIM_Base_Start_IT(&htim10);
 	ADC_MUXsel(Test_Port);
 	PulseCountDown = latchCountTo = 2000;
-	stableVoltageCount = 25;
 	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
+	HAL_TIM_Base_Start_IT(&htim10);
 	return Test_Port;
 }
 
@@ -40,10 +38,11 @@ void LatchTestInit() {
 	CLEAR_REG(LatchTestStatusRegister);
 	LatchCountTimer = 0;
 	LatchTestPort = 0;
+	stableVoltageCount = 25;
 	Vfuse.lowVoltage = 99.0;
 	Vin.lowVoltage = 99.0;
-	Vin.steadyState = 0.0;
-	Vfuse.steadyState = 0.0;
+	Vin.average = 0.0;
+	Vfuse.average = 0.0;
 	Vmos1.lowVoltage = 99.0;
 	Vmos2.lowVoltage = 99.0;
 

@@ -13,29 +13,29 @@ void LatchErrorCheck(TboardConfig * Board){
 	if( ( (adc1.HighPulseWidth > 52) || (adc1.HighPulseWidth < 48) ) || ( (adc1.LowPulseWidth > 52) || (adc1.LowPulseWidth < 48) ) )
 		SET_BIT(Board->LTR, PORT_A_PULSEWIDTH_ERROR);
 	if (Board->BoardType == b935x || Board->BoardType == b937x) {
-		if((adc1.highVoltage <= 9.8)  || (adc1.lowVoltage >= 0.7) || (adc1.highVoltage == 0))
+		if((adc1.highVoltage < 9.2)  || (adc1.lowVoltage > 1.2) || (adc1.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if((adc2.highVoltage <= 9.8) || (adc2.lowVoltage >= 0.7) || (adc2.highVoltage == 0))
+		if((adc2.highVoltage < 9.2) || (adc2.lowVoltage > 1.2) || (adc2.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	} else {
-		if((adc1.highVoltage <= 9.2)  || (adc1.lowVoltage >= 0.7) || (adc1.highVoltage == 0))
+		if((adc1.highVoltage <= 9.2)  || (adc1.lowVoltage >= 1.2) || (adc1.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if((adc2.highVoltage <= 9.2 ) || (adc2.lowVoltage >= 0.7) || (adc2.highVoltage == 0))
+		if((adc2.highVoltage <= 9.2 ) || (adc2.lowVoltage >= 1.2) || (adc2.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	}
 		//ADC2 Check
 	if( ( (adc2.HighPulseWidth > 52) || (adc2.HighPulseWidth < 48) ) || ( (adc2.LowPulseWidth > 52) || (adc2.LowPulseWidth < 48) ) )
 		SET_BIT(Board->LTR, PORT_B_PULSEWIDTH_ERROR);
 		//Vin Check
-	if( Vin.steadyState < 10.8 )
+	if( Vin.average < 10.8 )
 		SET_BIT(Board->LTR, INPUT_VOLTAGE_ERROR);
 		//Vfuse Check
-	if(Vfuse.steadyState < 0.95*Vin.steadyState  || Vfuse.lowVoltage < 0.9*Vin.lowVoltage)
+	if(Vfuse.average < 0.95*Vin.average  || Vfuse.lowVoltage < 0.9*Vin.lowVoltage)
 		SET_BIT(Board->LTR, FUSE_VOLTAGE_ERROR);
 		//Vmos Check
-	if(Vmos1.highVoltage < 0.05 || Vmos1.highVoltage > 3 || Vmos1.lowVoltage > 0.7 || Vmos1.lowVoltage < 0.1)
+	if(Vmos1.highVoltage < 0.01 || Vmos1.highVoltage > 3.5 || Vmos1.lowVoltage > 0.7 || Vmos1.lowVoltage < 0.01)
 		SET_BIT(Board->LTR, PORT_A_MOSFET_ERROR);
-	if(Vmos2.highVoltage < 0.05 || Vmos2.highVoltage > 3 || Vmos2.lowVoltage > 0.7 || Vmos2.lowVoltage < 0.1)
+	if(Vmos2.highVoltage < 0.01 || Vmos2.highVoltage > 3.5 || Vmos2.lowVoltage > 0.7 || Vmos2.lowVoltage < 0.01)
 		SET_BIT(Board->LTR, PORT_B_MOSFET_ERROR);
 }
 void printLatchError(uint8 *ErrorCode){

@@ -21,9 +21,9 @@ void Calibration(){
 	DACval = 0x3000 + DAC_1volt + *calPtr;
 	DAC_set((calPort), DACval);
 	MUX_Sel((calPort), THREE_VOLT);
-	sprintf(debugTransmitBuffer, "==========Calibrating 1V==========\n");
+	sprintf(&debugTransmitBuffer, "==========Calibrating 1V==========\n");
 	printT(&debugTransmitBuffer[0]);
-	sprintf(debugTransmitBuffer, "Port Calibrating: %d\n", calPort+1);
+	sprintf(&debugTransmitBuffer, "Port Calibrating: %d\n", calPort+1);
 	printT(&debugTransmitBuffer[0]);
 
 	while(calTest != Done){
@@ -301,7 +301,7 @@ void TargetBoardCalibration(TboardConfig * Board) {
 		if (!switchToCurrent) {
 				uns_ch Command;
 				Command = 0xC0;
-				SetPara(Command);
+				SetPara(Board, Command);
 					//Set Port 1
 				DACval = DAC_1volt + Port1.CalibrationFactor[V_1];
 				DACval += 0x3000;
@@ -329,9 +329,11 @@ void TargetBoardCalibration(TboardConfig * Board) {
 				for (int i = Port_1; i <= Port_6; i++) {
 						MUX_Sel(i, THREE_VOLT);
 					}
-				ADC_MUXsel(Port_1);	//Depending on board connected switch what port is being watched by ADC
+				if (Board->BoardType == b427x)
+					ADC_MUXsel(Port_4);	//Depending on board connected switch what port is being watched by ADC
+				else
+					ADC_MUXsel(Port_1);
 				calibrateADCval.total = calibrateADCval.average = 0;
-				currentlyCalibrating = true;
 
 				communication_array(Command, &Para[0], Paralen);
 				CalibratingTimer = 0;
@@ -339,6 +341,7 @@ void TargetBoardCalibration(TboardConfig * Board) {
 				HAL_TIM_Base_Start_IT(&htim10);
 
 		} else {
+				_Bool MuxState = HAL_GPIO_ReadPin(MUX_A0_GPIO_Port, MUX_A0_Pin);
 				calibrateADCval.total = calibrateADCval.average = 0;
 				HAL_TIM_Base_Stop(&htim10);
 						//Set Port 1
@@ -369,6 +372,10 @@ void TargetBoardCalibration(TboardConfig * Board) {
 				for (int i = Port_1; i <= Port_6; i++) {
 						MUX_Sel(i, TWENTY_AMP);
 					}
+				if (MuxState)
+					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
+				else
+					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 			}
 }
 

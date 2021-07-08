@@ -61,6 +61,7 @@
 
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim10;
@@ -103,7 +104,7 @@ void HardFault_Handler(void)
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
 	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
 	  HAL_Delay(100);
-	  /* USER CODE END W1_HardFault_IRQn 0 */
+    /* USER CODE END W1_HardFault_IRQn 0 */
   }
 }
 
@@ -218,21 +219,9 @@ void SysTick_Handler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
+	//500us timer for calculating ADC values for latching and power ports
+	//Poll 5 times each ms to gain a higher accuracy of voltage
 
-
-	if (!InputVoltageStable) {
-		ADC_Ch2sel();
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1, 10);
-		Vin.average = HAL_ADC_GetValue(&hadc1);
-		HAL_ADC_Stop(&hadc1);
-		if (Vin.average >= 3500) {
-			InputVoltageCounter++;
-			if (InputVoltageCounter > 2000)
-				InputVoltageStable = true;
-		}
-		InputVoltageTimer++;
-	}
 	if (CurrentState == csCalibrating) {
 		/*
 		 * Read the ADC to determine when the Port that the calibration is connected to falls to GND,
@@ -240,43 +229,35 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		 * the current on all ports.
 		 * In the event of a failure set the ProcessState to psFailed to halt process
 		 */
-
 		if (CalibratingTimer < CalibrateTimerTo) {
-			if(BoardConnected.BoardType == b401x) {
+			if(BoardConnected.BoardType == b401x)
 				ADC_Ch4sel();
-			} else if (BoardConnected.BoardType == b402x) {
+			else if (BoardConnected.BoardType == b402x)
 				ADC_Ch3sel();
-			} else {
+			else
 				ADC_Ch0sel();
-			}
+
 			HAL_ADC_Start(&hadc1);
 			HAL_ADC_PollForConversion(&hadc1, 100);
-			calibrateADCval.total += HAL_ADC_GetValue(&hadc1);
+			calibrateADCval.average = HAL_ADC_GetValue(&hadc1);
 			HAL_ADC_Stop(&hadc1);
 
-			usADCcount++;
-
-			if ( usADCcount >= 5 ) {
-				calibrateADCval.average = calibrateADCval.total / usADCcount;
-				calibrateADCval.total = 0;
-				usADCcount = 0;
-				if ( (BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b401x) || (calibrateADCval.average >= 3000) ) {
-					if (!(--CalibrationCountdown)) {
-						switchToCurrent = true;
-						TargetBoardCalibration();
-						}
-				} else if ( (calibrateADCval.average <= 100) ) {
-					if (!(--CalibrationCountdown)) {
-						switchToCurrent = true;
-						TargetBoardCalibration();
-						}
-				} else {
-					CalibrationCountdown = 10;
+			if ( ( (BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b401x) ) && (calibrateADCval.average >= 3000) ) {
+				if (!(--CalibrationCountdown) ) {
+					switchToCurrent = true;
+					TargetBoardCalibration(&BoardConnected);
 					}
-			}
+			} else if (  (calibrateADCval.average <= 100) ) {
+				if (!(--CalibrationCountdown)) {
+					switchToCurrent = true;
+					TargetBoardCalibration(&BoardConnected);
+					}
+			} else
+					CalibrationCountdown = 10;
 		} else
 			ProcessState = psFailed;
 	}
+
 	if ( READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING) ) {
 		/*
 		 * While the LatchSampling variable is true the system will complete the latching test process,
@@ -285,151 +266,149 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		 *	pulse widths, high voltages, low voltages, fuse voltages and input voltages.
 		 *	From this other factors can be determined such as current through the latch, and MOSFET voltages.
 		 */
-		if (LatchCountTimer < latchCountTo) {
 			//Poll ADC every 200us to take average across 1ms to get more accurate reading
 					//ADC 1
+
+		if (LatchCountTimer < 2048) {
 				ADC_Ch0sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 10);
-				adc1.raw_Buffer[usADCcount] = HAL_ADC_GetValue(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
+				adc1.currentValue = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
-
 					//ADC 2
 				ADC_Ch1sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 10);
-				adc2.raw_Buffer[usADCcount] = HAL_ADC_GetValue(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
+				adc2.currentValue = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 //					//Vin
 				ADC_Ch2sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 10);
-				Vin.total += HAL_ADC_GetValue(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
+				Vin.currentValue = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 //					//Vfuse
 				ADC_Ch3sel();
 				HAL_ADC_Start(&hadc1);
-				HAL_ADC_PollForConversion(&hadc1, 10);
-				Vfuse.total += HAL_ADC_GetValue(&hadc1);
+				HAL_ADC_PollForConversion(&hadc1, 100);
+				Vfuse.currentValue = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 
-					//ADC1
-				adc1.total += adc1.raw_Buffer[usADCcount];
-					//ADC2
-				adc2.total += adc2.raw_Buffer[usADCcount];
+				if (LatchCountTimer > 2048)
+					LatchCountTimer = 2048;
+				else {
+					//Vin
+				Vin.avg_Buffer[LatchCountTimer] = Vin.currentValue;
+					//Vfuse
+				Vfuse.avg_Buffer[LatchCountTimer] = Vfuse.currentValue;
+				}
 
-
-				if(LatchCountTimer > 10) {
+				if(LatchCountTimer > 100) {
 					/*
 					 *  Once voltage is stable find the lowest fuse and input voltage. If the calculated average voltage is less then the current minimum
 					 *  set the minimum to the calculated average
 					 *  */
-					Vfuse.lowVoltage = Vfuse.average < Vfuse.lowVoltage ? Vfuse.average:Vfuse.lowVoltage;
-					Vin.lowVoltage = Vin.average < Vin.lowVoltage ? Vin.average:Vin.lowVoltage;
+					Vfuse.lowVoltage = Vfuse.currentValue < Vfuse.lowVoltage ? Vfuse.currentValue:Vfuse.lowVoltage;
+					Vin.lowVoltage = Vin.currentValue < Vin.lowVoltage ? Vin.currentValue:Vin.lowVoltage;
 				}
-
-			if(usADCcount == 5){
-				/*
-				 * Average the results from the previous 1ms of data collected
-				 */
-				adc1.average = adc1.total / usADCcount;
-				adc1.avg_Buffer[LatchCountTimer] = adc1.average;
-
-				adc2.average = adc2.total / usADCcount;
-				adc2.avg_Buffer[LatchCountTimer] = adc2.average;
-
-
-				Vfuse.average = Vfuse.total / usADCcount;
-				Vfuse.avg_Buffer[LatchCountTimer] = Vfuse.average;
-
-				Vin.average = Vin.total/usADCcount;
-				Vin.avg_Buffer[LatchCountTimer] = Vin.average;
-
 
 				if(stableVoltageCount) {
 					/*
 					 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
 					 * set LatchSampling to false so that the process is halted and the test fails
 					 */
-					if( (Vfuse.average > 2700) && (Vfuse.average > 0.75*Vin.average) ) stableVoltageCount--;
+					if( (Vfuse.currentValue > 2700) && (Vfuse.currentValue > 0.75*Vin.currentValue) ) stableVoltageCount--;
 					else stableVoltageCount++;
 					if( stableVoltageCount > 100)
 						CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 					else if (stableVoltageCount == 0)
 						SET_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
+
 				}
 
-				if(LatchCountTimer == 50 && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE) ) {
+				if(LatchCountTimer == 100 && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE) ) {
 					/*
-					 * Calculate the steady state/ average voltage of the fuse and input accross the range determined
+					 * Calculate the steady state/ average voltage of the fuse and input across the range determined
 					 * if the fuse and input are determined to be stable
 					*/
-					for(int i = 0; i <= LatchCountTimer;i++) {
-						Vfuse.steadyState += Vfuse.avg_Buffer[i];
-						Vin.steadyState += Vin.avg_Buffer[i];
-					}
-					Vfuse.steadyState /= LatchCountTimer;
-					Vin.steadyState /= LatchCountTimer;
-				} else if (LatchCountTimer > 50  && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE) ) {
+						Vfuse.total = Vin.total = 0;
+						for (int i = 0; i <= LatchCountTimer;i++) {
+							Vfuse.total += Vfuse.avg_Buffer[i];
+							Vin.total += Vin.avg_Buffer[i];
+						}
+						Vfuse.average = Vfuse.total/LatchCountTimer;
+						Vin.average = Vin.total/LatchCountTimer;
+				} else if (LatchCountTimer > 100  && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE) ) {
 						/*
 						 * If statement to determine the voltages of the latch and pulsewidths.
 						 * If the pulse width is above 47ms the latchoff rountine can be run.
 						 */
+
 							//Latch On Test
-						if (adc1.average > 2400) {
-							adc1.HighPulseWidth++;
-							adc1.highVoltage += adc1.average;
-							if (adc1.HighPulseWidth > 5 && adc1.HighPulseWidth < 45) {
-								Vmos1.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc1.avg_Buffer[LatchCountTimer];
-								Vmos1.highVoltage = Vmos1.highVoltage < Vmos1.avg_Buffer[LatchCountTimer] ? Vmos1.avg_Buffer[LatchCountTimer] : Vmos1.highVoltage;
-							PulseCountDown = (adc1.HighPulseWidth > 45 || adc2.LowPulseWidth > 45) ? 10 : PulseCountDown;
+						if(READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
+							if (adc1.currentValue > 2400) {
+								adc1.HighPulseWidth++;
+								adc1.highVoltage += adc1.currentValue;
+								if (adc1.HighPulseWidth > 5 && adc1.HighPulseWidth < 90) {
+									Vmos1.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc1.currentValue;
+									Vmos1.highVoltage = Vmos1.highVoltage < Vmos1.avg_Buffer[LatchCountTimer] ? Vmos1.avg_Buffer[LatchCountTimer] : Vmos1.highVoltage;
+								PulseCountDown = (adc1.HighPulseWidth > 90 || adc2.LowPulseWidth > 90) ? 10 : PulseCountDown;
+								}
+							}
+							if (adc2.currentValue < 500) {
+								adc2.LowPulseWidth++;
+								adc2.lowVoltage += adc2.currentValue;
+								if (adc2.LowPulseWidth > 5 && adc2.LowPulseWidth < 90) {
+									Vmos2.avg_Buffer[LatchCountTimer] = adc2.currentValue;
+									Vmos2.lowVoltage = Vmos2.lowVoltage > Vmos2.avg_Buffer[LatchCountTimer] ? Vmos2.avg_Buffer[LatchCountTimer] : Vmos2.lowVoltage;
+								}
 							}
 						}
-						if (adc2.average < 500) {
-							adc2.LowPulseWidth++;
-							adc2.lowVoltage += adc2.average;
-							if (adc2.LowPulseWidth > 5 && adc2.LowPulseWidth < 45) {
-								Vmos2.avg_Buffer[LatchCountTimer] = adc2.avg_Buffer[LatchCountTimer];
-								Vmos2.lowVoltage = Vmos2.lowVoltage > Vmos2.avg_Buffer[LatchCountTimer] ? Vmos2.avg_Buffer[LatchCountTimer] : Vmos2.lowVoltage;
-							}
-						}
+						if(READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
 						//Latch Off Test
-						if (adc1.average < 500) {
+						if (adc1.currentValue < 500) {
 							adc1.LowPulseWidth++;
-							adc1.lowVoltage += adc1.average;
-							if (adc1.LowPulseWidth > 5 && adc1.LowPulseWidth < 45) {
-								Vmos1.avg_Buffer[LatchCountTimer] = adc1.avg_Buffer[LatchCountTimer];
+							adc1.lowVoltage += adc1.currentValue;
+							if (adc1.LowPulseWidth > 5 && adc1.LowPulseWidth < 90) {
+								Vmos1.avg_Buffer[LatchCountTimer] = adc1.currentValue;
 								Vmos1.lowVoltage = Vmos1.lowVoltage > Vmos1.avg_Buffer[LatchCountTimer] ? Vmos1.avg_Buffer[LatchCountTimer] : Vmos1.lowVoltage;
 							}
 						}
-						if (adc2.average > 2400) {
+						if (adc2.currentValue > 2400) {
 							adc2.HighPulseWidth++;
-							adc2.highVoltage += adc2.average;
-							if (adc2.HighPulseWidth > 5 && adc2.HighPulseWidth < 45) {
-								Vmos2.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc2.avg_Buffer[LatchCountTimer];
+							adc2.highVoltage += adc2.currentValue;
+							if (adc2.HighPulseWidth > 5 && adc2.HighPulseWidth < 90) {
+								Vmos2.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc2.currentValue;
 								Vmos2.highVoltage = Vmos2.highVoltage < Vmos2.avg_Buffer[LatchCountTimer] ? Vmos2.avg_Buffer[LatchCountTimer] : Vmos2.highVoltage;
 							}
-							PulseCountDown = (adc2.HighPulseWidth > 45 || adc1.LowPulseWidth > 45) ? 10 : PulseCountDown;
+							PulseCountDown = (adc2.HighPulseWidth > 90 || adc1.LowPulseWidth > 90) ? 10 : PulseCountDown;
+							}
 						}
 						PulseCountDown--;
-						if ( ( (adc1.HighPulseWidth > 47) && (adc2.LowPulseWidth > 47) )  )//|| (PulseCountDown == 0)
+
+							//Set latch complete bits
+						if ( !PulseCountDown && ( (adc1.HighPulseWidth > 94) && (adc2.LowPulseWidth > 94) )  ) {//|| (PulseCountDown == 0)
 							SET_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE);
-						if ( adc2.HighPulseWidth > 47 || adc1.LowPulseWidth > 47)
+							adc1.highVoltage /= 2;
+							adc2.lowVoltage /= 2;
+							adc1.HighPulseWidth /= 2;
+							adc2.LowPulseWidth /= 2;
+						}
+						if ( !PulseCountDown && ( (adc2.HighPulseWidth > 94) || (adc1.LowPulseWidth > 94) ) ) {
 							SET_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE);
-					}
-				adc1.total = 0;
-				adc2.total = 0;
-				Vfuse.total = 0;
-				Vin.total = 0;
-				usADCcount = 0;
+							adc1.LowPulseWidth /= 2;
+							adc2.HighPulseWidth /= 2;
+							adc2.highVoltage /= 2;
+							adc1.lowVoltage /= 2;
+						}
+
+				}
 				LatchCountTimer++;
 			}
-			usADCcount++;
-		} else{
-			 CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
-		}
-	}
+		} else
+		 CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
   /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
   HAL_TIM_IRQHandler(&htim10);
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
 
@@ -443,7 +422,19 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
 		// 1ms Interrupt timer
-
+		if (!InputVoltageStable && InputVoltageTimer) {
+			ADC_Ch2sel();
+			HAL_ADC_Start(&hadc1);
+			HAL_ADC_PollForConversion(&hadc1, 10);
+			Vin.average = HAL_ADC_GetValue(&hadc1);
+			HAL_ADC_Stop(&hadc1);
+			if (Vin.average >= 3500) {
+				InputVoltageCounter++;
+				if (InputVoltageCounter > 1000)
+					InputVoltageStable = true;
+			}
+			InputVoltageTimer--;
+		}
 	  if(samplesUploading) {
 		  /*
 		   * Timer that is set when samples begin uploading to determine when to send
@@ -465,6 +456,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 				  sampleCount++;
 			  }
 		  }
+
 	  if(timeOutEn) {
 		  /*
 		   * Timeout routine to be run throughout the program,
@@ -485,6 +477,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		  }
 	  }
   /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
   HAL_TIM_IRQHandler(&htim11);
   /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 1 */
 
@@ -498,7 +491,6 @@ void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
 	if (USART2->SR & USART_SR_RXNE) {
-		errorCounter++;
 		/*
 		 * Board Comms receive routine to handle the data from the RS485 or Radio
 		 * The Routine should sort through the string of data determining whether the string
@@ -546,9 +538,10 @@ void USART2_IRQHandler(void)
 							memcpy(&Data_Buffer[0],&UART2_RXbuffer[14], (UART2_RecPos) );
 						}
 						ReceiveState = RxGOOD;
-					} else
+					} else {
 						ReceiveState = RxBAD;
-					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+						printT("CRC Error...\n");
+					}
 					USART2->CR1  &= ~(USART_CR1_RXNEIE);
 				}
 			} else
@@ -565,7 +558,6 @@ void USART2_IRQHandler(void)
 
 		if (UART2_TXpos == UART2_TXcount) {
 			if (UART2_TXpos != 0)
-				errorCounter = 0;
 			//disable interrupts
 			if (UART2_TXcount > 0)
 				USART2->CR1 |= (USART_CR1_TCIE);
@@ -582,6 +574,7 @@ void USART2_IRQHandler(void)
 		USART2->CR1 |= (USART_CR1_RE);
 		USART2->CR1 &= ~(USART_CR1_TCIE);
 		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_SET);
 	}
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
@@ -950,7 +943,13 @@ void TIM6_IRQHandler(void)
 void TIM7_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM7_IRQn 0 */
+	/*
 
+	//       ======      KEYPAD Scan Interupt      ======      //
+
+	*/
+
+	// 1ms timer to scan keypad
   /* USER CODE END TIM7_IRQn 0 */
   HAL_TIM_IRQHandler(&htim7);
   /* USER CODE BEGIN TIM7_IRQn 1 */

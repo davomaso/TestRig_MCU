@@ -19,9 +19,9 @@
 
 //Routines
 void communication_array(uns_ch, uns_ch*, uint8);
-void communication_response(uns_ch*, uns_ch*, uint8);
+void communication_response(TboardConfig *,uns_ch*, uns_ch*, uint8);
 void communication_command(uns_ch *);
-void SetPara(uns_ch);
+void SetPara(TboardConfig *,uns_ch);
 void BoardConfig(void);
 void ADC_Init(void);
 void TransmitResults(void);
@@ -29,17 +29,11 @@ void PrintLatchResults(void);
 void LatchErrorCheck(TboardConfig *);
 void printLatchError(uint8 *);
 void ADC_MUXsel(uint8);
-//uint32 ReadSerialNumber(uns_ch, uns_ch *, uint16);
 
 //Constant Defines
 #define LRGBUFFER 254
 #define SMLBUFFER 32
 #define XSMLBUFFER 16
-
-
-int intBuffer;
-
-uint16 errorCounter;
 
 //variables for communication.c
 //variables for communication array/command
@@ -50,22 +44,12 @@ uns_ch Data_Buffer[LRGBUFFER];
 uint8 Paralen;
 uns_ch Para[LRGBUFFER];
 
-//communication response
-uint16 Board;
-uint8 Version;
-uns_ch Flags;
-uns_ch Subclass;
-
 //Loom Variables
 _Bool CheckLoom;
 _Bool LoomChecking;
 uint16 LoomCheckCount;
 uint8 LoomState;
-
 uint8 PrevLoomState;
-
-//Test Parameters Returned
-uint16 Samplerate;
 
 //0x1A and 0x1B Command and Response
 uint16 sampleTime;
@@ -114,7 +98,6 @@ TsdiConfig SDI_Port6;
 uint8 SDIAddress;
 float SDIMeasurement;
 typedef enum {SDSundef, SDSquery, SDSaddress, SDSc, SDSdPending, SDSd}TsdiState;
-
 TsdiState SDSstate;
 
 //Latch Variables
@@ -127,18 +110,18 @@ uint8 LatchTestPort;
 
 typedef struct{
 	uint32_t total;
-	uint16_t average;
+	float average;
 	uint16_t raw_Buffer[20];
 	uint16_t avg_Buffer[ADC_BUF_LEN];
+	uint16 currentValue;
 
 	uint8_t HighPulseWidth;
 	_Bool HighPulseMeasure;
 	uint8_t LowPulseWidth;
 	_Bool LowPulseMeasure;
 
-	float highVoltage;
-	float lowVoltage;
-	float steadyState;
+	double highVoltage;
+	double lowVoltage;
 
 }TADCconfig;
 
@@ -174,10 +157,8 @@ typedef struct{
 
 TlatchResults LatchRes;
 
-uint8 usADCcount; 			//us ADC count to poll the ADC every 100us
+//uint8 usADCcount; 			//us ADC count to poll the ADC every 100us
 uint8_t PulseCountDown;		// Stable voltage pulse
-
-uint8_t LatchErrCheck;
 
 	//Keypad Variables
 typedef struct {
@@ -219,8 +200,8 @@ bool LatchTimeOut;
 uint16 latchTimeOutCount;
 
 bool InputVoltageStable;
-uint32 InputVoltageCounter;
-uint32 InputVoltageTimer;
+uint16 InputVoltageCounter;
+uint16 InputVoltageTimer;
 
 uint16 LEDcounter;
 bool LED1active;

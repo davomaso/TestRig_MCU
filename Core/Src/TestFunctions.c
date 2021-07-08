@@ -20,7 +20,7 @@
 _Bool twoWireLatching(TboardConfig*,uint8,_Bool);
 float twentyAmp(uint8);
 float threeVolt(uint8, uint8);
-float asyncPulse(uint8);
+float asyncPulse(TboardConfig *,uint8);
 float sdiTwelve(uint8);
 //void DAC_set(uint8, int);
 
@@ -62,7 +62,7 @@ void TestFunction(TboardConfig *Board) {
 			CHval[Board->GlobalTestNum][totalPortCount++] = threeVolt(currPort, ONE_VOLT);
 			break;
 		case ASYNC_PULSE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(Board,currPort);
 			break;
 		case SDI_TWELVE:
 			CHval[Board->GlobalTestNum][totalPortCount++] = sdiTwelve(currPort);
@@ -73,7 +73,7 @@ void TestFunction(TboardConfig *Board) {
 	for (currPort = 6; currPort < Board->digitalInputCout+6; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case ASYNC_PULSE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(Board,currPort);
 			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
 			break;
 		}
@@ -279,12 +279,13 @@ float threeVolt(uint8 Test_Port, uint8 TestCode) {
 
 
 //	===================================   ASYNC   ===================================	//
-float asyncPulse(uint8 Test_Port) {
+float asyncPulse(TboardConfig * Board, uint8 Test_Port) {
 	switch (Test_Port) {
 	//Port 2
 	case Port_1:
 		HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
-		switch (BoardConnected.GlobalTestNum) {
+		MUX_Sel(Test_Port, ASYNC_PULSE);
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port1.PulseCount = 10;
@@ -298,8 +299,7 @@ float asyncPulse(uint8 Test_Port) {
 			Async_Port1.PulseCount = 10;
 			break;
 		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		HAL_Delay(5);
+		HAL_Delay(10);
 		Async_Port1.fcount = 5;
 		Async_Port1.PulseState = true;
 		return (float) Async_Port1.FilterEnabled ?  Async_Port1.PulseCount : (11*Async_Port1.PulseCount);
@@ -307,7 +307,7 @@ float asyncPulse(uint8 Test_Port) {
 		//Port 3
 	case Port_2:
 		HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port2.PulseCount = 5;
@@ -322,7 +322,7 @@ float asyncPulse(uint8 Test_Port) {
 			break;
 		}
 		MUX_Sel(Test_Port, ASYNC_PULSE);
-		HAL_Delay(5);
+		HAL_Delay(10);
 		Async_Port2.fcount = 5;
 		Async_Port2.PulseState = true;
 		return (float) Async_Port2.FilterEnabled ?  Async_Port2.PulseCount : (11*Async_Port2.PulseCount);
@@ -330,7 +330,7 @@ float asyncPulse(uint8 Test_Port) {
 		//Port 4
 	case Port_3:
 		HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port3.PulseCount = 8;
@@ -353,7 +353,7 @@ float asyncPulse(uint8 Test_Port) {
 		//Port 5
 	case Port_4:
 		HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port4.PulseCount = 10;
@@ -375,7 +375,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 	case Port_5:
 		HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port5.PulseCount = 10;
@@ -398,7 +398,7 @@ float asyncPulse(uint8 Test_Port) {
 
 	case Port_6:
 		HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port6.PulseCount = 10;
@@ -420,7 +420,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 
 	case Port_7:
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port7.PulseCount = 5;
@@ -441,7 +441,7 @@ float asyncPulse(uint8 Test_Port) {
 		break;
 
 	case Port_8:
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port8.PulseCount = 7;
@@ -461,7 +461,7 @@ float asyncPulse(uint8 Test_Port) {
 		return (float) Async_Port8.PulseCount;
 		break;
 	case Port_9:
-		switch (BoardConnected.GlobalTestNum) {
+		switch (Board->GlobalTestNum) {
 		case 0:
 		case 1:
 			Async_Port9.PulseCount = 7;
@@ -533,28 +533,9 @@ float sdiTwelve(uint8 Test_Port){
 //	===================================================================================	//
 
 
-//	=================================    Run Output    ===============================  //
-_Bool RunOutputTest() {
-	/*
-	 * Run test on the output of the input board, The output is connected to the Vfuse as
-	 * the output and fuse will share the same voltage
-	 *
-	 * Test is to run for 50ms to ensure that the output is correct and operates in a stable manner
-	 */
-	uns_ch Command = 0x26;
-	Para[0] = 0x87;
-	Paralen = 1;
-	communication_array(Command, &Para, Paralen);
-	while(1) {
-
-	}
-	return 1;
-}
-//	===================================================================================	//
-
-
 //	===================================    MUX    ===================================	//
 void MUX_Sel(uint8 Test_Port, uint8 Test) {
+	_Bool MuxState = HAL_GPIO_ReadPin(MUX_A0_GPIO_Port, MUX_A0_Pin);
 	switch (Test_Port) {
 	case Port_1:
 		HAL_GPIO_WritePin(MUX_WRodd1_GPIO_Port, MUX_WRodd1_Pin, GPIO_PIN_RESET);
@@ -625,6 +606,11 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 		HAL_GPIO_WritePin(MUX_WReven3_GPIO_Port, MUX_WReven3_Pin, GPIO_PIN_SET);
 		break;
 	}
+	delay_us(50);
+	if (MuxState)
+		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
+	else
+		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 }
 void reset_ALL_MUX() {
 	//MUX 1
@@ -645,52 +631,12 @@ void reset_ALL_MUX() {
 	//MUX 6
 	HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
 	MUX_Sel(Port_6, ASYNC_PULSE);
-//	HAL_Delay(2000);
 }
 //	=================================================================================//
 
 
 
 //	=================================================================================//
-
-
-//	=================================    ADC    =====================================//
-void ADC_Init(){
-	CLEAR_REG(LatchTestStatusRegister);
-	stableVoltageCount = 25;
-	LatchCountTimer = 0;
-		//Low Voltage Reset
-	Vfuse.lowVoltage = 4096;
-	Vin.lowVoltage = 4096;
-	Vmos1.lowVoltage = 4096;
-	Vmos2.lowVoltage = 4096;
-
-		//High Voltage Reset
-	Vfuse.highVoltage = 0;
-	Vin.highVoltage = 0;
-	Vmos1.highVoltage = 0;
-	Vmos2.highVoltage = 0;
-
-		//ADC1 Reset
-	adc1.HighPulseWidth = 0;
-	adc1.LowPulseWidth = 0;
-	adc2.HighPulseWidth = 0;
-	adc2.LowPulseWidth = 0;
-
-		//ADC2 Reset
-	adc1.highVoltage = 0;
-	adc1.lowVoltage = 0;
-	adc2.highVoltage = 0;
-	adc2.lowVoltage = 0;
-
-	Vin.average = 0;
-	Vin.steadyState = 0;
-	Vin.total = 0;
-	Vfuse.average = 0;
-	Vfuse.steadyState = 0;
-	Vfuse.total = 0;
-	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
-}
 void ADC_MUXsel(uint8 ADCport){
 	switch(ADCport){
 	case Port_1:
@@ -719,67 +665,64 @@ void PrintLatchResults(){
 	float LatchCurrent1;
 	float LatchCurrent2;
 	printT("\n\n =======================  Latch Test  =======================\n\n");
-	sprintf(debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n", adc1.HighPulseWidth, adc1.LowPulseWidth);
+	sprintf(&debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n", adc1.HighPulseWidth, adc1.LowPulseWidth);
 	printT(&debugTransmitBuffer);
 
-		//Port A Voltage
-	adc1.highVoltage = adc1.HighPulseWidth > 0 ? adc1.highVoltage/adc1.HighPulseWidth:0;
-	adc1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION); //Previous value was 16.17 when resistor is set to 150
-	adc1.lowVoltage /= adc1.LowPulseWidth;
-	adc1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	sprintf(debugTransmitBuffer, "\n==============   Port A Voltage:   High: %f Low: %f   ==============\n\n", adc1.highVoltage, adc1.lowVoltage);
+	sprintf(&debugTransmitBuffer, "\n==============   Port A Voltage:   High: %.3f Low: %.3f   ==============\n", adc1.highVoltage, adc1.lowVoltage);
 	printT(&debugTransmitBuffer);
 
 		//Port B Latch Time
-	sprintf(debugTransmitBuffer, "==============   Port B Latch time:   High: %d  Low: %d   ==============\n", adc2.HighPulseWidth, adc2.LowPulseWidth);
+	sprintf(&debugTransmitBuffer, "\n==============   Port B Latch time:   High: %d  Low: %d   ==============\n", adc2.HighPulseWidth, adc2.LowPulseWidth);
 	printT(&debugTransmitBuffer);
 
-		//Port B Voltage
-	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;
-	adc2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	adc2.lowVoltage /= adc2.LowPulseWidth;
-	adc2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	sprintf(debugTransmitBuffer, "\n==============   Port B Voltage:   High: %f Low: %f   ==============\n\n", adc2.highVoltage, adc2.lowVoltage);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	sprintf(&debugTransmitBuffer, "\n==============   Port B Voltage:   High: %.3f Low: %.3f   ==============\n\n", adc2.highVoltage, adc2.lowVoltage);
+	printT(&debugTransmitBuffer);
 
-		//Vin Voltage
-	Vin.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
-	Vin.steadyState *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
-	sprintf(debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %f Min: %f   ==============\n", Vin.steadyState, Vin.lowVoltage);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	sprintf(&debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %.3f Min: %.3f   ==============\n", Vin.average, Vin.lowVoltage);
+	printT(&debugTransmitBuffer);
 
-		//Fuse Voltage
-	Vfuse.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
-	Vfuse.steadyState *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
-	sprintf(debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %f Min: %f   ==============\n", Vfuse.steadyState, Vfuse.lowVoltage);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	sprintf(&debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %.3f Min: %.3f   ==============\n", Vfuse.average, Vfuse.lowVoltage);
+	printT(&debugTransmitBuffer);
 
-		//MOSFET Voltage
-	Vmos1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	Vmos1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	sprintf(debugTransmitBuffer, "\n==============   MOSFET 1 Voltage:   High: %f Low: %f   ==============\n", Vmos1.highVoltage, Vmos1.lowVoltage);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 1 Voltage:   High: %.3f Low: %.3f   ==============\n", Vmos1.highVoltage, Vmos1.lowVoltage);
+	printT(&debugTransmitBuffer);
 
-	Vmos2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	Vmos2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	sprintf(debugTransmitBuffer, "\n==============   MOSFET 2 Voltage:   High: %f Low: %f   ==============\n", Vmos2.highVoltage, Vmos2.lowVoltage);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-
+	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 2 Voltage:   High: %.3f Low: %.3f   ==============\n", Vmos2.highVoltage, Vmos2.lowVoltage);
+	printT(&debugTransmitBuffer);
 
 	  LatchCurrent2 = adc2.highVoltage - adc1.lowVoltage;
 	  LatchCurrent1 = adc1.highVoltage - adc2.lowVoltage;
 	  LatchCurrent1 /= ADC_Rcurrent;
 	  LatchCurrent2 /= ADC_Rcurrent;
 
+	sprintf(&debugTransmitBuffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent1, LatchCurrent2);
+	printT(&debugTransmitBuffer);
+}
 
-	sprintf(debugTransmitBuffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent1, LatchCurrent2);
-	CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-	  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+void normaliseLatchResults() {
+		//Port A Voltage
+	adc1.highVoltage = adc1.HighPulseWidth > 0 ? adc1.highVoltage/adc1.HighPulseWidth:0;
+	adc1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION); //Previous value was 16.17 when resistor is set to 150
+	adc1.lowVoltage /= adc1.LowPulseWidth;
+	adc1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+
+		//Port B Voltage
+	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;
+	adc2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	adc2.lowVoltage /= adc2.LowPulseWidth;
+	adc2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+
+		//Vin Voltage
+	Vin.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
+	Vin.average *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
+		//Fuse Voltage
+	Vfuse.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
+	Vfuse.average *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
+		//MOSFET Voltage
+	Vmos1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vmos1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vmos2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	Vmos2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 
 	//Store Values
 	LatchRes.tOn = (adc1.HighPulseWidth >= adc2.LowPulseWidth) ? adc1.HighPulseWidth:adc2.LowPulseWidth;
@@ -791,9 +734,9 @@ void PrintLatchResults(){
 	LatchRes.PortBhighVoltage = adc2.highVoltage;
 	LatchRes.PortBlowVoltage = adc2.lowVoltage;
 
-	LatchRes.InAvgVoltage = Vin.steadyState;
+	LatchRes.InAvgVoltage = Vin.average;
 	LatchRes.InLowVoltage = Vin.lowVoltage;
-	LatchRes.FuseAvgVoltage = Vfuse.steadyState;
+	LatchRes.FuseAvgVoltage = Vfuse.average;
 	LatchRes.FuseLowVoltage = Vfuse.lowVoltage;
 
 	LatchRes.MOSonHigh = Vmos1.highVoltage;
