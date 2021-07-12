@@ -7,8 +7,12 @@
 #include "Programming.h"
 #include "File_Handling.h"
 
+extern SD_HandleTypeDef hsd;
+
 _Bool populatePageBuffer(uns_ch*, uint16*,uns_ch*,uint8*);
 _Bool VerifyPage(uint8 , uns_ch *);
+_Bool EnableProgramming(void);
+void SetSDclk(_Bool);
 
 void ProgramTargetBoard (TboardConfig * Board) {
 	uns_ch tempLine[100];
@@ -24,6 +28,7 @@ void ProgramTargetBoard (TboardConfig * Board) {
 	uint16 page = 0;
 	uint8 Percentage = 0;
 	char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
+	SetSDclk(1);
 
 	if (FindBoardFile(Board, fileLocation)) {
 		OpenFile(fileLocation);
@@ -36,6 +41,7 @@ void ProgramTargetBoard (TboardConfig * Board) {
 		// Multiply by 70% to get an approximation of the actual data to transmit to the target board
 		ProgressBarTarget = round( (float) ((fileSize / 2) / flashPagelen) * 0.7);
 		while (f_gets(&tempLine, sizeof(tempLine), &SDcard.file)) {
+			HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
 			sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
 			Pos = LineBufferPosition;
 			if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition)) {
@@ -62,12 +68,12 @@ void ProgramTargetBoard (TboardConfig * Board) {
 				Percentage = (uint8) ((page / (float) ProgressBarTarget) * 100);
 				ProgressBar(Percentage);
 				page++;
+				HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 			}
 		}
 		if (ProcessState == psFailed) {
 			printT("Programming Done\n");
 			Close_File(fileLocation);
-			printT("I Made it\n");
 			return;
 		}
 		while (PageBufferPosition < MAX_PAGE_LENGTH) {
@@ -82,14 +88,15 @@ void ProgramTargetBoard (TboardConfig * Board) {
 		}
 		printT("Programming Done\n");
 		Close_File(fileLocation);
+		SetSDclk(0);
 
 		PageBufferPosition = page = 0;
-		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_64);
+		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
 		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
 		SetClkAndLck();
-		//HAL_Delay(100); // check if required
 		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 		SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
+
 	} else {
 		printT("Could not find hex file...\n");
 		CurrentState = csProgramming;
@@ -237,11 +244,11 @@ void ProgrammingInit() {
 	uint8 response[4];
 	response[2] = 0;
 	uint8 SignatureByte[3];
-	SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_64);
+	SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
 	SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
 
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
-	HAL_Delay(50);
+	HAL_Delay(20);
 
 	//Enable Programming
 	while (response[2] != 0x53) {
@@ -276,20 +283,8 @@ void ProgrammingInit() {
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 	SignatureByte[2] = response[3];
 
-	//Find Signature Byte
-	if ((SignatureByte[0] == 0x1E) && (SignatureByte[1] == 0x96)
-			&& (SignatureByte[2] == 0x09)) {
-		TBmicro = Tatmega644;
-//		flashPagelen = 256;
-		eepromPagelen = 8;
-	} else if ((SignatureByte[0] == 0x1E) && (SignatureByte[1] == 0x96)
-			&& (SignatureByte[2] == 0x0A)) {
-		TBmicro = Tatmega644p;
-//		flashPagelen = 256;
-		eepromPagelen = 8;
-	} else {
-		TBmicro = Tnone;
-	}
+	TBmicro = Tatmega644;
+
 	if ((TBmicro == Tatmega644) || (TBmicro == Tatmega644p)) {
 		//Set Clk to 8Mhz
 		data[0] = 0xAC;
@@ -307,9 +302,12 @@ void ProgrammingInit() {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		HAL_Delay(20);
 		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
-		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_64);
+		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_32);
 		ProgrammingCount = 0;
+		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+		EnableProgramming();
 	}
+
 	// Read Fuse Bits
 	data[0] = 0x50;
 	data[1] = 0x00;
@@ -320,6 +318,7 @@ void ProgrammingInit() {
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 	data[0] = 0x58;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+
 }
 
 uint8 findVer(char *data) {
@@ -424,12 +423,10 @@ _Bool ContinueWithCurrentProgram() {
 	LCD_setCursor(3, 0);
 	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 	printT(&lcdBuffer);
-//	printT(" \n");
 
 	LCD_ClearLine(4);
 	sprintf(lcdBuffer, "*-Reprogram   #-Keep");
 	printT(&lcdBuffer);
-//	printT(" \n");
 	LCD_setCursor(4, 0);
 	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 	while (1) {
@@ -454,6 +451,7 @@ _Bool EnableProgramming() {
 	uns_ch data[4];
 	uns_ch response[4];
 	//Reenable programming prior to writing a page,
+	HAL_Delay(5);
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
 	HAL_Delay(20);
 	//Enable Programming
@@ -547,4 +545,15 @@ void ProgressBar(uint8 Percentage) {
 		}
 	}
 
+}
+
+void SetSDclk(_Bool OnOff) {
+	HAL_Delay(10);
+	if(OnOff) {
+		hsd.Instance->CLKCR &= 0xFF00;
+		hsd.Instance->CLKCR |= 2;
+	} else {
+		hsd.Instance->CLKCR &= 0xFF00;
+		hsd.Instance->CLKCR |= 16;
+	}
 }

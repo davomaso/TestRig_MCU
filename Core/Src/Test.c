@@ -269,6 +269,12 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 			*Count = 0;
 			// ======= Load Both Arrays into Para to be sent to Target Board  ======= //
 			uint8 * PCptr = &(Board->PortCodes[0]);
+			 if ( (Board->BoardType == b427x) && (Board->GlobalTestNum == 0) ) {
+					*Para = 0x81; (*Count)++; Para++;
+					*Para = 0x01; (*Count)++; Para++;
+					*Para = 0x82; (*Count)++; Para++;
+					*Para = 0x01; (*Count)++; Para++;
+				}
 			for (uint8 PortCount = 0; PortCount < TotalPort; PortCount++) {
 				Set_Test(Board, PortCount);	//Increment This test to the next testarray variable
 				if(Board->ThisTest->Code){
@@ -341,7 +347,6 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 				*Para = 0xA2; (*Count)++; Para++;
 				*Para = 0x01; (*Count)++; Para++;
 			}
-
 	}
 
 void Set_Test(TboardConfig *Board, uint8 Port) {

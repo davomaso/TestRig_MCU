@@ -203,6 +203,8 @@ bool InputVoltageStable;
 uint16 InputVoltageCounter;
 uint16 InputVoltageTimer;
 
+_Bool OutputsSet;
+
 uint16 LEDcounter;
 bool LED1active;
 bool LED2active;

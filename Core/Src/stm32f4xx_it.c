@@ -441,7 +441,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		   * the 0x18 Command to fetch results
 		   * Set the processState to complete so that the next step can begin
 		   */
-			  if(sampleCount >= sampleTime) {
+			  if(sampleCount > sampleTime) {
 				  samplesUploading = false;
 				  samplesUploaded = true;
 				  Vuser.average = Vuser.total / sampleCount;
@@ -564,7 +564,7 @@ void USART2_IRQHandler(void)
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
 			ReceiveState = RxWaiting;
-			setTimeOut(5000);
+			setTimeOut(1000);
 
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];

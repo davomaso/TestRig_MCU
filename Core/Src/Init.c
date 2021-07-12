@@ -78,6 +78,7 @@ void configureTargetBoard(TboardConfig * Board) {
 	Command = 0x56;
 	SetPara(Board, Command);
 	communication_array(Command, &Para[0], Paralen);
+	OutputsSet = false;
 }
 
 void uploadSamplesTargetBoard(TboardConfig * Board) {

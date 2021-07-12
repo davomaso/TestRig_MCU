@@ -243,7 +243,7 @@ void handleInterogating(TboardConfig *Board, TprocessState * State) {
 		break;
 
 	case psFailed:
-		if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED) && (retryCount++ > 2)) {
+		if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED) && (retryCount++ > 5) ) {
 			currentBoardConnected(&BoardConnected);
 			LCD_ClearLine(1);
 			sprintf(debugTransmitBuffer, "    Programming    ");
@@ -269,14 +269,19 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 			break;
 		case psWaiting:
 				if (ReceiveState == RxGOOD) {
+					if (!OutputsSet)
+						TestFunction(Board);
 					Response = Data_Buffer[0];
 					if(Response == 0x57) {
 						HAL_Delay(250);
+						printT("===Board Configuration Successful===\n");
 						*State = psComplete;
 					} else
 						*State = psFailed;
 				} else if (ReceiveState == RxBAD) {
 					*State = psFailed;
+				} else if (!OutputsSet) {
+					TestFunction(Board);
 				}
 			break;
 		case psComplete:
@@ -543,7 +548,7 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 		break;
 	case psFailed:
 		ReceiveState = RxWaiting;
-		if (retryCount > 2) {
+		if (retryCount > 16) {
 			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);

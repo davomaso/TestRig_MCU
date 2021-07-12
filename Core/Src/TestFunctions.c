@@ -18,10 +18,10 @@
 #include "DAC_Variables.h"
 
 _Bool twoWireLatching(TboardConfig*,uint8,_Bool);
-float twentyAmp(uint8);
-float threeVolt(uint8, uint8);
-float asyncPulse(TboardConfig *,uint8);
-float sdiTwelve(uint8);
+float setCurrentTestDAC(uint8);
+float setVoltageTestDAC(uint8, uint8);
+float setAsyncPulseCount(TboardConfig *,uint8);
+float setSDItwelveValue(uint8);
 //void DAC_set(uint8, int);
 
 void MUX_Sel(uint8, uint8);
@@ -49,23 +49,23 @@ void TestFunction(TboardConfig *Board) {
 	for (currPort = 0; currPort < Board->analogInputCount; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case TWENTY_AMP:
-			CHval[Board->GlobalTestNum][totalPortCount++] = twentyAmp(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = setCurrentTestDAC(currPort);
 //			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
 			break;
 		case THREE_VOLT:
-			CHval[Board->GlobalTestNum][totalPortCount++] = threeVolt(currPort, THREE_VOLT);
+			CHval[Board->GlobalTestNum][totalPortCount++] = setVoltageTestDAC(currPort, THREE_VOLT);
 			break;
 		case TWOFIVE_VOLT:
-			CHval[Board->GlobalTestNum][totalPortCount++] = threeVolt(currPort, TWOFIVE_VOLT);
+			CHval[Board->GlobalTestNum][totalPortCount++] = setVoltageTestDAC(currPort, TWOFIVE_VOLT);
 			break;
 		case ONE_VOLT:
-			CHval[Board->GlobalTestNum][totalPortCount++] = threeVolt(currPort, ONE_VOLT);
+			CHval[Board->GlobalTestNum][totalPortCount++] = setVoltageTestDAC(currPort, ONE_VOLT);
 			break;
 		case ASYNC_PULSE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(Board,currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = setAsyncPulseCount(Board,currPort);
 			break;
 		case SDI_TWELVE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = sdiTwelve(currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = setSDItwelveValue(currPort);
 			break;
 		}
 	}
@@ -73,7 +73,7 @@ void TestFunction(TboardConfig *Board) {
 	for (currPort = 6; currPort < Board->digitalInputCout+6; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case ASYNC_PULSE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = asyncPulse(Board,currPort);
+			CHval[Board->GlobalTestNum][totalPortCount++] = setAsyncPulseCount(Board,currPort);
 			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
 			break;
 		}
@@ -84,6 +84,7 @@ void TestFunction(TboardConfig *Board) {
 		} else
 			CHval[Board->GlobalTestNum][totalPortCount++] = 0;
 	}
+	OutputsSet = true;
 }
 //	==================================================================================	//
 
@@ -114,7 +115,7 @@ _Bool twoWireLatching(TboardConfig *Board, uint8 Test_Port,_Bool state) {
 
 
 //	================================   20mA Current   ================================	//
-float twentyAmp(uint8 Test_Port) {
+float setCurrentTestDAC(uint8 Test_Port) {
 	float current;
 	float corrected_current;
 	uint16 DAC_Value = 0;
@@ -206,7 +207,7 @@ float twentyAmp(uint8 Test_Port) {
 
 
 //	=================================   Three Volt   =================================	//
-float threeVolt(uint8 Test_Port, uint8 TestCode) {
+float setVoltageTestDAC(uint8 Test_Port, uint8 TestCode) {
 	float voltage;
 	uint16 Corrected_DACvalue;
 	uint16 DAC_Value;
@@ -279,7 +280,7 @@ float threeVolt(uint8 Test_Port, uint8 TestCode) {
 
 
 //	===================================   ASYNC   ===================================	//
-float asyncPulse(TboardConfig * Board, uint8 Test_Port) {
+float setAsyncPulseCount(TboardConfig * Board, uint8 Test_Port) {
 	switch (Test_Port) {
 	//Port 2
 	case Port_1:
@@ -487,7 +488,7 @@ float asyncPulse(TboardConfig * Board, uint8 Test_Port) {
 
 
 //	===================================   SDI-12    ===================================	//
-float sdiTwelve(uint8 Test_Port){
+float setSDItwelveValue(uint8 Test_Port){
 	MUX_Sel(Test_Port, SDI_TWELVE);
 	SDSstate = SDSundef;
 	switch (Test_Port) {

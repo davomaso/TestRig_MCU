@@ -119,7 +119,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -127,6 +128,7 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
+
 
   /* USER CODE BEGIN SysInit */
 
@@ -157,7 +159,6 @@ int main(void)
   HAL_I2C_Init(&hi2c1);
   LCD_init();
   ChangeCharacterSet('A');
-  flashPagelen = 256;
   hexAddress = 59;
 
   TestRig_Init();
@@ -453,6 +454,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
   hsd.Init.ClockDiv = 16;
+
   /* USER CODE BEGIN SDIO_Init 2 */
 
   /* USER CODE END SDIO_Init 2 */

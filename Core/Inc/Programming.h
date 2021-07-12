@@ -45,7 +45,7 @@ typedef enum {Tatmega644 = 644, Tatmega644p = 645, Tnone = 0}TtbMicroController;
 TtbMicroController TBmicro;
 
 uint32 fileSize;
-uint16 flashPagelen;
+#define flashPagelen 256
 uint16 eepromPagelen;
 uint16 extendedPage;
 

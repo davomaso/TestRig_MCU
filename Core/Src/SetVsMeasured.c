@@ -20,13 +20,15 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 	float comp_min;
 	Tresult TresultStatus;
 
- 	if (Board->GlobalTestNum == 0) {
-		sprintf(FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
+	if (Board->GlobalTestNum == 0) {
+ 		sprintf(&FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
+ 		Create_File(&FILEname);
 		sprintf(debugTransmitBuffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
-		if ( Write_File(&FILEname[0], &debugTransmitBuffer[0]) != FR_OK) {
-			Write_File(&FILEname[0], &debugTransmitBuffer[0]);
-		}
- 	}
+		if ( Write_File(&FILEname, &debugTransmitBuffer[0]) != FR_OK)
+			Write_File(&FILEname, &debugTransmitBuffer[0]);
+	} else
+		Open_AppendFile(&FILEname);
+
 	sprintf(debugTransmitBuffer,"\n====================	Test %d	====================\n\n",Board->GlobalTestNum+1);
 	printT(&debugTransmitBuffer);
 	LCD_ClearLine(2);
@@ -43,7 +45,6 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 	spacing /= 2;
 	LCD_setCursor(3, spacing);
  	LCD_setCursor(3, spacing);
-
 	for (currResult = 0;currResult < ChNum;currResult++) {
 		int MeasuredVal = Board->TestResults[Board->GlobalTestNum][currResult];
 		switch (Board->TestCode[currResult]) {
@@ -64,36 +65,28 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 			else if (Board->TestCode[currResult] == THREE_VOLT)
 				comp_max = comp_min = (3*0.01) + (0.005 * *SetVal);
 			fMeasured = (float) MeasuredVal / 1000;
-			sprintf(debugTransmitBuffer,"Testing Voltage\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT("Testing Voltage\n");
 			PortTypes[currResult] = TTVoltage;
 			break;
 
 		case TWENTY_AMP:
 			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = comp_min = (20*0.005) + (0.005 * *SetVal);
-			sprintf(debugTransmitBuffer,"Testing Currrent\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT("Testing Currrent\n");
 			PortTypes[currResult] = TTCurrent;
 			break;
 		case ASYNC_PULSE:
 			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = 0;//Once this works decrease the multiplication factor to improve testing accuracy
 			comp_min = 0;
-			sprintf(debugTransmitBuffer,"Testing Async\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT("Testing Async\n");
 			PortTypes[currResult] = TTAsync;
 			break;
 		case SDI_TWELVE:
 			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = (*SetVal); //Once this works decrease the multiplication factor to improve testing accuracy
 			comp_min = (*SetVal);
-			sprintf(debugTransmitBuffer,"Testing SDI-12\n");
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			printT("Testing SDI-12\n");
 			PortTypes[currResult] = TTSDI;
 			break;
 		case NOTEST:
@@ -139,9 +132,13 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		} else if ((PortTypes[currResult] != TTNo)){
 			sprintf(debugTransmitBuffer, "%x,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus, CHval[Board->GlobalTestNum][currResult],fMeasured);
 		}
-   		Open_AppendFile(&FILEname[0]);
-		Update_File(&FILEname[0], debugTransmitBuffer);
+		Update_File(&FILEname, &debugTransmitBuffer[0]);
+		if (SDcard.fresult == FR_DISK_ERR) {
+			Close_File(&FILEname);
+			Update_File(&FILEname, &debugTransmitBuffer[0]);
+		}
 		*SetVal++;
 	}
+	Close_File(&FILEname);
 
 }

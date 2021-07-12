@@ -115,20 +115,15 @@ void communication_response(TboardConfig * Board, uns_ch * Response, uns_ch *dat
 				printT(&debugTransmitBuffer);
 				delay_us(50);
 			break;
-		case 0x57:
-				HAL_Delay(100); //Delay for the reset of board, as to stop interference with ADC measurements
-				printT("===Board Configuration Successful===\n");
-				TestFunction(Board);
-			break;
 
 		case 0x1B:
 				sampleTime = *data++;
 				sampleTime |= (*data++ << 8);
 				sampleTime *= 100;
 				sampleCount = 0;
-				samplesUploading = true;
 				samplesUploaded = false;
 				sampleTime = sampleTime > 2000 ? 2000 : sampleTime;
+				samplesUploading = true;
 				//Uploading begun
 				sprintf(&debugTransmitBuffer,"Waiting : %.2f seconds....\n", (float)sampleTime/1000 );
 				printT(&debugTransmitBuffer);
@@ -143,7 +138,7 @@ void communication_response(TboardConfig * Board, uns_ch * Response, uns_ch *dat
 				samplesUploading = true;
 				samplesUploaded = false;
 				sampleCount = 0;
-				sampleTime = 2000;
+				sampleTime = 100;
 			break;
 		case 0xCD:	// Initialise board command
 				printT("\n=====     Board Initialised     =====\n");

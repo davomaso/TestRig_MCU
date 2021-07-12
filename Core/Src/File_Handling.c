@@ -152,26 +152,15 @@ FRESULT Write_File ( char *name, char *data) {
 	/**** check whether the file exists or not ****/
 	    /* Create a file with read write access and open it */
 		//Check if FA_OPEN_EXISTING is required below
-	SDcard.fresult = f_open(&SDcard.file, name, FA_CREATE_ALWAYS | FA_WRITE );	//Open file with write permissions, create the file even if existing so data is overwritten
-	    if (SDcard.fresult != FR_OK) {
-	    	char *buf = malloc(100*sizeof(char));
-	    	sprintf (buf, "ERROR!!! No. %d in opening file *%s*\n\n", SDcard.fresult, name);
-	    	printT(buf);
-	        free(buf);
-	        return SDcard.fresult; //return result if error when opening file
-	    } else {
-	    	SDcard.fresult = f_write(&SDcard.file, data, strlen(data), &SDcard.bw);
-	    	if (SDcard.fresult != FR_OK) {
-	    		char *buf = malloc(100*sizeof(char));
-	    		sprintf (buf, "ERROR!!! No. %d while writing to the FILE *%s*\n\n", SDcard.fresult, name);
-	    		printT(buf);
-	    		free(buf);
-	    		return SDcard.fresult; // if error when writing to file return the error
-	    	}
-	    }
-	    Close_File(name);	//Following writing to the file close the file and return the result
-	    return SDcard.fresult;
-	//}
+	SDcard.fresult = f_write(&SDcard.file, data, strlen(data), &SDcard.bw);
+	if (SDcard.fresult != FR_OK) {
+		char *buf = malloc(100*sizeof(char));
+		sprintf (buf, "ERROR!!! No. %d in opening file *%s*\n\n", SDcard.fresult, name);
+		printT(buf);
+		free(buf);
+		return SDcard.fresult; //return result if error when opening file
+	}
+	return SDcard.fresult;
 }
 
 FRESULT Read_File (char *name)
@@ -234,29 +223,19 @@ FRESULT Create_File (char *name)
 	 * f_stat used to determine whether file exists, if not f_open is used to create the file with
 	 * read and write privileges. FRESULT returned to determine if successful.
 	 */
-	SDcard.fresult = f_stat (name, &SDcard.fileInfo);
-	if (SDcard.fresult == FR_OK) {
+	SDcard.fresult = f_open(&SDcard.file, name, FA_CREATE_ALWAYS|FA_READ|FA_WRITE);
+	if (SDcard.fresult != FR_OK) {
 		char *buf = malloc(100*sizeof(char));
-		sprintf (buf, "ERROR!!! *%s* already exists!!!!\n use Update_File \n\n",name);
+		sprintf (buf, "ERROR!!! No. %d in creating file *%s*\n\n", SDcard.fresult, name);
 		printT(buf);
 		free(buf);
-	    return SDcard.fresult;
+		return SDcard.fresult;
 	} else {
-		SDcard.fresult = f_open(&SDcard.file, name, FA_CREATE_ALWAYS|FA_READ|FA_WRITE);
-		if (SDcard.fresult != FR_OK) {
-			char *buf = malloc(100*sizeof(char));
-			sprintf (buf, "ERROR!!! No. %d in creating file *%s*\n\n", SDcard.fresult, name);
-			printT(buf);
-			free(buf);
-		    return SDcard.fresult;
-		} else {
-			char *buf = malloc(100*sizeof(char));
-			sprintf (buf, "*%s* created successfully\n Now use Write_File to write data\n",name);
-			printT(buf);
-			free(buf);
+		char *buf = malloc(100*sizeof(char));
+		sprintf (buf, "*%s* created successfully\n Now use Write_File to write data\n",name);
+		printT(buf);
+		free(buf);
 		}
-	}
-	Close_File(name);
     return SDcard.fresult;
 }
 
@@ -284,11 +263,12 @@ void Close_File(char * name) {
 		sprintf (buf, "ERROR No. %d in closing file *%s*\n\n", SDcard.fresult, name);
 		printT(buf);
 		free(buf);
-		if (SDcard.fresult == FR_DISK_ERR || SDcard.fresult == FR_INVALID_OBJECT || SDcard.fresult == FR_LOCKED)
+		if (SDcard.fresult == FR_DISK_ERR || SDcard.fresult == FR_LOCKED) {
 			Close_File(name);
+		}
 	} else {
 		char *buf = malloc(100*sizeof(char));
-		sprintf (buf, "File *%s* CLOSED successfully\n", name);
+		sprintf (buf, "File *%s* CLOSED successfully\n\n", name);
 		printT(buf);
 		free(buf);
 	}
@@ -299,17 +279,8 @@ void Close_File(char * name) {
 FRESULT Update_File (char *name, char *data)
 {
 	/**** check whether the file exists or not ****/
-	SDcard.fresult = f_stat (name, &SDcard.fileInfo);
-	if (SDcard.fresult != FR_OK) {
-		char *buf = malloc(100*sizeof(char));
-		sprintf (buf, "ERROR!!! *%s* does not exists\n\n", name);
-		printT (buf);
-		free(buf);
-	    return SDcard.fresult;
-	} else {
-		 /* Create a file with read write access and open it */
-	    /* Writing text */
 		SDcard.fresult = f_write(&SDcard.file, data, strlen (data), &SDcard.bw);
+		f_sync(&SDcard.file);
 	    if (SDcard.fresult != FR_OK) {
 	    	char *buf = malloc(100*sizeof(char));
 	    	sprintf (buf, "ERROR!!! No. %d in writing file *%s*\n\n", SDcard.fresult, name);
@@ -321,8 +292,7 @@ FRESULT Update_File (char *name, char *data)
 	    	printT(buf);
 	    	free(buf);
 	    }
-	}
-	Close_File(name);
+//	}
     return SDcard.fresult;
 }
 
