@@ -15,9 +15,8 @@
 
 //	uint8 PortCount;
 //	uint8 *Code;
-char FILEname[255];
-
 typedef struct{
+	char FILEname[255];
 	FATFS fatfs;
 	DIR directory;
 	FIL file;
@@ -25,6 +24,7 @@ typedef struct{
 	FRESULT fresult;  // result
 	UINT br, bw;
 }TfileConfig;
+
 
 TfileConfig SDcard;
 

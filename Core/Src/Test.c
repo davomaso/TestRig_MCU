@@ -151,11 +151,11 @@ void TestConfig401x(TboardConfig * Board){
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 		//Port Code Array
-	uint8 tempPcARR[4][4] = {
-			{ 0xC0, 0xC2, 0xC1, 0xC3 },	//Transmit Control bits first, then channel number
-			{ 0xD0, 0xD2, 0xD1, 0xD3 },
-			{ 0xE0, 0xE2, 0xE1, 0xE3 },
-			{ 0xF0, 0xF2, 0xF1, 0xF3 },
+	uint8 tempPcARR[16] = {
+			 0xC0, 0xC2, 0xC1, 0xC3,		//Transmit Control bits first, then channel number
+			 0xD0, 0xD2, 0xD1, 0xD3,		//
+			 0xE0, 0xE2, 0xE1, 0xE3,		//
+			 0xF0, 0xF2, 0xF1, 0xF3,		//
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 		//Board Type

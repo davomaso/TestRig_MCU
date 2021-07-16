@@ -120,6 +120,7 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 
+
 	HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -243,6 +244,7 @@ int main(void)
   				LCD_Clear();
   				TestRig_Init();
   				TestRig_MainMenu();
+  				Close_File(SDcard.FILEname);
 				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
   				QuitCount = 0;

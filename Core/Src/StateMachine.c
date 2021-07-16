@@ -3,6 +3,8 @@
 #include "SetVsMeasured.h"
 #include "UART_Routine.h"
 #include "calibration.h"
+#include "Programming.h"
+#include "File_Handling.h"
 
 void handleIdle(TboardConfig *Board, TprocessState * State) {
 
@@ -130,7 +132,7 @@ void handleTestBegin(TboardConfig *Board, TprocessState * State) {
 			retryCount++;	//Dont know if this failure capture is required
 			HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 			SDfileInit();
-  			ProgramTargetBoard(Board);
+			*State = psInitalisation;
   			if (retryCount >= 3){
   				printT("Cannot Program Target Board\n");
   				printT("Attempted 3 times....\n");
@@ -143,26 +145,162 @@ void handleTestBegin(TboardConfig *Board, TprocessState * State) {
 
 
 void handleProgramming(TboardConfig *Board, TprocessState * State) {
+	uint8 data[4];
+	uint8 response[4];
+	response[2] = 0;
+	uint8 SignatureByte[3];
 	switch (*State) {
 	case psInitalisation:
-			printT("Programming\n");
-			ProgrammingInit();
-			*State = psWaiting;
+			if (!READ_BIT(Board->BPR, PROG_INITIALISED)) {
+				printT("Programming\n");
+				SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
+				SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
+
+				HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
+				HAL_Delay(20);
+				SET_BIT(Board->BPR, PROG_INITIALISED);
+			} else if (!READ_BIT(Board->BPR, PROG_ENABLED)) {
+				data[0] = 0xAC;
+				data[1] = 0x53;
+				data[2] = 0x00;
+				data[3] = 0x00;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				HAL_Delay(20);
+				if (response[2] == 0x53)
+					SET_BIT(Board->BPR, PROG_ENABLED);
+			} else {
+
+				data[0] = 0xAC;
+				data[1] = 0x80;
+				data[2] = 0x00;
+				data[3] = 0x00;
+				HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
+				//Poll RDY
+				PollReady();
+				//Read Signature byte
+//				data[0] = 0x30;
+//				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+//				data[2]++;
+//				SignatureByte[0] = response[3];
+//				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+//				SignatureByte[1] = response[3];
+//				data[2]++;
+//				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+//				SignatureByte[2] = response[3];
+
+				//Set Clk to 8Mhz
+				data[0] = 0xAC;
+				data[1] = 0xA0;		//Fuse Low Byte
+				data[2] = 0x00;
+				data[3] = 0xD2;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				HAL_Delay(20);
+				data[1] = 0xA8;		//Fuse High Byte
+				data[3] = 0xD7;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				HAL_Delay(20);
+				data[1] = 0xA4;		//Fuse Extended Byte
+				data[3] = 0xFD;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				HAL_Delay(20);
+				SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
+				SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_32);
+				ProgrammingCount = 0;
+				HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+				EnableProgramming();
+
+				// Read Fuse Bits
+				data[0] = 0x50;
+				data[1] = 0x00;
+				data[2] = 0x00;
+				data[3] = 0x00;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				data[1] = 0x08;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				data[0] = 0x58;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				if (FindBoardFile(Board, &SDcard.FILEname)) {
+					OpenFile(&SDcard.FILEname);
+					TestRig_MainMenu();
+					LCD_printf("    Programming    ",2,0);
+					ProgressBarTarget = round( (float) ((fileSize / 2) / MAX_PAGE_LENGTH) * 0.7);
+					SetSDclk(1);
+					page = PageBufferPosition = LineBufferPosition = 0;
+					CLEAR_REG(Board->BPR);
+					*State = psWaiting;
+				} else {
+					printT("Could not find hex file...\n");
+					CurrentState = csProgramming;
+					ProcessState = psFailed;
+				}
+			}
 		break;
 	case psWaiting:
-			//Rewrite the programming routine to not be blocking
-			ProgramTargetBoard(Board);
-			*State = psComplete;
+		if (f_gets(&tempLine, sizeof(tempLine), &SDcard.file)) {
+		    sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
+			LeftOverLineDataPos = LineBufferPosition;
+		    if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition) )
+		        SET_BIT(Board->BPR, PAGE_WRITE_READY);
+		} else {
+		    while (PageBufferPosition < MAX_PAGE_LENGTH) {
+		        PageBuffer[PageBufferPosition++] = 0xFF;
+		    }
+		    SET_BIT(Board->BPR, PAGE_WRITE_READY);
+		    SET_BIT(Board->BPR, FINAL_PAGE_WRITE);
+		}
+
+		if (READ_BIT(Board->BPR, PAGE_WRITE_READY) || READ_BIT(Board->BPR, FINAL_PAGE_WRITE)) {
+			uns_ch data[4];
+			if (page == 0) {
+				data[0] = 0x4D;
+				data[1] = 0x00;
+				data[2] = 0x00;
+				data[3] = 0x00;
+				HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
+			}
+			PageWrite(&PageBuffer[0], MAX_PAGE_LENGTH / 2, page);
+			if (!VerifyPage(page, &PageBuffer[0])) {
+				PageWrite(&PageBuffer[0], MAX_PAGE_LENGTH / 2, page);
+				if (!VerifyPage(page, &PageBuffer[0])) {
+					*State = psFailed;
+					}
+				}
+				CLEAR_BIT(Board->BPR, PAGE_WRITE_READY);
+				PageBufferPosition = 0;
+				if (READ_BIT(Board->BPR, FINAL_PAGE_WRITE)) {
+					*State = psComplete;
+					PageBufferPosition = page = 0;
+					SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
+					SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
+					HAL_Delay(10);
+					SetClkAndLck();
+					HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+				} else {
+					if (LineBufferPosition)
+						populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[LeftOverLineDataPos - LineBufferPosition], &LineBufferPosition);
+					Percentage = (uint8) ((page / (float) ProgressBarTarget) * 100);
+					ProgressBar(Percentage);
+				}
+				page++;
+		}
 		break;
 	case psComplete:
+
+			SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
+			printT("Programming Done\n");
+			Close_File(&SDcard.FILEname);
+			SetSDclk(0);
+
 			CurrentState = csInterogating;
 			*State = psInitalisation;
 		break;
 	case psFailed:
+			printT("Programming Done\n");
+			Close_File(&SDcard.FILEname);
 			retryCount++;
 			HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 			SDfileInit();
-  			ProgramTargetBoard(Board);
+			*State = psInitalisation;
   			if (retryCount >= 3){
   				printT("Cannot Program Target Board\n");
   				printT("Attempted 3 times....\n");
@@ -207,11 +345,16 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 		break;
 	case psFailed:
 			retryCount++;
-			printT("Calibration Failed Recalibrating Device\n");
-			switchToCurrent = false;
-			TargetBoardCalibration(&BoardConnected);
-			ProcessState = psWaiting;
-			ReceiveState = RxWaiting;
+			if (retryCount < 5) {
+				printT("Calibration Failed Recalibrating Device\n");
+				switchToCurrent = false;
+				TargetBoardCalibration(&BoardConnected);
+				ProcessState = psWaiting;
+				ReceiveState = RxWaiting;
+			} else {
+				*State = psInitalisation;
+				CurrentState = csIDLE;
+			}
 		break;
 	}
 }
@@ -243,7 +386,7 @@ void handleInterogating(TboardConfig *Board, TprocessState * State) {
 		break;
 
 	case psFailed:
-		if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED) && (retryCount++ > 5) ) {
+		if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED) && (retryCount++ > 4) ) {
 			currentBoardConnected(&BoardConnected);
 			LCD_ClearLine(1);
 			sprintf(debugTransmitBuffer, "    Programming    ");

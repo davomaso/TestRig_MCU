@@ -14,96 +14,6 @@ _Bool VerifyPage(uint8 , uns_ch *);
 _Bool EnableProgramming(void);
 void SetSDclk(_Bool);
 
-void ProgramTargetBoard (TboardConfig * Board) {
-	uns_ch tempLine[100];
-	uint8 Pos;
-	uns_ch Command;
-	uint16 ProgressBarTarget;
-	uns_ch LineBuffer[MAX_LINE_LENGTH];
-	uint8 LineBufferPosition;
-	uns_ch PageBuffer[MAX_PAGE_LENGTH];
-	uint16 PageBufferPosition = 0;
-	uint16 count = 0;
-	uns_ch RecBuffer[MAX_PAGE_LENGTH];
-	uint16 page = 0;
-	uint8 Percentage = 0;
-	char * fileLocation = malloc(MAX_FILE_NAME_LENGTH * sizeof(char));
-	SetSDclk(1);
-
-	if (FindBoardFile(Board, fileLocation)) {
-		OpenFile(fileLocation);
-		TestRig_MainMenu();
-		LCD_setCursor(2, 5);
-		sprintf(debugTransmitBuffer, "Programming");
-		LCD_displayString(&debugTransmitBuffer, strlen(debugTransmitBuffer));
-		// File size divide by two as .hex file is in ascii character form
-		// Divide by the length of each page
-		// Multiply by 70% to get an approximation of the actual data to transmit to the target board
-		ProgressBarTarget = round( (float) ((fileSize / 2) / flashPagelen) * 0.7);
-		while (f_gets(&tempLine, sizeof(tempLine), &SDcard.file)) {
-			HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-			sortLine(&tempLine, &LineBuffer[0], &LineBufferPosition);
-			Pos = LineBufferPosition;
-			if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer, &LineBufferPosition)) {
-				uns_ch data[4];
-				if (page == 0) {
-					data[0] = 0x4D;
-					data[1] = 0x00;
-					data[2] = 0x00;
-					data[3] = 0x00;
-					HAL_SPI_Transmit(&hspi3, &data, 4, HAL_MAX_DELAY);
-				}
-				PageWrite(&PageBuffer[0], flashPagelen / 2, page);
-				if (!VerifyPage(page, &PageBuffer[0])) {
-					PageWrite(&PageBuffer[0], flashPagelen / 2, page);
-					if (!VerifyPage(page, &PageBuffer[0])) {
-						printT("Failed to Program Board\n");
-						break;
-					}
-				}
-
-				PageBufferPosition = 0;
-				if (LineBufferPosition)
-					populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[Pos - LineBufferPosition], &LineBufferPosition);
-				Percentage = (uint8) ((page / (float) ProgressBarTarget) * 100);
-				ProgressBar(Percentage);
-				page++;
-				HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-			}
-		}
-		if (ProcessState == psFailed) {
-			printT("Programming Done\n");
-			Close_File(fileLocation);
-			return;
-		}
-		while (PageBufferPosition < MAX_PAGE_LENGTH) {
-			PageBuffer[PageBufferPosition++] = 0xFF;
-		}
-		PageWrite(&PageBuffer[0], flashPagelen / 2, page);
-		if (!VerifyPage(page, &PageBuffer[0])) {
-			PageWrite(&PageBuffer[0], flashPagelen / 2, page);
-			if (!VerifyPage(page, &PageBuffer[0])) {
-				printT("Failed to Program Board\n");
-			}
-		}
-		printT("Programming Done\n");
-		Close_File(fileLocation);
-		SetSDclk(0);
-
-		PageBufferPosition = page = 0;
-		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
-		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
-		SetClkAndLck();
-		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-		SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
-
-	} else {
-		printT("Could not find hex file...\n");
-		CurrentState = csProgramming;
-		ProcessState = psFailed;
-	}
-}
-
 void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	/*
 	 * Routine to sort through a line of INTEL hex format data
@@ -142,7 +52,7 @@ _Bool populatePageBuffer(uns_ch *Page, uint16 *PagePos, uns_ch *Line, uint8 *Lin
 		memcpy(Page, Line, *LinePos);
 		*PagePos += *LinePos;
 		*LinePos = 0;
-		if (*PagePos == flashPagelen)
+		if (*PagePos == MAX_PAGE_LENGTH)
 			return true;
 		else
 			return false;
@@ -240,85 +150,9 @@ void ProgrammingInit() {
 	 * Routine to enable programming
 	 * Poll the device until ready, erase device, and change clk to 8Mhz to program at a greater speed
 	 */
-	uint8 data[4];
-	uint8 response[4];
-	response[2] = 0;
-	uint8 SignatureByte[3];
-	SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
-	SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
-
-	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_RESET);
-	HAL_Delay(20);
-
-	//Enable Programming
-	while (response[2] != 0x53) {
-		data[0] = 0xAC;
-		data[1] = 0x53;
-		data[2] = 0x00;
-		data[3] = 0x00;
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	}
 	//Erase Chip
-	data[0] = 0xAC;
-	data[1] = 0x80;
-	data[2] = 0x00;
-	data[3] = 0x00;
-	HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
-	//Poll RDY
-	data[0] = 0xF0;
-	data[1] = 0x00;
-	while (1) {
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-		if (((response[3] & 0x01) == 0))
-			break;
-	}
-	//Read Signature byte
-	data[0] = 0x30;
-	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	data[2]++;
-	SignatureByte[0] = response[3];
-	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	SignatureByte[1] = response[3];
-	data[2]++;
-	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	SignatureByte[2] = response[3];
-
-	TBmicro = Tatmega644;
-
-	if ((TBmicro == Tatmega644) || (TBmicro == Tatmega644p)) {
-		//Set Clk to 8Mhz
-		data[0] = 0xAC;
-		data[1] = 0xA0;		//Fuse Low Byte
-		data[2] = 0x00;
-		data[3] = 0xD2;
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-		HAL_Delay(20);
-		data[1] = 0xA8;		//Fuse High Byte
-		data[3] = 0xD7;
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-		HAL_Delay(20);
-		data[1] = 0xA4;		//Fuse Extended Byte
-		data[3] = 0xFD;
-		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-		HAL_Delay(20);
-		SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
-		SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_32);
-		ProgrammingCount = 0;
-		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-		EnableProgramming();
-	}
-
-	// Read Fuse Bits
-	data[0] = 0x50;
-	data[1] = 0x00;
-	data[2] = 0x00;
-	data[3] = 0x00;
-	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	data[1] = 0x08;
-	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-	data[0] = 0x58;
-	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-
+	uns_ch data[4];
+	uns_ch response[4];
 }
 
 uint8 findVer(char *data) {

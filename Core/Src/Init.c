@@ -8,6 +8,7 @@
 #include "interogate_project.h"
 #include "SetVsMeasured.h"
 #include "UART_Routine.h"
+#include "calibration.h"
 
 void TestRig_Init() {
 	printT("==========TestRig========== \n");
@@ -41,6 +42,14 @@ void TestRig_Init() {
 	Async_Port7.Active = false;
 	Async_Port8.Active = false;
 	Async_Port9.Active = false;
+
+	Port1.lowItestComplete = false;
+	Port2.lowItestComplete = false;
+	Port3.lowItestComplete = false;
+	Port4.lowItestComplete = false;
+	Port5.lowItestComplete = false;
+	Port6.lowItestComplete = false;
+
 
 	HAL_TIM_Base_Start_IT(&htim6);
 	HAL_TIM_Base_Start_IT(&htim7);

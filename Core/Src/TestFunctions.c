@@ -50,7 +50,6 @@ void TestFunction(TboardConfig *Board) {
 		switch (Board->TestCode[totalPortCount]) {
 		case TWENTY_AMP:
 			CHval[Board->GlobalTestNum][totalPortCount++] = setCurrentTestDAC(currPort);
-//			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
 			break;
 		case THREE_VOLT:
 			CHval[Board->GlobalTestNum][totalPortCount++] = setVoltageTestDAC(currPort, THREE_VOLT);
@@ -117,8 +116,8 @@ _Bool twoWireLatching(TboardConfig *Board, uint8 Test_Port,_Bool state) {
 //	================================   20mA Current   ================================	//
 float setCurrentTestDAC(uint8 Test_Port) {
 	float current;
-	float corrected_current;
-	uint16 DAC_Value = 0;
+	uint16 Corrected_DACvalue;
+	uint16 DAC_Value;
 	//Correction Factor
 	switch (Test_Port) {
 		case Port_1:
@@ -126,11 +125,11 @@ float setCurrentTestDAC(uint8 Test_Port) {
 				current = 4;
 				Port1.lowItestComplete = true;
 				DAC_Value = DAC_4amp;
-				corrected_current = DAC_Value + Port1.CalibrationFactor[I_4];
+				Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[I_4];
 			} else {
 				current = 17.5;
 				DAC_Value = DAC_175amp;
-				corrected_current = DAC_Value + Port1.CalibrationFactor[I_175];
+				Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[I_175];
 			}
 			break;
 		case Port_2:
@@ -138,11 +137,11 @@ float setCurrentTestDAC(uint8 Test_Port) {
 				current = 4;
 				Port2.lowItestComplete = true;
 				DAC_Value = DAC_4amp;
-				corrected_current = DAC_Value + Port2.CalibrationFactor[I_4];
+				Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[I_4];
 			} else {
 				current = 17.5;
 				DAC_Value = DAC_175amp;
-				corrected_current = DAC_Value + Port2.CalibrationFactor[I_175];
+				Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[I_175];
 			}
 			break;
 		case Port_3:
@@ -150,11 +149,11 @@ float setCurrentTestDAC(uint8 Test_Port) {
 				current = 4;
 				Port3.lowItestComplete = true;
 				DAC_Value = DAC_4amp;
-				corrected_current = DAC_Value + Port3.CalibrationFactor[I_4];
+				Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[I_4];
 			} else {
 				current = 17.5;
 				DAC_Value = DAC_175amp;
-				corrected_current = DAC_Value + Port3.CalibrationFactor[I_175];
+				Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[I_175];
 			}
 			break;
 		case Port_4:
@@ -162,11 +161,11 @@ float setCurrentTestDAC(uint8 Test_Port) {
 				current = 4;
 				Port4.lowItestComplete = true;
 				DAC_Value = DAC_4amp;
-				corrected_current = DAC_Value + Port4.CalibrationFactor[I_4];
+				Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[I_4];
 			} else {
 				current = 17.5;
 				DAC_Value = DAC_175amp;
-				corrected_current = DAC_Value + Port4.CalibrationFactor[I_175];
+				Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[I_175];
 			}
 			break;
 		case Port_5:
@@ -174,11 +173,11 @@ float setCurrentTestDAC(uint8 Test_Port) {
 				current = 4;
 				Port5.lowItestComplete = true;
 				DAC_Value = DAC_4amp;
-				corrected_current = DAC_Value + Port5.CalibrationFactor[I_4];
+				Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[I_4];
 			} else {
 				current = 17.5;
 				DAC_Value = DAC_175amp;
-				corrected_current = DAC_Value + Port5.CalibrationFactor[I_175];
+				Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[I_175];
 			}
 			break;
 		case Port_6:
@@ -186,20 +185,20 @@ float setCurrentTestDAC(uint8 Test_Port) {
 				current = 4;
 				Port6.lowItestComplete = true;
 				DAC_Value = DAC_4amp;
-				corrected_current = DAC_Value + Port6.CalibrationFactor[I_4];
+				Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[I_4];
 			} else {
 				current = 17.5;
 				DAC_Value = DAC_175amp;
-				corrected_current = DAC_Value + Port6.CalibrationFactor[I_175];
+				Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[I_175];
 			}
 			break;
 		}
 
 	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)
-		DAC_Value += 0x3000;
+		Corrected_DACvalue += 0x3000;
 	else if (Test_Port == Port_2 || Test_Port == Port_4 || Test_Port == Port_6)
-		DAC_Value += 0xB000;
-	DAC_set(Test_Port, DAC_Value);
+		Corrected_DACvalue += 0xB000;
+	DAC_set(Test_Port, Corrected_DACvalue);
 	MUX_Sel(Test_Port, TWENTY_AMP);
 	return current;
 }

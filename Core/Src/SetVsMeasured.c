@@ -21,13 +21,13 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 	Tresult TresultStatus;
 
 	if (Board->GlobalTestNum == 0) {
- 		sprintf(&FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
- 		Create_File(&FILEname);
+ 		sprintf(&SDcard.FILEname, "/TEST_RESULTS/%d.CSV",Board->SerialNumber);
+ 		Create_File(&SDcard.FILEname);
 		sprintf(debugTransmitBuffer, "Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
-		if ( Write_File(&FILEname, &debugTransmitBuffer[0]) != FR_OK)
-			Write_File(&FILEname, &debugTransmitBuffer[0]);
+		if ( Write_File(&SDcard.FILEname, &debugTransmitBuffer[0]) != FR_OK)
+			Write_File(&SDcard.FILEname, &debugTransmitBuffer[0]);
 	} else
-		Open_AppendFile(&FILEname);
+		Open_AppendFile(&SDcard.FILEname);
 
 	sprintf(debugTransmitBuffer,"\n====================	Test %d	====================\n\n",Board->GlobalTestNum+1);
 	printT(&debugTransmitBuffer);
@@ -132,13 +132,13 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 		} else if ((PortTypes[currResult] != TTNo)){
 			sprintf(debugTransmitBuffer, "%x,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus, CHval[Board->GlobalTestNum][currResult],fMeasured);
 		}
-		Update_File(&FILEname, &debugTransmitBuffer[0]);
+		Update_File(&SDcard.FILEname, &debugTransmitBuffer[0]);
 		if (SDcard.fresult == FR_DISK_ERR) {
-			Close_File(&FILEname);
-			Update_File(&FILEname, &debugTransmitBuffer[0]);
+			Close_File(&SDcard.FILEname);
+			Update_File(&SDcard.FILEname, &debugTransmitBuffer[0]);
 		}
 		*SetVal++;
 	}
-	Close_File(&FILEname);
+	Close_File(&SDcard.FILEname);
 
 }

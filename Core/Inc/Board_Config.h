@@ -47,6 +47,13 @@
 	#define LATCH_PORT_THREE 	(1 << 2)
 	#define LATCH_PORT_FOUR 	(1 << 3)
 
+	//============		PROGRAMMING VARIABLES		===========//
+	#define PROG_INITIALISED 	(1 << 0)
+	#define PROG_ENABLED		(1 << 1)
+	#define FILE_FOUND_OPEN 	(1 << 2)
+	#define PAGE_WRITE_READY	(1 << 3)
+	#define FINAL_PAGE_WRITE	(1 << 4)
+
 	typedef struct {
 			//=== Port Code ===//
 			unsigned char Code;
@@ -89,6 +96,7 @@
 			uint8 GlobalTestNum;
 			uint8 BSR; //Board Status Register
 			uint8 LTR; //Latch Test Register
+			uint8 BPR; //Board Programming Register
 	}TboardConfig;
 
 	TboardConfig BoardConnected;

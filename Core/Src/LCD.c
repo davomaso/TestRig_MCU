@@ -110,9 +110,7 @@ void LCD_Clear() {
 
 void TestRig_MainMenu() {
 	  LCD_Clear();
-	  LCD_setCursor(1, 6);
-	  sprintf(debugTransmitBuffer,"Test Rig");
-	  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+	  LCD_printf("     Test Rig     ",1,0);
 	  LCD_setCursor(3, 0);
 	  LCD_CursorOn_Off(false);
 }

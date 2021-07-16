@@ -231,7 +231,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		 */
 		if (CalibratingTimer < CalibrateTimerTo) {
 			if(BoardConnected.BoardType == b401x)
-				ADC_Ch4sel();
+				ADC_Ch5sel();
 			else if (BoardConnected.BoardType == b402x)
 				ADC_Ch3sel();
 			else
@@ -564,7 +564,7 @@ void USART2_IRQHandler(void)
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
 			ReceiveState = RxWaiting;
-			setTimeOut(1000);
+			setTimeOut(700);
 
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];

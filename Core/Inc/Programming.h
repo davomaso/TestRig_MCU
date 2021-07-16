@@ -40,12 +40,26 @@ uint8 ProgrammingCount;
 
 //_Bool Programming;
 uint8 Program_CountDown;
-typedef enum {Tatmega644 = 644, Tatmega644p = 645, Tnone = 0}TtbMicroController;
 
-TtbMicroController TBmicro;
+uns_ch tempLine[100];
+uint8 LeftOverLineDataPos;
+uns_ch Command;
+uint16 ProgressBarTarget;
+uns_ch LineBuffer[MAX_LINE_LENGTH];
+uint8 LineBufferPosition;
+uns_ch PageBuffer[MAX_PAGE_LENGTH];
+uint16 PageBufferPosition;
+uint16 count;
+uns_ch RecBuffer[MAX_PAGE_LENGTH];
+uint16 page ;
+uint8 Percentage;
+
+
+
+
+
 
 uint32 fileSize;
-#define flashPagelen 256
 uint16 eepromPagelen;
 uint16 extendedPage;
 
