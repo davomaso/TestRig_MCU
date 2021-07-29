@@ -317,7 +317,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
 					 * set LatchSampling to false so that the process is halted and the test fails
 					 */
-					if( (Vfuse.currentValue > 2700) && (Vfuse.currentValue > 0.75*Vin.currentValue) ) stableVoltageCount--;
+					if( (Vin.currentValue > 3000) && (Vfuse.currentValue > 0.75*Vin.currentValue) ) stableVoltageCount--;
 					else stableVoltageCount++;
 					if( stableVoltageCount > 100)
 						CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);

@@ -20,20 +20,47 @@ void handleIdle(TboardConfig *Board, TprocessState * State) {
 		  	  	   */
 				  scanLoom(&BoardConnected);
 			}
-			if (KP_1.Pressed) {
-						HAL_Delay(50);
+			if (KP_1.Pressed  || KP_6.Pressed) {
+						HAL_Delay(125);
 				  		//If 1 is pressed
 					  	KP_1.Pressed = false;
 				  		KP_1.Count = 0;
+				  		if (KP_6.Pressed)
+				  			OldBoardMode = true;
+				  		else
+				  			OldBoardMode = false;
+
+				  		KP_6.Pressed = false;
+				  		KP_6.Count = 0;
+
 				  		TestRig_Init();
 				  		TargetBoardParamInit();
 				  		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
 				  		clearTestStatusLED();
 				  		testInputVoltage();
-				  		HAL_Delay(1200);
-				  		CurrentState = csInterogating;
-				  		*State = psInitalisation;
+				  		LCD_Clear();
 				  }
+			if (InputVoltageSampling) {
+				if (InputVoltageStable){
+					InputVoltageSampling = InputVoltageStable = false;
+					InputVoltageTimer = InputVoltageCounter = 0;
+					printT("Input Voltage Stable...\n");
+			  		HAL_Delay(1200);
+			  		if (OldBoardMode)
+			  			CurrentState = csInterogating;
+			  		else
+			  			CurrentState = csProgramming;
+			  		*State = psInitalisation;
+					break;
+				} else if (!InputVoltageTimer) {
+					InputVoltageSampling = InputVoltageStable = false;
+					HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
+					printT("Input Voltage Failure...\n");
+					CurrentState = csIDLE;
+					*State = psInitalisation;
+					break;
+				}
+			}
 			break;
 		case psComplete:
     		  initialiseTargetBoard(Board);
@@ -77,7 +104,7 @@ void handleInitialising(TboardConfig *Board, TprocessState * State) {
 				CurrentState = csIDLE;
 				*State = psInitalisation;
 			} else {
-				CurrentState = csTestBegin;
+				CurrentState = csInterogating;
 				*State = psInitalisation;
 			}
 		break;
@@ -109,6 +136,7 @@ void handleTestBegin(TboardConfig *Board, TprocessState * State) {
 			if (KP_hash.Pressed) {
 				KP_hash.Pressed = false;
 				KP_hash.Count = 0;
+				HAL_Delay(125);
 				CurrentState = csConfiguring;
 				*State = psInitalisation;
 			} else if (KP_1.Pressed) {
@@ -285,12 +313,11 @@ void handleProgramming(TboardConfig *Board, TprocessState * State) {
 		}
 		break;
 	case psComplete:
-
 			SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
 			printT("Programming Done\n");
 			Close_File(&SDcard.FILEname);
 			SetSDclk(0);
-
+			HAL_Delay(250);
 			CurrentState = csInterogating;
 			*State = psInitalisation;
 		break;
@@ -301,7 +328,7 @@ void handleProgramming(TboardConfig *Board, TprocessState * State) {
 			HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 			SDfileInit();
 			*State = psInitalisation;
-  			if (retryCount >= 3){
+  			if (retryCount >= 3) {
   				printT("Cannot Program Target Board\n");
   				printT("Attempted 3 times....\n");
   				CurrentState = csIDLE;
@@ -340,7 +367,7 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 	case psComplete:
 			SET_BIT( BoardConnected.BSR, BOARD_CALIBRATED );
 			printT("=====     Board Calibrated     =====\n");
-			CurrentState = csSerialise;
+			CurrentState = csInitialising;
 			*State = psInitalisation;
 		break;
 	case psFailed:
@@ -379,10 +406,16 @@ void handleInterogating(TboardConfig *Board, TprocessState * State) {
 			}
 		break;
 	case psComplete:
-			communication_response(Board,&Response, &Data_Buffer[5], strlen(Data_Buffer));
-			currentBoardConnected(Board);
-			CurrentState = csCalibrating;
-			*State = psInitalisation;
+			if (READ_BIT(Board->BSR, BOARD_INITIALISED) ) {
+				communication_response(Board,&Response, &Data_Buffer[5], strlen(Data_Buffer));
+				CurrentState = csSerialise;
+				*State = psInitalisation;
+			} else {
+				communication_response(Board,&Response, &Data_Buffer[5], strlen(Data_Buffer));
+				currentBoardConnected(Board);
+				CurrentState = csCalibrating;
+				*State = psInitalisation;
+			}
 		break;
 
 	case psFailed:
@@ -436,11 +469,16 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 				*State = psInitalisation;
 			break;
 		case psFailed:
+			if (retryCount > 4) {
+				CurrentState = csInterogating;
+				*State = psInitalisation;
+			} else {
 				retryCount++;
-				Command = 0x56;
-				communication_array(Command,&Para[0], Paralen);
+				HAL_Delay(100);
+				configureTargetBoard(Board);
 				*State = psWaiting;
 				ReceiveState = RxWaiting;
+			}
 			break;
 	}
 }
@@ -521,11 +559,10 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 						PrintLatchResults();
 						LatchErrorCheck(Board);
 						if(!(Board->LTR) ) {
-							sprintf(debugTransmitBuffer,"\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
-							CDC_Transmit_FS(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+							printT("\n==============   LATCH TEST PASSED  ==============\n\n\n\n");
 							Board->TestResults[Board->GlobalTestNum][LatchTestPort] = true;
 						} else {
-							printLatchError(&Board->LTR);
+							printLatchError(Board);
 							printT("\n==============   LATCH TEST FAILED  ==============\n\n\n\n");
 							Board->TestResults[Board->GlobalTestNum][LatchTestPort] = false;
 							if(Board->BoardType == b422x) { //TODO: Check if this needs to be here with code changes
@@ -562,6 +599,9 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 					CurrentState = csIDLE;
 					ProcessState = psWaiting;
 				} else {
+					if (Para[0] & 0x80) {
+						communication_array(0x26, &Para[0], 1);
+					}
 					retryCount++;
 					*State = psInitalisation;
 				}
@@ -646,7 +686,7 @@ void handleSampling(TboardConfig *Board, TprocessState * State) {
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 			TargetBoardParamInit(); //Change position of this if board connected data is required by other functions.
 			CurrentState = csIDLE;
-			ProcessState = psWaiting;
+			*State = psWaiting;
 		} else {
 			retryCount++;
 			*State = psInitalisation;
@@ -697,7 +737,7 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 			TargetBoardParamInit(); //Change position of this if board connected data is required by other functions.
 			CurrentState = csIDLE;
-			ProcessState = psWaiting;
+			*State = psWaiting;
 		} else {
 			retryCount++;
 			uploadSamplesTargetBoard(Board);
@@ -742,7 +782,7 @@ void handleSortResults(TboardConfig *Board, TprocessState * State) {
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 			TargetBoardParamInit(); //Change position of this if board connected data is required by other functions.
 			CurrentState = csIDLE;
-			ProcessState = psWaiting;
+			*State = psWaiting;
 		break;
 	}
 }
@@ -793,7 +833,7 @@ void handleSerialise(TboardConfig *Board, TprocessState * State) {
 					printT("=====     Board Serialised     =====\n");
 						sprintf(debugTransmitBuffer, "Serial number %d loaded into board\n", BoardConnected.SerialNumber);
 						printT(&debugTransmitBuffer[0]);
-						CurrentState = csInitialising;
+						CurrentState = csTestBegin;
 						*State = psInitalisation;
 				}
 			break;
@@ -803,7 +843,7 @@ void handleSerialise(TboardConfig *Board, TprocessState * State) {
 				HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 				TargetBoardParamInit(); //Change position of this if board connected data is required by other functions.
 				CurrentState = csIDLE;
-				ProcessState = psWaiting;
+				*State = psWaiting;
 			break;
 	}
 }
@@ -824,24 +864,4 @@ void TestComplete(TboardConfig * Board) {
 		}
 		timeOutEn = false;
 		LCD_printf(&previousTestBuffer, 2, 0);
-}
-
-void EnterSerialNumber(TboardConfig *Board) {
-	uint8 Command;
-	LCD_ClearLine(2);
-	LCD_ClearLine(3);
-	LCD_ClearLine(4);
-	LCD_setCursor(2, 0);
-	sprintf(debugTransmitBuffer, "Enter Serial Number:");
-	LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-	printT("Enter Serial Number: \n");
-	Board->SerialNumber = read_serial();
-//				SET_BIT(BoardConnected.BSR, BOARD_SERIALISED);	// Set board register serialised bit to set
-	if (Board->SerialNumber) {
-		Command = 0x10;
-		communication_arraySerial(Command, 0, 0);
-		CurrentState = csSerialise;
-		ProcessState = psWaiting;
-	}
 }

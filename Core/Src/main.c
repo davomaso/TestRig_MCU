@@ -121,6 +121,7 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 
 
+
 	HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -160,7 +161,6 @@ int main(void)
   HAL_I2C_Init(&hi2c1);
   LCD_init();
   ChangeCharacterSet('A');
-  hexAddress = 59;
 
   TestRig_Init();
   SDfileInit();

@@ -4,6 +4,7 @@ uint32 read_serial() {
 	USART3->CR1 |= (USART_CR1_RXNEIE);
 	LCD_printf("Enter Serial Number ", 2, 0);
 	LCD_printf(" * - Esc    # - Ent ",4,0);
+	LCD_ClearLine(3);
 	LCD_setCursor(3, 0);
 	LCD_CursorOn_Off(true);
 	SerialCount = 0;

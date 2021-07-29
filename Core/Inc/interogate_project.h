@@ -27,7 +27,7 @@ void ADC_Init(void);
 void TransmitResults(void);
 void PrintLatchResults(void);
 void LatchErrorCheck(TboardConfig *);
-void printLatchError(uint8 *);
+//void printLatchError(uint8 *);
 void ADC_MUXsel(uint8);
 
 //Constant Defines
@@ -189,6 +189,8 @@ uint8 BarcodeCount;
 uint8 BarcodeBuffer[9];
 _Bool BarcodeScanned;
 
+
+_Bool OldBoardMode;
 //	Timeout functionality, Loop action until timeout is met
 bool timeOutEn;
 uint32 timeOutCount;
@@ -202,6 +204,7 @@ uint16 latchTimeOutCount;
 bool InputVoltageStable;
 uint16 InputVoltageCounter;
 uint16 InputVoltageTimer;
+_Bool InputVoltageSampling;
 
 _Bool OutputsSet;
 

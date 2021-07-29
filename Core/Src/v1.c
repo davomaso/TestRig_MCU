@@ -16,18 +16,5 @@ void clearTestStatusLED() {
 void testInputVoltage(){
 		LCD_printf("Board Power Test", 2, 0);
 		InputVoltageTimer = 2500;
-		while(1) {
-			if (InputVoltageStable){
-				InputVoltageStable = false;
-				InputVoltageTimer = InputVoltageCounter = 0;
-				printT("Input Voltage Stable...\n");
-				break;
-			} else if (!InputVoltageTimer) {
-				HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
-				printT("Input Voltage Failure...\n");
-				CurrentState = csIDLE;
-				ProcessState = psFailed;
-				break;
-			}
-		}
+		InputVoltageSampling = true;
 }
