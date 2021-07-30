@@ -539,11 +539,11 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 	switch (Test_Port) {
 	case Port_1:
 		HAL_GPIO_WritePin(MUX_WRodd1_GPIO_Port, MUX_WRodd1_Pin, GPIO_PIN_RESET);
-		delay_us(7);
+		delay_us(5);
 		break;
 	case Port_2:
 		HAL_GPIO_WritePin(MUX_WReven1_GPIO_Port, MUX_WReven1_Pin, GPIO_PIN_RESET);
-		delay_us(7);
+		delay_us(5);
 		break;
 	case Port_3:
 		HAL_GPIO_WritePin(MUX_WRodd2_GPIO_Port, MUX_WRodd2_Pin, GPIO_PIN_RESET);
@@ -582,11 +582,11 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 	}
 	switch (Test_Port) {
 	case Port_1:
-		delay_us(7);
+		delay_us(5);
 		HAL_GPIO_WritePin(MUX_WRodd1_GPIO_Port, MUX_WRodd1_Pin, GPIO_PIN_SET);
 		break;
 	case Port_2:
-		delay_us(7);
+		delay_us(5);
 		HAL_GPIO_WritePin(MUX_WReven1_GPIO_Port, MUX_WReven1_Pin, GPIO_PIN_SET);
 		break;
 	case Port_3:

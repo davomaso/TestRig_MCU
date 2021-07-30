@@ -122,7 +122,7 @@ int main(void)
 
 
 
-	HAL_Init();
+ 	HAL_Init();
 
   /* USER CODE BEGIN Init */
 

@@ -201,10 +201,15 @@ bool latchTimeOutEn;
 bool LatchTimeOut;
 uint16 latchTimeOutCount;
 
-bool InputVoltageStable;
+_Bool InputVoltageStable;
 uint16 InputVoltageCounter;
 uint16 InputVoltageTimer;
 _Bool InputVoltageSampling;
+
+_Bool SolarChargerStable;
+uint16 SolarChargerCounter;
+uint16 SolarChargerTimer;
+_Bool SolarChargerSampling;
 
 _Bool OutputsSet;
 

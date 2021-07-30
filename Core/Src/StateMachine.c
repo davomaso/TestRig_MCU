@@ -37,9 +37,27 @@ void handleIdle(TboardConfig *Board, TprocessState * State) {
 				  		TargetBoardParamInit();
 				  		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
 				  		clearTestStatusLED();
-				  		testInputVoltage();
 				  		LCD_Clear();
+				  		testInputVoltage();
+//				  		if (Board->BoardType == b422x || Board->BoardType == b427x)
+//				  			testSolarCharger();
 				  }
+			if (SolarChargerSampling) {
+				if (SolarChargerStable) {
+					InputVoltageSampling = InputVoltageStable = false;
+					InputVoltageTimer = InputVoltageCounter = 0;
+					printT("Solar Charger Stable...\n");
+					testInputVoltage();
+				} else if (!SolarChargerTimer) {
+					SolarChargerSampling = SolarChargerStable = false;
+					HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
+					printT("Solar Charger Failure...\n");
+					CurrentState = csIDLE;
+					*State = psInitalisation;
+					break;
+				}
+
+			}
 			if (InputVoltageSampling) {
 				if (InputVoltageStable){
 					InputVoltageSampling = InputVoltageStable = false;
@@ -343,12 +361,13 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 	uint8 Response;
 	switch (*State) {
 	case psInitalisation:
+			HAL_Delay(2000);
 			if (READ_BIT(Board->BSR, BOARD_CALIBRATED) || (Board->BoardType == b422x) ) {
 					*State = psComplete;
 			} else {
 				sprintf(&lcdBuffer,"    Calibrating" );
 				LCD_printf(&lcdBuffer, 2, 0);
-				switchToCurrent = false;
+				CLEAR_REG(CalibrationStatusRegister);
 				TargetBoardCalibration(Board);
 				*State = psWaiting;
 			}
@@ -374,7 +393,7 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 			retryCount++;
 			if (retryCount < 5) {
 				printT("Calibration Failed Recalibrating Device\n");
-				switchToCurrent = false;
+				CLEAR_REG(CalibrationStatusRegister);
 				TargetBoardCalibration(&BoardConnected);
 				ProcessState = psWaiting;
 				ReceiveState = RxWaiting;

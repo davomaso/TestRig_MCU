@@ -128,6 +128,7 @@ TprocessState ProcessState;
 /* USER CODE BEGIN EC */
 uns_ch debugTransmitBuffer[256];
 uns_ch previousTestBuffer[21];
+uns_ch TestResultsBuffer[256];
 uns_ch lcdBuffer[80];
 
 /* USER CODE END EC */

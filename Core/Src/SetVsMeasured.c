@@ -119,8 +119,8 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 			TresultStatus = TRfailed;
 		}
 			//Write Results to file
-		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {
-			sprintf(debugTransmitBuffer, "%x,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",Board->BoardType, Board->GlobalTestNum+1,
+		if ( (currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch) ) {
+			sprintf(&TestResultsBuffer[0], "%x,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",Board->BoardType, Board->GlobalTestNum+1,
 					(currResult + 1),
 					PortTypes[currResult], TresultStatus, LatchRes.tOn,
 					LatchRes.tOff, LatchRes.PortAhighVoltage,
@@ -129,16 +129,15 @@ void CompareResults(TboardConfig * Board, float *SetVal)
 					LatchRes.InLowVoltage, LatchRes.FuseAvgVoltage,
 					LatchRes.FuseLowVoltage, LatchRes.MOSonHigh,
 					LatchRes.MOSonLow, LatchRes.MOSoffHigh, LatchRes.MOSoffLow);
-		} else if ((PortTypes[currResult] != TTNo)){
-			sprintf(debugTransmitBuffer, "%x,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus, CHval[Board->GlobalTestNum][currResult],fMeasured);
+		} else if ( (PortTypes[currResult] != TTNo) ) {
+			sprintf(&TestResultsBuffer[0], "%x,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum+1, (currResult+1)-Board->latchPortCount, PortTypes[currResult], TresultStatus, CHval[Board->GlobalTestNum][currResult],fMeasured);
 		}
-		Update_File(&SDcard.FILEname, &debugTransmitBuffer[0]);
+		Update_File(&SDcard.FILEname, &TestResultsBuffer[0]);
 		if (SDcard.fresult == FR_DISK_ERR) {
 			Close_File(&SDcard.FILEname);
-			Update_File(&SDcard.FILEname, &debugTransmitBuffer[0]);
+			Update_File(&SDcard.FILEname, &TestResultsBuffer[0]);
 		}
 		*SetVal++;
 	}
 	Close_File(&SDcard.FILEname);
-
 }

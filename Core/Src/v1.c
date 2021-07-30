@@ -18,3 +18,9 @@ void testInputVoltage(){
 		InputVoltageTimer = 2500;
 		InputVoltageSampling = true;
 }
+
+void testSolarCharger() {
+	LCD_printf("Solar Charger Test", 2, 1);
+	SolarChargerTimer = 2500;
+	SolarChargerSampling = true;
+}

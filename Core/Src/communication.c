@@ -199,10 +199,6 @@ void SetPara(TboardConfig * Board, uns_ch Command)
 				Para[0] = 0x49;
 				Paralen = 1;
 			break;
-		case 0xC0:
-				Para[0] = 0x50;
-				Paralen = 1;
-			break;
 	}
 }
 

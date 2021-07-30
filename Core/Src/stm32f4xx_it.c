@@ -244,16 +244,17 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
 			if ( ( (BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b401x) ) && (calibrateADCval.average >= 3000) ) {
 				if (!(--CalibrationCountdown) ) {
-					switchToCurrent = true;
+					HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+					SET_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_READY);
 					TargetBoardCalibration(&BoardConnected);
 					}
-			} else if (  (calibrateADCval.average <= 100) ) {
+			} else if (  (calibrateADCval.average <= 500) ) {
 				if (!(--CalibrationCountdown)) {
-					switchToCurrent = true;
+					SET_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_READY);
 					TargetBoardCalibration(&BoardConnected);
 					}
 			} else
-					CalibrationCountdown = 10;
+					CalibrationCountdown = 5;
 		} else
 			ProcessState = psFailed;
 	}
@@ -422,6 +423,20 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
 		// 1ms Interrupt timer
+		if (!SolarChargerStable && SolarChargerTimer) {
+			ADC_Ch2sel();
+			HAL_ADC_Start(&hadc1);
+			HAL_ADC_PollForConversion(&hadc1, 10);
+			Vin.average = HAL_ADC_GetValue(&hadc1);
+			HAL_ADC_Stop(&hadc1);
+			if (Vin.average >= 3500) {
+				SolarChargerCounter++;
+				if (SolarChargerCounter > 1000)
+					SolarChargerStable = true;
+			}
+			SolarChargerTimer--;
+		}
+
 		if (!InputVoltageStable && InputVoltageTimer) {
 			ADC_Ch2sel();
 			HAL_ADC_Start(&hadc1);

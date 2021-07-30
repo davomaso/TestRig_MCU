@@ -298,10 +298,11 @@ void Calibration(){
 
 void TargetBoardCalibration(TboardConfig * Board) {
 	uint16 DACval;
-		if (!switchToCurrent) {
+		if (!READ_BIT(CalibrationStatusRegister, CALIBRATE_VOLTAGE_SET)) {
 				uns_ch Command;
 				Command = 0xC0;
-				SetPara(Board, Command);
+				Para[0] = 0x50;
+				Paralen = 1;
 					//Set Port 1
 				DACval = DAC_1volt + Port1.CalibrationFactor[V_1];
 				DACval += 0x3000;
@@ -339,8 +340,9 @@ void TargetBoardCalibration(TboardConfig * Board) {
 				CalibratingTimer = 0;
 				HAL_TIM_Base_Start(&htim10);
 				HAL_TIM_Base_Start_IT(&htim10);
+				SET_BIT(CalibrationStatusRegister, CALIBRATE_VOLTAGE_SET);
 
-		} else {
+		} else if (!READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET) && READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_READY)){
 				_Bool MuxState = HAL_GPIO_ReadPin(MUX_A0_GPIO_Port, MUX_A0_Pin);
 				calibrateADCval.total = calibrateADCval.average = 0;
 				HAL_TIM_Base_Stop(&htim10);
@@ -376,6 +378,7 @@ void TargetBoardCalibration(TboardConfig * Board) {
 					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 				else
 					HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+				SET_BIT(CalibrationStatusRegister, CALIBRATE_VOLTAGE_SET);
 			}
 }
 
