@@ -361,14 +361,14 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 	uint8 Response;
 	switch (*State) {
 	case psInitalisation:
-			HAL_Delay(2000);
 			if (READ_BIT(Board->BSR, BOARD_CALIBRATED) || (Board->BoardType == b422x) ) {
 					*State = psComplete;
 			} else {
 				sprintf(&lcdBuffer,"    Calibrating" );
 				LCD_printf(&lcdBuffer, 2, 0);
 				CLEAR_REG(CalibrationStatusRegister);
-				TargetBoardCalibration(Board);
+				CalibratingTimer = 0;
+				TargetBoardCalibration_Voltage(Board);
 				*State = psWaiting;
 			}
 		break;
@@ -394,7 +394,7 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 			if (retryCount < 5) {
 				printT("Calibration Failed Recalibrating Device\n");
 				CLEAR_REG(CalibrationStatusRegister);
-				TargetBoardCalibration(&BoardConnected);
+				TargetBoardCalibration_Voltage(Board);
 				ProcessState = psWaiting;
 				ReceiveState = RxWaiting;
 			} else {
@@ -460,15 +460,19 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 	switch (*State) {
 		case psInitalisation:
 				configureTargetBoard(Board);
-				*State = psWaiting;
+				if (Board->BoardType == b422x) {
+					TestFunction(Board);
+					*State = psComplete;
+				} else
+					*State = psWaiting;
 			break;
 		case psWaiting:
 				if (ReceiveState == RxGOOD) {
-					if (!OutputsSet)
+					if ( !OutputsSet )
 						TestFunction(Board);
 					Response = Data_Buffer[0];
 					if(Response == 0x57) {
-						HAL_Delay(250);
+						HAL_Delay(300);
 						printT("===Board Configuration Successful===\n");
 						*State = psComplete;
 					} else
@@ -480,10 +484,6 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 				}
 			break;
 		case psComplete:
-				communication_response(Board,&Response, &UART2_RXbuffer, UART2_RecPos);
-				if (SDIenabled)
-					USART6->CR1 |= (USART_CR1_RXNEIE);
-
 				CurrentState = csLatchTest;
 				*State = psInitalisation;
 			break;
@@ -573,7 +573,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 				if (READ_REG(Board->LatchTestPort)) {
 						HAL_TIM_Base_Stop(&htim10);
 					//Print Results & Error Messages
-					//		TransmitResults();
+//						TransmitResults();
 						normaliseLatchResults();
 						PrintLatchResults();
 						LatchErrorCheck(Board);
@@ -603,6 +603,8 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 						}
 						CLEAR_REG(Board->LatchTestPort);
 					}
+				if (SDIenabled)
+					USART6->CR1 |= (USART_CR1_RXNEIE);
 				if (Board->BoardType == b422x)
 					CurrentState = csSampling;
 				else
@@ -631,6 +633,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 void handleAsyncTest(TboardConfig *Board, TprocessState *State) {
 	switch(*State) {
 		case psInitalisation:
+				HAL_Delay(50);
 				AsyncComplete = false;
 				Async_Port1.Active = Async_Port1.PulseCount ? true:false;
 				Async_Port2.Active = Async_Port2.PulseCount ? true:false;
@@ -691,6 +694,8 @@ void handleSampling(TboardConfig *Board, TprocessState * State) {
 				*State = psComplete;
 				ReceiveState = RxWaiting;
 			}
+			if (SDSstate == SDSd)
+				samplesUploaded = true;
 		break;
 	case psComplete:
 			printT("Samples Uploaded\n\n");
@@ -750,18 +755,18 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 		break;
 	case psFailed:
 		ReceiveState = RxWaiting;
-		if (retryCount > 16) {
-			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-			TargetBoardParamInit(); //Change position of this if board connected data is required by other functions.
-			CurrentState = csIDLE;
-			*State = psWaiting;
-		} else {
+//		if (retryCount > 16) {
+//			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
+//			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+//			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+//			TargetBoardParamInit(); //Change position of this if board connected data is required by other functions.
+//			CurrentState = csIDLE;
+//			*State = psWaiting;
+//		} else {
 			retryCount++;
 			uploadSamplesTargetBoard(Board);
 			*State = psWaiting;
-		}
+//		}
 		break;
 	}
 }
@@ -781,6 +786,7 @@ void handleSortResults(TboardConfig *Board, TprocessState * State) {
 	case psComplete:
 			Board->GlobalTestNum++; //Increment Test Number
 			if( CheckTestNumber(Board)) {
+				// change this to skip to latch test if board 4220 is connected
 				*State = psInitalisation;
 				CurrentState = csConfiguring;
 			} else {

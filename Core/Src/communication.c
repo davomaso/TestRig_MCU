@@ -122,7 +122,8 @@ void communication_response(TboardConfig * Board, uns_ch * Response, uns_ch *dat
 				sampleTime *= 100;
 				sampleCount = 0;
 				samplesUploaded = false;
-				sampleTime = sampleTime > 2000 ? 2000 : sampleTime;
+				sampleTime = sampleTime > 2200? 2200 : sampleTime;
+				sampleTime = sampleTime < 200 ? 200 : sampleTime;
 				samplesUploading = true;
 				//Uploading begun
 				sprintf(&debugTransmitBuffer,"Waiting : %.2f seconds....\n", (float)sampleTime/1000 );

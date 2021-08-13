@@ -8,23 +8,23 @@ void LatchErrorCheck(TboardConfig * Board){
 	 * range specified here, then the bits in the LatchErrCheck register are truggered, flagging the errors for when the
 	 * failures are presented.
 	 */
-	CLEAR_REG(LatchTestErrorRegister);
+	CLEAR_REG(Board->LTR);
 		//ADC1 Check
-	if( ( (adc1.HighPulseWidth > 52) || (adc1.HighPulseWidth < 48) ) || ( (adc1.LowPulseWidth > 52) || (adc1.LowPulseWidth < 48) ) )
+	if( ( (LatchPortA.HighPulseWidth > 52) || (LatchPortA.HighPulseWidth < 48) ) || ( (LatchPortA.LowPulseWidth > 52) || (LatchPortA.LowPulseWidth < 48) ) )
 		SET_BIT(Board->LTR, PORT_A_PULSEWIDTH_ERROR);
 	if (Board->BoardType == b935x || Board->BoardType == b937x) {
-		if((adc1.highVoltage < 9.2)  || (adc1.lowVoltage > 1.2) || (adc1.highVoltage == 0))
+		if((LatchPortA.highVoltage < 9.2)  || (LatchPortA.lowVoltage > 1.2) || (LatchPortA.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if((adc2.highVoltage < 9.2) || (adc2.lowVoltage > 1.2) || (adc2.highVoltage == 0))
+		if((LatchPortB.highVoltage < 9.2) || (LatchPortB.lowVoltage > 1.2) || (LatchPortB.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	} else {
-		if((adc1.highVoltage <= 9.2)  || (adc1.lowVoltage >= 1.2) || (adc1.highVoltage == 0))
+		if((LatchPortA.highVoltage <= 9.2)  || (LatchPortA.lowVoltage >= 1.2) || (LatchPortA.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if((adc2.highVoltage <= 9.2 ) || (adc2.lowVoltage >= 1.2) || (adc2.highVoltage == 0))
+		if((LatchPortB.highVoltage <= 9.2 ) || (LatchPortB.lowVoltage >= 1.2) || (LatchPortB.highVoltage == 0))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	}
 		//ADC2 Check
-	if( ( (adc2.HighPulseWidth > 52) || (adc2.HighPulseWidth < 48) ) || ( (adc2.LowPulseWidth > 52) || (adc2.LowPulseWidth < 48) ) )
+	if( ( (LatchPortB.HighPulseWidth > 52) || (LatchPortB.HighPulseWidth < 48) ) || ( (LatchPortB.LowPulseWidth > 52) || (LatchPortB.LowPulseWidth < 48) ) )
 		SET_BIT(Board->LTR, PORT_B_PULSEWIDTH_ERROR);
 		//Vin Check
 	if( Vin.average < 10.8 )
@@ -33,9 +33,9 @@ void LatchErrorCheck(TboardConfig * Board){
 	if(Vfuse.average < 0.95*Vin.average  || Vfuse.lowVoltage < 0.9*Vin.lowVoltage)
 		SET_BIT(Board->LTR, FUSE_VOLTAGE_ERROR);
 		//Vmos Check
-	if(Vmos1.highVoltage < 0.01 || Vmos1.highVoltage > 3.5 || Vmos1.lowVoltage > 0.7 || Vmos1.lowVoltage < 0.01)
+	if(MOSFETvoltageA.highVoltage < 0.01 || MOSFETvoltageA.highVoltage > 1.8 || MOSFETvoltageA.lowVoltage > 1.8 || MOSFETvoltageA.lowVoltage < 0.01)
 		SET_BIT(Board->LTR, PORT_A_MOSFET_ERROR);
-	if(Vmos2.highVoltage < 0.01 || Vmos2.highVoltage > 3.5 || Vmos2.lowVoltage > 0.7 || Vmos2.lowVoltage < 0.01)
+	if(MOSFETvoltageB.highVoltage < 0.01 || MOSFETvoltageB.highVoltage > 1.8 || MOSFETvoltageB.lowVoltage > 1.8 || MOSFETvoltageB.lowVoltage < 0.01)
 		SET_BIT(Board->LTR, PORT_B_MOSFET_ERROR);
 }
 void printLatchError(TboardConfig * Board){

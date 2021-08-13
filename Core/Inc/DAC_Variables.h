@@ -26,7 +26,7 @@
 	//Current Calculations
 #define I_R1 10000.0
 #define I_R2 20000.0
-#define I_Rp 150.0
+#define I_Rp 180.0
 
 
 #define CURRENT_GAIN ((I_R2+I_Rp) / I_R1)

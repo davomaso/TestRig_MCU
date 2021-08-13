@@ -169,16 +169,6 @@ void SVC_Handler(void)
 /**
   * @brief This function handles Debug monitor.
   */
-void DebugMon_Handler(void)
-{
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
-
-  /* USER CODE END DebugMonitor_IRQn 1 */
-}
-
 /**
   * @brief This function handles Pendable request for system service.
   */
@@ -222,14 +212,14 @@ void TIM1_UP_TIM10_IRQHandler(void)
 	//500us timer for calculating ADC values for latching and power ports
 	//Poll 5 times each ms to gain a higher accuracy of voltage
 
-	if (CurrentState == csCalibrating) {
+	if ( (CurrentState == csCalibrating) && (ProcessState == psWaiting) ) {
 		/*
 		 * Read the ADC to determine when the Port that the calibration is connected to falls to GND,
 		 * When a ground is detected for 5ms switch to current putting 20mA on all ports to calibrate
 		 * the current on all ports.
 		 * In the event of a failure set the ProcessState to psFailed to halt process
 		 */
-		if (CalibratingTimer < CalibrateTimerTo) {
+		if (CalibratingTimer < CALIBRATION_TIMEOUT) {
 			if(BoardConnected.BoardType == b401x)
 				ADC_Ch5sel();
 			else if (BoardConnected.BoardType == b402x)
@@ -242,21 +232,21 @@ void TIM1_UP_TIM10_IRQHandler(void)
 			calibrateADCval.average = HAL_ADC_GetValue(&hadc1);
 			HAL_ADC_Stop(&hadc1);
 
-			if ( ( (BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b401x) ) && (calibrateADCval.average >= 3000) ) {
-				if (!(--CalibrationCountdown) ) {
-					HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-					SET_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_READY);
-					TargetBoardCalibration(&BoardConnected);
+			if ( ( (BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b401x) ) && (calibrateADCval.average >= 3500) ) {
+				if (!(--CalibrationCountdown)  && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
+					TargetBoardCalibration_Current(&BoardConnected);
 					}
 			} else if (  (calibrateADCval.average <= 500) ) {
-				if (!(--CalibrationCountdown)) {
-					SET_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_READY);
-					TargetBoardCalibration(&BoardConnected);
+				if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
+					TargetBoardCalibration_Current(&BoardConnected);
 					}
-			} else
-					CalibrationCountdown = 5;
-		} else
-			ProcessState = psFailed;
+			} else {
+				if (BoardConnected.BoardType == b401x)
+					CalibrationCountdown = 50;
+				else
+					CalibrationCountdown = 10;
+			}
+		}
 	}
 
 	if ( READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING) ) {
@@ -274,13 +264,13 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				ADC_Ch0sel();
 				HAL_ADC_Start(&hadc1);
 				HAL_ADC_PollForConversion(&hadc1, 100);
-				adc1.currentValue = HAL_ADC_GetValue(&hadc1);
+				LatchPortA.currentValue = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 					//ADC 2
 				ADC_Ch1sel();
 				HAL_ADC_Start(&hadc1);
 				HAL_ADC_PollForConversion(&hadc1, 100);
-				adc2.currentValue = HAL_ADC_GetValue(&hadc1);
+				LatchPortB.currentValue = HAL_ADC_GetValue(&hadc1);
 				HAL_ADC_Stop(&hadc1);
 //					//Vin
 				ADC_Ch2sel();
@@ -347,60 +337,66 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
 							//Latch On Test
 						if(READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
-							if (adc1.currentValue > 2400) {
-								adc1.HighPulseWidth++;
-								adc1.highVoltage += adc1.currentValue;
-								if (adc1.HighPulseWidth > 5 && adc1.HighPulseWidth < 90) {
-									Vmos1.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc1.currentValue;
-									Vmos1.highVoltage = Vmos1.highVoltage < Vmos1.avg_Buffer[LatchCountTimer] ? Vmos1.avg_Buffer[LatchCountTimer] : Vmos1.highVoltage;
-								PulseCountDown = (adc1.HighPulseWidth > 90 || adc2.LowPulseWidth > 90) ? 10 : PulseCountDown;
+							if (LatchPortA.currentValue > 2400) {
+								LatchPortA.HighPulseWidth++;
+								LatchPortA.highVoltage += LatchPortA.currentValue;
+								if (LatchPortA.HighPulseWidth > 5 && LatchPortA.HighPulseWidth < 90) {
+									MOSFETvoltageA.currentValue = Vfuse.currentValue - LatchPortA.currentValue;
+									MOSFETvoltageA.total += MOSFETvoltageA.currentValue;
 								}
+								PulseCountDown = (LatchPortA.HighPulseWidth > 90 || LatchPortB.LowPulseWidth > 90) ? 10 : PulseCountDown;
 							}
-							if (adc2.currentValue < 500) {
-								adc2.LowPulseWidth++;
-								adc2.lowVoltage += adc2.currentValue;
-								if (adc2.LowPulseWidth > 5 && adc2.LowPulseWidth < 90) {
-									Vmos2.avg_Buffer[LatchCountTimer] = adc2.currentValue;
-									Vmos2.lowVoltage = Vmos2.lowVoltage > Vmos2.avg_Buffer[LatchCountTimer] ? Vmos2.avg_Buffer[LatchCountTimer] : Vmos2.lowVoltage;
+							if (LatchPortB.currentValue < 500) {
+								LatchPortB.LowPulseWidth++;
+								LatchPortB.lowVoltage += LatchPortB.currentValue;
+								if (LatchPortB.LowPulseWidth > 5 && LatchPortB.LowPulseWidth < 90) {
+									MOSFETvoltageB.currentValue = LatchPortB.currentValue;
+									MOSFETvoltageB.total += MOSFETvoltageB.currentValue;
 								}
 							}
 						}
 						if(READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
 						//Latch Off Test
-						if (adc1.currentValue < 500) {
-							adc1.LowPulseWidth++;
-							adc1.lowVoltage += adc1.currentValue;
-							if (adc1.LowPulseWidth > 5 && adc1.LowPulseWidth < 90) {
-								Vmos1.avg_Buffer[LatchCountTimer] = adc1.currentValue;
-								Vmos1.lowVoltage = Vmos1.lowVoltage > Vmos1.avg_Buffer[LatchCountTimer] ? Vmos1.avg_Buffer[LatchCountTimer] : Vmos1.lowVoltage;
+						if (LatchPortA.currentValue < 500) {
+							LatchPortA.LowPulseWidth++;
+							LatchPortA.lowVoltage += LatchPortA.currentValue;
+							if (LatchPortA.LowPulseWidth > 5 && LatchPortA.LowPulseWidth < 90) {
+								MOSFETvoltageA.currentValue = LatchPortA.currentValue;
+								MOSFETvoltageA.total += MOSFETvoltageA.currentValue;
 							}
 						}
-						if (adc2.currentValue > 2400) {
-							adc2.HighPulseWidth++;
-							adc2.highVoltage += adc2.currentValue;
-							if (adc2.HighPulseWidth > 5 && adc2.HighPulseWidth < 90) {
-								Vmos2.avg_Buffer[LatchCountTimer] = Vfuse.avg_Buffer[LatchCountTimer] - adc2.currentValue;
-								Vmos2.highVoltage = Vmos2.highVoltage < Vmos2.avg_Buffer[LatchCountTimer] ? Vmos2.avg_Buffer[LatchCountTimer] : Vmos2.highVoltage;
+						if (LatchPortB.currentValue > 2400) {
+							LatchPortB.HighPulseWidth++;
+							LatchPortB.highVoltage += LatchPortB.currentValue;
+							if (LatchPortB.HighPulseWidth > 5 && LatchPortB.HighPulseWidth < 90) {
+								MOSFETvoltageB.currentValue = Vfuse.currentValue - LatchPortB.currentValue;
+								MOSFETvoltageB.total += MOSFETvoltageB.currentValue;
 							}
-							PulseCountDown = (adc2.HighPulseWidth > 90 || adc1.LowPulseWidth > 90) ? 10 : PulseCountDown;
+							PulseCountDown = (LatchPortB.HighPulseWidth > 90 || LatchPortA.LowPulseWidth > 90) ? 10 : PulseCountDown;
 							}
 						}
 						PulseCountDown--;
 
 							//Set latch complete bits
-						if ( !PulseCountDown && ( (adc1.HighPulseWidth > 94) && (adc2.LowPulseWidth > 94) )  ) {//|| (PulseCountDown == 0)
+						if ( !PulseCountDown && ( (LatchPortA.HighPulseWidth > 94) && (LatchPortB.LowPulseWidth > 94) )  ) {//|| (PulseCountDown == 0)
 							SET_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE);
-							adc1.highVoltage /= 2;
-							adc2.lowVoltage /= 2;
-							adc1.HighPulseWidth /= 2;
-							adc2.LowPulseWidth /= 2;
+							LatchPortA.highVoltage /= 2;
+							LatchPortB.lowVoltage /= 2;
+							LatchPortA.HighPulseWidth /= 2;
+							LatchPortB.LowPulseWidth /= 2;
+							MOSFETvoltageA.highVoltage = MOSFETvoltageA.total/LatchPortA.HighPulseWidth;
+							MOSFETvoltageB.lowVoltage = MOSFETvoltageB.total/LatchPortB.LowPulseWidth;
+							MOSFETvoltageA.total = MOSFETvoltageB.total = 0;
 						}
-						if ( !PulseCountDown && ( (adc2.HighPulseWidth > 94) || (adc1.LowPulseWidth > 94) ) ) {
+						if ( !PulseCountDown && ( (LatchPortB.HighPulseWidth > 94) || (LatchPortA.LowPulseWidth > 94) ) ) {
 							SET_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE);
-							adc1.LowPulseWidth /= 2;
-							adc2.HighPulseWidth /= 2;
-							adc2.highVoltage /= 2;
-							adc1.lowVoltage /= 2;
+							LatchPortA.LowPulseWidth /= 2;
+							LatchPortB.HighPulseWidth /= 2;
+							LatchPortB.highVoltage /= 2;
+							LatchPortA.lowVoltage /= 2;
+							MOSFETvoltageB.highVoltage = MOSFETvoltageB.total/LatchPortB.HighPulseWidth;
+							MOSFETvoltageA.lowVoltage = MOSFETvoltageA.total/LatchPortA.LowPulseWidth;
+							MOSFETvoltageA.total = MOSFETvoltageB.total = 0;
 						}
 
 				}
@@ -443,7 +439,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 			HAL_ADC_PollForConversion(&hadc1, 10);
 			Vin.average = HAL_ADC_GetValue(&hadc1);
 			HAL_ADC_Stop(&hadc1);
-			if (Vin.average >= 3500) {
+			if (Vin.average >= 3200) {
 				InputVoltageCounter++;
 				if (InputVoltageCounter > 1000)
 					InputVoltageStable = true;
@@ -502,6 +498,16 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 /**
   * @brief This function handles USART2 global interrupt.
   */
+void DebugMon_Handler(void)
+{
+  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+
+  /* USER CODE END DebugMonitor_IRQn 0 */
+  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+
+  /* USER CODE END DebugMonitor_IRQn 1 */
+}
+
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
@@ -579,7 +585,7 @@ void USART2_IRQHandler(void)
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
 			ReceiveState = RxWaiting;
-			setTimeOut(700);
+			setTimeOut(1500);
 
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
@@ -721,7 +727,7 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
   			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
   		  } else
   			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_SET);
-  	  }else if(Async_Port1.PulseState){
+  	  }else if(Async_Port3.PulseState){
   		  if(!(--Async_Port3.scount)){
   			  Async_Port3.fcount=5;
   			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
@@ -1160,10 +1166,11 @@ void USART6_IRQHandler(void)
 					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_SET);
 					USART6->CR1 |= (USART_CR1_RE);
+
 				} else
 					SDSstate = SDSundef;
-				sampleTime = 15;
-				sampleCount = 0;
+//				sampleTime = 15;
+//				sampleCount = 0;
 			}
 	}
   /* USER CODE END USART6_IRQn 0 */

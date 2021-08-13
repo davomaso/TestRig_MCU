@@ -86,7 +86,8 @@ void configureTargetBoard(TboardConfig * Board) {
 	uns_ch Command;
 	Command = 0x56;
 	SetPara(Board, Command);
-	communication_array(Command, &Para[0], Paralen);
+	if (Board->BoardType != b422x)
+		communication_array(Command, &Para[0], Paralen);
 	OutputsSet = false;
 }
 

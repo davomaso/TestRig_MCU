@@ -111,25 +111,25 @@ uint8 LatchTestPort;
 typedef struct{
 	uint32_t total;
 	float average;
-	uint16_t raw_Buffer[20];
-	uint16_t avg_Buffer[ADC_BUF_LEN];
-	uint16 currentValue;
+	float avg_Buffer[ADC_BUF_LEN];
+	uint16 readValue;
+	float currentValue;
 
 	uint8_t HighPulseWidth;
 	_Bool HighPulseMeasure;
 	uint8_t LowPulseWidth;
 	_Bool LowPulseMeasure;
 
-	double highVoltage;
-	double lowVoltage;
+	float highVoltage;
+	float lowVoltage;
 
 }TADCconfig;
 
-TADCconfig adc1;
-TADCconfig adc2;
+TADCconfig LatchPortA;
+TADCconfig LatchPortB;
 TADCconfig Vfuse;
-TADCconfig Vmos1;
-TADCconfig Vmos2;
+TADCconfig MOSFETvoltageA;
+TADCconfig MOSFETvoltageB;
 TADCconfig Vin;
 TADCconfig Vuser;
 

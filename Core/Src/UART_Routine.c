@@ -44,5 +44,5 @@ void printT(uns_ch * Text) {
 //	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
 
 	CDC_Transmit_FS(Text, strlen(Text));
-	HAL_Delay(10);
+	delay_us(5000);
 }

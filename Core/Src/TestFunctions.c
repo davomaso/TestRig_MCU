@@ -606,7 +606,7 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 		HAL_GPIO_WritePin(MUX_WReven3_GPIO_Port, MUX_WReven3_Pin, GPIO_PIN_SET);
 		break;
 	}
-	delay_us(50);
+	delay_us(250);
 	if (MuxState)
 		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 	else
@@ -665,17 +665,17 @@ void PrintLatchResults(){
 	float LatchCurrent1;
 	float LatchCurrent2;
 	printT("\n\n =======================  Latch Test  =======================\n\n");
-	sprintf(&debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n", adc1.HighPulseWidth, adc1.LowPulseWidth);
+	sprintf(&debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n", LatchPortA.HighPulseWidth, LatchPortA.LowPulseWidth);
 	printT(&debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   Port A Voltage:   High: %.3f Low: %.3f   ==============\n", adc1.highVoltage, adc1.lowVoltage);
+	sprintf(&debugTransmitBuffer, "\n==============   Port A Voltage:   High: %.3f Low: %.3f   ==============\n", LatchPortA.highVoltage, LatchPortA.lowVoltage);
 	printT(&debugTransmitBuffer);
 
 		//Port B Latch Time
-	sprintf(&debugTransmitBuffer, "\n==============   Port B Latch time:   High: %d  Low: %d   ==============\n", adc2.HighPulseWidth, adc2.LowPulseWidth);
+	sprintf(&debugTransmitBuffer, "\n==============   Port B Latch time:   High: %d  Low: %d   ==============\n", LatchPortB.HighPulseWidth, LatchPortB.LowPulseWidth);
 	printT(&debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   Port B Voltage:   High: %.3f Low: %.3f   ==============\n\n", adc2.highVoltage, adc2.lowVoltage);
+	sprintf(&debugTransmitBuffer, "\n==============   Port B Voltage:   High: %.3f Low: %.3f   ==============\n\n", LatchPortB.highVoltage, LatchPortB.lowVoltage);
 	printT(&debugTransmitBuffer);
 
 	sprintf(&debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %.3f Min: %.3f   ==============\n", Vin.average, Vin.lowVoltage);
@@ -684,14 +684,14 @@ void PrintLatchResults(){
 	sprintf(&debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %.3f Min: %.3f   ==============\n", Vfuse.average, Vfuse.lowVoltage);
 	printT(&debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 1 Voltage:   High: %.3f Low: %.3f   ==============\n", Vmos1.highVoltage, Vmos1.lowVoltage);
+	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 1 Voltage:   High: %.3f Low: %.3f   ==============\n", MOSFETvoltageA.highVoltage, MOSFETvoltageA.lowVoltage);
 	printT(&debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 2 Voltage:   High: %.3f Low: %.3f   ==============\n", Vmos2.highVoltage, Vmos2.lowVoltage);
+	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 2 Voltage:   High: %.3f Low: %.3f   ==============\n", MOSFETvoltageB.highVoltage, MOSFETvoltageB.lowVoltage);
 	printT(&debugTransmitBuffer);
 
-	  LatchCurrent2 = adc2.highVoltage - adc1.lowVoltage;
-	  LatchCurrent1 = adc1.highVoltage - adc2.lowVoltage;
+	  LatchCurrent2 = LatchPortB.highVoltage - LatchPortA.lowVoltage;
+	  LatchCurrent1 = LatchPortA.highVoltage - LatchPortB.lowVoltage;
 	  LatchCurrent1 /= ADC_Rcurrent;
 	  LatchCurrent2 /= ADC_Rcurrent;
 
@@ -701,16 +701,16 @@ void PrintLatchResults(){
 
 void normaliseLatchResults() {
 		//Port A Voltage
-	adc1.highVoltage = adc1.HighPulseWidth > 0 ? adc1.highVoltage/adc1.HighPulseWidth:0;
-	adc1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION); //Previous value was 16.17 when resistor is set to 150
-	adc1.lowVoltage /= adc1.LowPulseWidth;
-	adc1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	LatchPortA.highVoltage = LatchPortA.HighPulseWidth > 0 ? LatchPortA.highVoltage/LatchPortA.HighPulseWidth:0;
+	LatchPortA.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION); //Previous value was 16.17 when resistor is set to 150
+	LatchPortA.lowVoltage /= LatchPortA.LowPulseWidth;
+	LatchPortA.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 
 		//Port B Voltage
-	adc2.highVoltage = adc2.HighPulseWidth > 0 ? adc2.highVoltage/adc2.HighPulseWidth:0;
-	adc2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	adc2.lowVoltage /= adc2.LowPulseWidth;
-	adc2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	LatchPortB.highVoltage = LatchPortB.HighPulseWidth > 0 ? LatchPortB.highVoltage/LatchPortB.HighPulseWidth:0;
+	LatchPortB.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	LatchPortB.lowVoltage /= LatchPortB.LowPulseWidth;
+	LatchPortB.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 
 		//Vin Voltage
 	Vin.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
@@ -719,31 +719,31 @@ void normaliseLatchResults() {
 	Vfuse.lowVoltage *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
 	Vfuse.average *= (MAX_SOURCE_VALUE/ADC_RESOLUTION);
 		//MOSFET Voltage
-	Vmos1.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	Vmos1.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	Vmos2.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
-	Vmos2.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	MOSFETvoltageA.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	MOSFETvoltageA.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	MOSFETvoltageB.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
+	MOSFETvoltageB.highVoltage *= (ADC_MAX_INPUT_VOLTAGE/ADC_RESOLUTION);
 
 	//Store Values
-	LatchRes.tOn = (adc1.HighPulseWidth >= adc2.LowPulseWidth) ? adc1.HighPulseWidth:adc2.LowPulseWidth;
-	LatchRes.tOff = (adc2.HighPulseWidth >= adc1.LowPulseWidth) ? adc2.HighPulseWidth:adc1.LowPulseWidth;
+	LatchRes.tOn = (LatchPortA.HighPulseWidth >= LatchPortB.LowPulseWidth) ? LatchPortA.HighPulseWidth:LatchPortB.LowPulseWidth;
+	LatchRes.tOff = (LatchPortB.HighPulseWidth >= LatchPortA.LowPulseWidth) ? LatchPortB.HighPulseWidth:LatchPortA.LowPulseWidth;
 
-	LatchRes.PortAhighVoltage = adc1.highVoltage;
-	LatchRes.PortAlowVoltage = adc1.lowVoltage;
+	LatchRes.PortAhighVoltage = LatchPortA.highVoltage;
+	LatchRes.PortAlowVoltage = LatchPortA.lowVoltage;
 
-	LatchRes.PortBhighVoltage = adc2.highVoltage;
-	LatchRes.PortBlowVoltage = adc2.lowVoltage;
+	LatchRes.PortBhighVoltage = LatchPortB.highVoltage;
+	LatchRes.PortBlowVoltage = LatchPortB.lowVoltage;
 
 	LatchRes.InAvgVoltage = Vin.average;
 	LatchRes.InLowVoltage = Vin.lowVoltage;
 	LatchRes.FuseAvgVoltage = Vfuse.average;
 	LatchRes.FuseLowVoltage = Vfuse.lowVoltage;
 
-	LatchRes.MOSonHigh = Vmos1.highVoltage;
-	LatchRes.MOSonLow = Vmos2.lowVoltage;
+	LatchRes.MOSonHigh = MOSFETvoltageA.highVoltage;
+	LatchRes.MOSonLow = MOSFETvoltageB.lowVoltage;
 
-	LatchRes.MOSoffHigh = Vmos2.highVoltage;
-	LatchRes.MOSoffLow = Vmos1.lowVoltage;
+	LatchRes.MOSoffHigh = MOSFETvoltageB.highVoltage;
+	LatchRes.MOSoffLow = MOSFETvoltageA.lowVoltage;
 }
 
 void TransmitResults(){
@@ -752,9 +752,8 @@ void TransmitResults(){
 		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
 		for(int i = 0;i<LatchCountTimer;i++)
 		{
-			sprintf(debugTransmitBuffer, "%d,%d,%d,%d\n",i,adc1.avg_Buffer[i],adc2.avg_Buffer[i],Vfuse.avg_Buffer[i]);
-			CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			sprintf(debugTransmitBuffer, "%d,%d,%d,%d\n",i,LatchPortA.avg_Buffer[i],LatchPortB.avg_Buffer[i],Vfuse.avg_Buffer[i]);
+			printT(&debugTransmitBuffer);
 		}
 }
 //	=================================================================================//

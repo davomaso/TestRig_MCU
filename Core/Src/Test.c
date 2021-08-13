@@ -77,11 +77,11 @@ void ConfigInit() {
 void TestConfig935x(TboardConfig * Board) {
 		// Port Test Array
 	uint32 *tempTestARR[30] = {
-			&latchTest, &OnevoltTest,&OnevoltTest, &asyncTest, &asyncDigitalTest, 				//
-			&noTest, &OnevoltTest, &TwovoltTest, &asyncDigitalTest, &asyncTest,				//
+			&latchTest, &TwovoltTest,&OnevoltTest, &asyncTest, &asyncDigitalTest, 				//
+			&noTest, &sdi12Test, &currentTest, &asyncDigitalTest, &asyncTest,				//
 			&noTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest, 		//
-			&noTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, 				//
-			&noTest, &TwovoltTest, &currentTest, &asyncDigitalTest, &asyncTest, 				//
+			&noTest, &asyncTest, &currentTest, &asyncTest, &asyncDigitalTest, 				//
+			&noTest, &currentTest, &TwovoltTest, &asyncDigitalTest, &asyncTest, 				//
 			&noTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest		 		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR) );
@@ -108,11 +108,11 @@ void TestConfig935x(TboardConfig * Board) {
 void TestConfig937x(TboardConfig * Board) {
 		// Port Test Array
 	TportConfig *tempTestARR[24] = {	// Array size must not exceed size of MAX_TEST_ARRAY_SIZE
-					&latchTest, &noTest, &OnevoltTest, &asyncDigitalTest,	//
-					&noTest, &latchTest, &TwovoltTest, &asyncDigitalTest,	//
+					&latchTest, &noTest, &asyncTest, &asyncDigitalTest,	//
+					&noTest, &latchTest, &TwovoltTest, &asyncTest,	//
 					&noTest, &noTest, &sdi12Test, &currentTest,	//
 					&noTest, &noTest, &asyncDigitalTest, &sdi12Test,	//
-					&noTest, &noTest, &currentTest, &TwovoltTest,	//
+					&noTest, &noTest, &OnevoltTest, &currentTest,	//
 					&noTest, &noTest, &currentTest, &OnevoltTest	//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
@@ -218,11 +218,11 @@ void TestConfig422x(TboardConfig * Board){
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 
-	uint8 tempPcARR[4][2] = {
-			{ 0xC0, 0xC1 },
-			{ 0xC4, 0xC5 },
-			{ 0xC8, 0xC9 },
-			{ 0xCC, 0xCD },
+	uint8 tempPcARR[8] = {
+			 0xC0, 0xC1 ,		//
+			 0xC4, 0xC5,		//
+			 0xC8, 0xC9,		//
+			 0xCC, 0xCD,		//
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
@@ -236,10 +236,10 @@ void TestConfig422x(TboardConfig * Board){
 
 void TestConfig427x(TboardConfig * Board){
 	uint32 *tempTestARR[20] = {
-			&latchTest, &noTest, &noTest, &noTest, &OnevoltTest,	//
-			&noTest, &latchTest, &noTest, &noTest, &currentTest,	//
-			&noTest, &noTest, &latchTest, &noTest, &asyncTest,		//
-			&noTest, &noTest, &noTest, &latchTest, &sdi12Test,		//
+			&latchTest, &noTest, &noTest, &noTest, &sdi12Test,		//
+			&noTest, &latchTest, &noTest, &noTest, &OnevoltTest,	//
+			&noTest, &noTest, &latchTest, &noTest, &currentTest,	//
+			&noTest, &noTest, &noTest, &latchTest, &asyncTest		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -274,6 +274,11 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 					*Para = 0x01; (*Count)++; Para++;
 					*Para = 0x82; (*Count)++; Para++;
 					*Para = 0x01; (*Count)++; Para++;
+				} else if ( (Board->BoardType == b422x ) && (Board->GlobalTestNum == 0) ) {
+					*Para = 0x80; (*Count)++; Para++;
+					*Para = 0x64; (*Count)++; Para++;
+					*Para = 0x83; (*Count)++; Para++;
+					*Para = 0x80; (*Count)++; Para++;
 				}
 			for (uint8 PortCount = 0; PortCount < TotalPort; PortCount++) {
 				Set_Test(Board, PortCount);	//Increment This test to the next testarray variable
@@ -305,37 +310,37 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 					} else PCptr++;
 				} else PCptr += 4;
 
-				if(Board->ThisTest->Code == SDI_TWELVE)
+				if (Board->ThisTest->Code == SDI_TWELVE)
 					SDIenabled = true;
-				if(Board->ThisTest->Code == ASYNC_PULSE){
-					switch( PortCount - (Board->latchPortCount) ){
-					case Port_1:
-						Async_Port1.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
-						break;
-					case Port_2:
-						Async_Port2.FilterEnabled = (Board->ThisTest->Options & 0x20);
- 						break;
-					case Port_3:
-						Async_Port3.FilterEnabled = (Board->ThisTest->Options & 0x20);
-						break;
-					case Port_4:
-						Async_Port4.FilterEnabled = (Board->ThisTest->Options & 0x20);
-						break;
-					case Port_5:
-						Async_Port5.FilterEnabled = (Board->ThisTest->Options & 0x20);
-						break;
-					case Port_6:
-						Async_Port6.FilterEnabled = (Board->ThisTest->Options & 0x20);
-						break;
-					case Port_7:
-						Async_Port7.FilterEnabled = (Board->ThisTest->Options & 0x20);
-						break;
-					case Port_8:
-						Async_Port8.FilterEnabled = (Board->ThisTest->Options & 0x20);
-						break;
-					case Port_9:
-						Async_Port9.FilterEnabled = (Board->ThisTest->Options & 0x20);
-						break;
+				if (Board->ThisTest->Code == ASYNC_PULSE) {
+					switch( PortCount - (Board->latchPortCount) ) {
+						case Port_1:
+							Async_Port1.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
+							break;
+						case Port_2:
+							Async_Port2.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
+						case Port_3:
+							Async_Port3.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
+						case Port_4:
+							Async_Port4.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
+						case Port_5:
+							Async_Port5.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
+						case Port_6:
+							Async_Port6.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
+						case Port_7:
+							Async_Port7.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
+						case Port_8:
+							Async_Port8.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
+						case Port_9:
+							Async_Port9.FilterEnabled = (Board->ThisTest->Options & 0x20);
+							break;
 					}
 				}
 			}
@@ -387,27 +392,5 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 	}
 	return true;
 }
-//	=================================================================================//
-
-
-//	=================================================================================//
-//void run422xTest(TboardConfig *Board, TprocessState * State) {
-//	if ( READ_BIT(Board->BSR, BOARD_INITIALISED) ) {
-//		if (CheckTestNumber(Board)) {
-//			LatchingSolenoidDriverTest(Board, Board->GlobalTestNum);
-//			CompareResults(Board, &CHval[Board->GlobalTestNum]);
-//			} else {
-//				TestComplete(Board);
-//				CurrentState = csIDLE;
-//				*State = psWaiting;
-//								}
-//	  	} else {
-//	  		initialiseTargetBoard();
-//	  		CurrentState = csInitialising;
-//	  		*State = psWaiting;
-//	  	  }
-//}
-
-//	=================================================================================//
 //	=================================================================================//
 //	=================================================================================//

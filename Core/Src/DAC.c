@@ -44,24 +44,29 @@ void set_ALL_DAC( uint16 * DACvalue) {
 	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
 	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_SET);
+	*DACvalue &= 0XFFF;
 	*DACvalue += 0xB000;	//OUTB Clear
 	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
 	HAL_GPIO_WritePin(DAC_CS1_GPIO_Port, DAC_CS1_Pin, GPIO_PIN_SET);
 	//DAC 2 set
+	*DACvalue &= 0XFFF;
 	*DACvalue += 0x3000;	//OUTA Clear
 	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
 	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_SET);
-	DACvalue = 0xB000;	//OUTB Clear
+	*DACvalue &= 0XFFF;
+	DACvalue += 0xB000;	//OUTB Clear
 	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
 	HAL_GPIO_WritePin(DAC_CS2_GPIO_Port, DAC_CS2_Pin, GPIO_PIN_SET);
 	//DAC 3 set
+	*DACvalue &= 0XFFF;
 	*DACvalue += 0x3000;	//OUTA Clear
 	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);
 	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_SET);
+	*DACvalue &= 0XFFF;
 	*DACvalue += 0xB000;	//OUTB Clear
 	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&DAC_SPI, &DACvalue, 2, 100);

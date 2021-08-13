@@ -119,10 +119,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-
-
- 	HAL_Init();
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -279,17 +276,13 @@ int main(void)
 			  sprintf(debugTransmitBuffer, "1V - Port 1");
 			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 
-			  sprintf(debugTransmitBuffer,"\n\n==========  Calibration Routine  ==========\n");
-			  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+			  printT("\n\n==========  Calibration Routine  ==========\n");
 			  Calibration();
 			  LCD_Clear();
 			  TestRig_Init();
 			  TestRig_MainMenu();
-			  sprintf(debugTransmitBuffer,"\n\n==========  Test Rig  ==========\n");
-			  CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			  HAL_UART_Transmit(&D_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-		  }
+			  printT("\n\n==========  Test Rig  ==========\n");
+			}
   }
 //=========================================================================================================//
 

@@ -16,18 +16,18 @@ Latch Port Input________|________/\/\/\______________OPAMP
 #ifndef INC_ADC_VARIABLES_H_
 #define INC_ADC_VARIABLES_H_
 
-#define ADC_R1 5000
-#define ADC_R2 5000
+#define ADC_R1 6200
+#define ADC_R2 5100
 #define ADC_R3 1000
 #define ADC_Rcurrent 3.3
 
-#define V_SOURCE 12.0
+#define V_SOURCE 15.25
 #define ADC_VREF 2.5
 #define ADC_RESOLUTION 4096
 #define ADC_MAX_INPUT_VOLTAGE ( ADC_VREF * ( (ADC_R2+ADC_R3) / ADC_R3 ) )
 
-#define LATCH_HIGH_VOLTAGE_THRESHOLD ( (V_SOURCE * 0.9) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH high voltage is above 90% of source voltage
-#define LATCH_LOW_VOLTAGE_THRESHOLD ( (V_SOURCE * 0.2 ) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH low voltage is below 10% of source voltage
+#define LATCH_HIGH_VOLTAGE_THRESHOLD ( (10 * 0.9) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH high voltage is above 90% of source voltage
+#define LATCH_LOW_VOLTAGE_THRESHOLD ( (10 * 0.2 ) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH low voltage is below 10% of source voltage
 
 
 // Input Voltages
@@ -47,8 +47,8 @@ Latch Port Input________|________/\/\/\______________OPAMP
 				   GND		 	 	 	 	 GND
 */
 
-#define INPUT_ADC_R1 5000
-#define INPUT_ADC_R2 4020
+#define INPUT_ADC_R1 6200
+#define INPUT_ADC_R2 5100
 #define INPUT_ADC_R3 1000
 #define INPUT_ADC_R4 100	//Not required for calculations
 #define MAX_SOURCE_VALUE ( (ADC_VREF * (INPUT_ADC_R2 + INPUT_ADC_R3) ) / INPUT_ADC_R3 )
