@@ -603,8 +603,17 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 						}
 						CLEAR_REG(Board->LatchTestPort);
 					}
-				if (SDIenabled)
+				if (SDIenabled) {
+					SET_BIT(huart6.Instance->CR1, USART_CR1_M);
+					SET_BIT(huart6.Instance->CR1, USART_CR1_PCE);
 					USART6->CR1 |= (USART_CR1_RXNEIE);
+				}
+				if (RS485enabled) {
+					CLEAR_BIT(huart6.Instance->CR1, USART_CR1_M);
+					CLEAR_BIT(huart6.Instance->CR1, USART_CR1_PCE);
+					USART6->CR1 |= (USART_CR1_RXNEIE);
+				}
+
 				if (Board->BoardType == b422x)
 					CurrentState = csSampling;
 				else

@@ -71,6 +71,7 @@
 	TportConfig asyncTest;
 	TportConfig asyncDigitalTest;
 	TportConfig sdi12Test;
+	TportConfig rs485Test;
 	TportConfig noTest;
 	TportConfig SampleTime;
 

@@ -100,6 +100,9 @@ float SDIMeasurement;
 typedef enum {SDSundef, SDSquery, SDSaddress, SDSc, SDSdPending, SDSd}TsdiState;
 TsdiState SDSstate;
 
+typedef enum {RSundef, RSquery, RSaddress, RSc, RSdPending, RSd} TrsState;
+TrsState RSstate;
+
 //Latch Variables
 uint16_t LatchCountTimer;
 uint8_t stableVoltageCount;

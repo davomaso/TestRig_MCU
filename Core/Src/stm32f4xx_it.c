@@ -1095,84 +1095,97 @@ void USART6_IRQHandler(void)
 	 * The routine will respond with the addres
 	 *
 	 */
-
-	uint16 UART6status = USART6->SR;
-	unsigned char UART6data = (USART6->DR & 0X7F);
-	if(UART6status & USART_ERROR_MASK){
-		SDSstate = SDSundef;
-	}
-	else if (UART6status & USART_SR_RXNE) {
-		if ( UART6data == '?' ) {
-			SDSstate = SDSquery;
-		} else if ( SDSstate == SDSundef ) {
-			if ( UART6data == (SDIAddress + 0x30) )
-				SDSstate = SDSaddress;
-			else
-				SDSstate = SDSundef;
-		} else if ( SDSstate == SDSaddress ) {
-			if ( UART6data == 'C' )
-				SDSstate = SDSc;
-			else if ( UART6data == 'D' )
-				SDSstate = SDSdPending;
-		} else if ( (UART6data == '0') && (SDSstate == SDSdPending) )
-				SDSstate = SDSd;
-		if (UART6data == '!') {
-			if ( SDSstate == SDSquery ) {
-					USART6->CR1 &= ~(USART_CR1_RE);
-						//Set Address
-					if ( SDI_Port1.Enabled ) {
-						SDI_Port1.Enabled = false;
-						SDIAddress = SDI_Port1.Address;
-						SDIMeasurement = SDI_Port1.setValue;
-					} else if ( SDI_Port2.Enabled ) {
-						SDI_Port2.Enabled = false;
-						SDIAddress = SDI_Port2.Address;
-						SDIMeasurement = SDI_Port2.setValue;
-					} else if ( SDI_Port3.Enabled ) {
-						SDI_Port3.Enabled = false;
-						SDIAddress = SDI_Port3.Address;
-						SDIMeasurement = SDI_Port3.setValue;
-					} else if ( SDI_Port4.Enabled ) {
-						SDI_Port4.Enabled = false;
-						SDIAddress = SDI_Port4.Address;
-						SDIMeasurement = SDI_Port4.setValue;
-					} else if ( SDI_Port5.Enabled ) {
-						SDI_Port5.Enabled = false;
-						SDIAddress = SDI_Port5.Address;
-						SDIMeasurement = SDI_Port5.setValue;
-					} else if ( SDI_Port6.Enabled ) {
-						SDI_Port6.Enabled = false;
-						SDIAddress = SDI_Port6.Address;
-						SDIMeasurement = SDI_Port6.setValue;
-					}
-					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_RESET);
-					sprintf(debugTransmitBuffer,"%d\x0D\x0A", (SDIAddress));
-					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), 10);
-					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
-					USART6->CR1 |= (USART_CR1_RE);
+	if (SDIenabled) {
+		uint16 UART6status = USART6->SR;
+		unsigned char UART6data = (USART6->DR & 0X7F);
+		if(UART6status & USART_ERROR_MASK){
+			SDSstate = SDSundef;
+		} else if (UART6status & USART_SR_RXNE) {
+			if ( UART6data == '?' ) {
+				SDSstate = SDSquery;
+			} else if ( SDSstate == SDSundef ) {
+				if ( UART6data == (SDIAddress + 0x30) )
+					SDSstate = SDSaddress;
+				else
 					SDSstate = SDSundef;
-				} else if ( SDSstate == SDSc ) {
-					USART6->CR1 &= ~(USART_CR1_RE); //					Return Time till sample
-					uns_ch *SDIrqMeasurements = "00001";
-					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_RESET);
-					sprintf(debugTransmitBuffer, "%d%s\x0D\x0A", (SDIAddress),SDIrqMeasurements);
-					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_SET);
-					USART6->CR1 |= (USART_CR1_RE);
-				} else if ( SDSstate == SDSd ) {
-					USART6->CR1 &= ~(USART_CR1_RE);//					Return Time till sample
-					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_RESET);
-					sprintf(debugTransmitBuffer, "%d+%f\x0D\x0A", (SDIAddress), SDIMeasurement);
-					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_SET);
-					USART6->CR1 |= (USART_CR1_RE);
+			} else if ( SDSstate == SDSaddress ) {
+				if ( UART6data == 'C' )
+					SDSstate = SDSc;
+				else if ( UART6data == 'D' )
+					SDSstate = SDSdPending;
+			} else if ( (UART6data == '0') && (SDSstate == SDSdPending) )
+					SDSstate = SDSd;
+			if (UART6data == '!') {
+				if ( SDSstate == SDSquery ) {
+						USART6->CR1 &= ~(USART_CR1_RE);
+							//Set Address
+						if ( SDI_Port1.Enabled ) {
+							SDI_Port1.Enabled = false;
+							SDIAddress = SDI_Port1.Address;
+							SDIMeasurement = SDI_Port1.setValue;
+						} else if ( SDI_Port2.Enabled ) {
+							SDI_Port2.Enabled = false;
+							SDIAddress = SDI_Port2.Address;
+							SDIMeasurement = SDI_Port2.setValue;
+						} else if ( SDI_Port3.Enabled ) {
+							SDI_Port3.Enabled = false;
+							SDIAddress = SDI_Port3.Address;
+							SDIMeasurement = SDI_Port3.setValue;
+						} else if ( SDI_Port4.Enabled ) {
+							SDI_Port4.Enabled = false;
+							SDIAddress = SDI_Port4.Address;
+							SDIMeasurement = SDI_Port4.setValue;
+						} else if ( SDI_Port5.Enabled ) {
+							SDI_Port5.Enabled = false;
+							SDIAddress = SDI_Port5.Address;
+							SDIMeasurement = SDI_Port5.setValue;
+						} else if ( SDI_Port6.Enabled ) {
+							SDI_Port6.Enabled = false;
+							SDIAddress = SDI_Port6.Address;
+							SDIMeasurement = SDI_Port6.setValue;
+						}
+						HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_RESET);
+						sprintf(debugTransmitBuffer,"%d\x0D\x0A", (SDIAddress));
+						HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), 10);
+						HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
+						USART6->CR1 |= (USART_CR1_RE);
+						SDSstate = SDSundef;
+					} else if ( SDSstate == SDSc ) {
+						USART6->CR1 &= ~(USART_CR1_RE); //					Return Time till sample
+						uns_ch *SDIrqMeasurements = "00001";
+						HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_RESET);
+						sprintf(debugTransmitBuffer, "%d%s\x0D\x0A", (SDIAddress),SDIrqMeasurements);
+						HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+						HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_SET);
+						USART6->CR1 |= (USART_CR1_RE);
+					} else if ( SDSstate == SDSd ) {
+						USART6->CR1 &= ~(USART_CR1_RE);//					Return Time till sample
+						HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_RESET);
+						sprintf(debugTransmitBuffer, "%d+%f\x0D\x0A", (SDIAddress), SDIMeasurement);
+						HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+						HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin,GPIO_PIN_SET);
+						USART6->CR1 |= (USART_CR1_RE);
 
-				} else
-					SDSstate = SDSundef;
-//				sampleTime = 15;
-//				sampleCount = 0;
-			}
+					} else
+						SDSstate = SDSundef;
+				}
+		}
 	}
+	if (RS485enabled) {
+		uint16 UART6status = USART6->SR;
+		uns_ch UART6data = (USART6->DR & 0X7F);
+		if(UART6status & USART_ERROR_MASK){
+			RSstate = RSundef;
+		} else if (UART6status & USART_SR_RXNE) {
+				uns_ch UART6data = (USART6->DR & 0X7F);
+				if ( (UART6data == '9') && (RSstate == RSundef) ) {
+					RSstate = RSquery;
+				} else if ( (UART6data == '9') && (RSstate == RSquery) ) {
+
+				}
+		}
+	}
+
   /* USER CODE END USART6_IRQn 0 */
   HAL_UART_IRQHandler(&huart6);
   /* USER CODE BEGIN USART6_IRQn 1 */

@@ -64,6 +64,12 @@ void ConfigInit() {
 	sdi12Test.Channels = 1;
 	sdi12Test.Options = 0;
 	sdi12Test.GateTime = 0;
+
+	//RS485 Test
+	rs485Test.Code = AQUASPY;
+	rs485Test.Channels = 0;
+	rs485Test.Options = 1;
+	rs485Test.GateTime = 0;
 	//No Test
 	noTest.Code = NOTEST;
 	noTest.Channels = NOTEST;
@@ -312,6 +318,8 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 
 				if (Board->ThisTest->Code == SDI_TWELVE)
 					SDIenabled = true;
+				if (Board->ThisTest->Code == AQUASPY)
+					RS485enabled = true;
 				if (Board->ThisTest->Code == ASYNC_PULSE) {
 					switch( PortCount - (Board->latchPortCount) ) {
 						case Port_1:

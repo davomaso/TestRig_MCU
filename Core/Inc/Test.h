@@ -25,7 +25,7 @@ void TestConfig427x(TboardConfig *);
 float CHval[10][16];
 
 _Bool SDIenabled;
-
+_Bool RS485enabled;
 
 
 #endif /* INC_TEST_H_ */
