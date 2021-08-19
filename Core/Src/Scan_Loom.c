@@ -1,8 +1,8 @@
 #include <main.h>
 #include "interogate_project.h"
 
-void scanLoom(TboardConfig *Board){
-		//First Wire
+void scanLoom(TboardConfig *Board) {
+	uint8 PrevLoomState;
 	CheckLoom = false;
 	PrevLoomState = LoomState;
 	LoomState = 0x00;
@@ -11,16 +11,14 @@ void scanLoom(TboardConfig *Board){
 		delay_us(50); //Wait for system to become stable
 		if(!HAL_GPIO_ReadPin(Loom_Sel_GPIO_Port, Loom_Sel_Pin)){
 			LoomState |= (1 << (i));
-		} else {
-			LoomState |= (0 << (i));
 		}
-	}
-	if(LoomState != PrevLoomState || LoomState == bNone){
+	}	// ###### add loom checking to occur during testing
+	if(LoomState != PrevLoomState) {
 		LCD_Clear();
 		switch(LoomState){
 		case 0:
-			LCD_printf("Connect A Loom",1,0);
-			printT("Connect A Loom...\n");
+			LCD_printf("Connect Loom",2,4);
+			printT("Connect Loom...\n");
 			break;
 		case 1:
 			Board->BoardType = b935x;
@@ -54,14 +52,10 @@ void scanLoom(TboardConfig *Board){
 			break;
 		default:
 			Board->BoardType = bNone;
-			LCD_printf("Connect A Loom",1,0);
-			printT("Connect A Loom...\n");
+			LCD_printf("Unknown Loom",1,0);
+			printT("Unknown Loom...\n");
 		}
-		if(strlen(previousTestBuffer) > 1){
-			LCD_setCursor(2, 0);
-			LCD_displayString(&previousTestBuffer[0], strlen(previousTestBuffer));
-		}
-		LCD_printf("   1 - Begin Test ",4,0);
+		LCD_printf("   1 - Begin Test ",4,0);	// change wording to be dependant on state and loom connected
 		printT("Press 1 - Begin Test \n");
 	}
 

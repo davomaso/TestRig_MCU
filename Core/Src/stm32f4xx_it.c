@@ -102,8 +102,6 @@ void HardFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-	  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-	  HAL_Delay(100);
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
 }
@@ -169,6 +167,16 @@ void SVC_Handler(void)
 /**
   * @brief This function handles Debug monitor.
   */
+void DebugMon_Handler(void)
+{
+  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+
+  /* USER CODE END DebugMonitor_IRQn 0 */
+  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+
+  /* USER CODE END DebugMonitor_IRQn 1 */
+}
+
 /**
   * @brief This function handles Pendable request for system service.
   */
@@ -231,21 +239,25 @@ void TIM1_UP_TIM10_IRQHandler(void)
 			HAL_ADC_PollForConversion(&hadc1, 100);
 			calibrateADCval.average = HAL_ADC_GetValue(&hadc1);
 			HAL_ADC_Stop(&hadc1);
-
-			if ( ( (BoardConnected.BoardType == b402x) || (BoardConnected.BoardType == b401x) ) && (calibrateADCval.average >= 3500) ) {
-				if (!(--CalibrationCountdown)  && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
-					TargetBoardCalibration_Current(&BoardConnected);
-					}
-			} else if (  (calibrateADCval.average <= 500) ) {
+//			sprintf(debugTransmitBuffer, "%d", calibrateADCval.average);
+//			printT(&debugTransmitBuffer);
+			if (BoardConnected.BoardType == b401x || BoardConnected.BoardType == b402x) {
+				if ( ( (BoardConnected.BoardType == b401x) ) && (calibrateADCval.average >= 3500) ) {
+					if (!(--CalibrationCountdown)  && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
+						TargetBoardCalibration_Current(&BoardConnected);
+						}
+				} else if ((BoardConnected.BoardType == b402x) && calibrateADCval.average <= 500) {
+					if (!(--CalibrationCountdown)  && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
+						TargetBoardCalibration_Current(&BoardConnected);
+						}
+				} else
+					CalibrationCountdown = 50;
+			} else if ((calibrateADCval.average <= 500) ) {
 				if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
 					TargetBoardCalibration_Current(&BoardConnected);
 					}
-			} else {
-				if (BoardConnected.BoardType == b401x)
-					CalibrationCountdown = 50;
-				else
+			} else
 					CalibrationCountdown = 10;
-			}
 		}
 	}
 
@@ -452,10 +464,12 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		   * the 0x18 Command to fetch results
 		   * Set the processState to complete so that the next step can begin
 		   */
-			  if(sampleCount > sampleTime) {
+			  if(sampleCount >= sampleTime) {
 				  samplesUploading = false;
 				  samplesUploaded = true;
 				  Vuser.average = Vuser.total / sampleCount;
+				  Vuser.average *= (15.25/4096);
+				  fuseBuffer[BoardConnected.GlobalTestNum] = Vuser.average;
 				  sampleCount = 0;
 				  Vuser.total = 0;
 			  }	else {
@@ -498,16 +512,6 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 /**
   * @brief This function handles USART2 global interrupt.
   */
-void DebugMon_Handler(void)
-{
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
-
-  /* USER CODE END DebugMonitor_IRQn 1 */
-}
-
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
@@ -585,7 +589,10 @@ void USART2_IRQHandler(void)
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
 			ReceiveState = RxWaiting;
-			setTimeOut(1500);
+			if (CurrentState == csCalibrating)
+				setTimeOut(4000);
+			else
+				setTimeOut(1500);
 
 		} else {
 			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
@@ -658,271 +665,38 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
    * on the digital ports of the target board.
    */
   //LED Toggle
-  if(Async_Port1.Active)		//max pulse count == 20
-    {
-  	  if(Async_Port1.fcount > 0){
-  		  if(HAL_GPIO_ReadPin(ASYNC1_GPIO_Port, ASYNC1_Pin)){
-  			  if(!(--Async_Port1.fcount)){
-  				  Async_Port1.scount = 20;
-  				  Async_Port1.PulseState ^= 1;
-  			  }
-  			  HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
-  		  } else
-  			  HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_SET);
-  	  }else if(Async_Port1.PulseState){
-  		  if(!(--Async_Port1.scount)){
-  			  Async_Port1.fcount=5;
-  			  HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
-  			  Async_Port1.Active =  --Async_Port1.PulseCount;
-  		  }
-  		  if(HAL_GPIO_ReadPin(ASYNC1_GPIO_Port, ASYNC1_Pin))
-  			  HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
-  	  }else{
-  		  if(!(--Async_Port1.scount)){
-  			  Async_Port1.fcount = 5;
-  			  HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
-  		  }
-  		  else if(!HAL_GPIO_ReadPin(ASYNC1_GPIO_Port, ASYNC1_Pin)){
-  			  HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_SET);
-  		  }
-  	  }
-    }
-  if(Async_Port2.Active)		//max pulse count == 20
-  {
-	  if(Async_Port2.fcount > 0){
-		  if(HAL_GPIO_ReadPin(ASYNC2_GPIO_Port, ASYNC2_Pin)){
-			  if(!(--Async_Port2.fcount)){
-				  Async_Port2.scount = 20;
-				  Async_Port2.PulseState ^= 1;
-			  }
-			  HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
-		  } else
-			  HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_SET);
-	  }else if(Async_Port2.PulseState){
-		  if(!(--Async_Port2.scount)){
-			  Async_Port2.fcount=5;
-			  HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
-			  Async_Port2.Active =  --Async_Port2.PulseCount;
-		  }
-		  if(HAL_GPIO_ReadPin(ASYNC2_GPIO_Port, ASYNC2_Pin))
-			  HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
-	  }else{
-		  if(!(--Async_Port2.scount)){
-			  Async_Port2.fcount = 5;
-			  HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
-		  }
-		  else if(!HAL_GPIO_ReadPin(ASYNC2_GPIO_Port, ASYNC2_Pin)){
-			  HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_SET);
-		  }
-	  }
-  }
-  if(Async_Port3.Active)		//max pulse count == 20
-    {
-  	  if(Async_Port3.fcount > 0){
-  		  if(HAL_GPIO_ReadPin(ASYNC3_GPIO_Port, ASYNC3_Pin)){
-  			  if(!(--Async_Port3.fcount)){
-  				  Async_Port3.scount = 20;
-  				  Async_Port3.PulseState ^= 1;
-  			  }
-  			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
-  		  } else
-  			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_SET);
-  	  }else if(Async_Port3.PulseState){
-  		  if(!(--Async_Port3.scount)){
-  			  Async_Port3.fcount=5;
-  			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
-  			  Async_Port3.Active =  --Async_Port3.PulseCount;
-  		  }
-  		  if(HAL_GPIO_ReadPin(ASYNC3_GPIO_Port, ASYNC3_Pin))
-  			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
-  	  }else{
-  		  if(!(--Async_Port3.scount)){
-  			  Async_Port3.fcount = 5;
-  			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
-  		  }
-  		  else if(!HAL_GPIO_ReadPin(ASYNC3_GPIO_Port, ASYNC3_Pin)){
-  			  HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_SET);
-  		  }
-  	  }
-    }
-  if(Async_Port4.Active)		//max pulse count == 20
-  {
-	  if(Async_Port4.fcount > 0){
-		  if(HAL_GPIO_ReadPin(ASYNC4_GPIO_Port, ASYNC4_Pin)){
-			  if(!(--Async_Port4.fcount)){
-				  Async_Port4.scount = 20;
-				  Async_Port4.PulseState ^= 1;
-			  }
-			  HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
-		  } else
-			  HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_SET);
-	  }else if(Async_Port4.PulseState){
-		  if(!(--Async_Port4.scount)){
-			  Async_Port4.fcount=5;
-			  HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
-			  Async_Port4.Active =  --Async_Port4.PulseCount;
-		  }
-		  if(HAL_GPIO_ReadPin(ASYNC4_GPIO_Port, ASYNC2_Pin))
-			  HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
-	  }else{
-		  if(!(--Async_Port4.scount)){
-			  Async_Port4.fcount = 5;
-			  HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
-		  }
-		  else if(!HAL_GPIO_ReadPin(ASYNC4_GPIO_Port, ASYNC4_Pin)){
-			  HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_SET);
-		  }
-	  }
-  }
-  if(Async_Port5.Active)		//max pulse count == 20
-    {
-  	  if(Async_Port5.fcount > 0){
-  		  if(HAL_GPIO_ReadPin(ASYNC5_GPIO_Port, ASYNC5_Pin)){
-  			  if(!(--Async_Port5.fcount)){
-  				  Async_Port5.scount = 20;
-  				  Async_Port5.PulseState ^= 1;
-  			  }
-  			  HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
-  		  } else
-  			  HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_SET);
-  	  }else if(Async_Port5.PulseState){
-  		  if(!(--Async_Port5.scount)){
-  			  Async_Port5.fcount=5;
-  			  HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
-  			  Async_Port5.Active =  --Async_Port5.PulseCount;
-  		  }
-  		  if(HAL_GPIO_ReadPin(ASYNC5_GPIO_Port, ASYNC5_Pin))
-  			  HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
-  	  }else{
-  		  if(!(--Async_Port5.scount)){
-  			  Async_Port5.fcount = 5;
-  			  HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
-  		  }
-  		  else if(!HAL_GPIO_ReadPin(ASYNC5_GPIO_Port, ASYNC5_Pin)){
-  			  HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_SET);
-  		  }
-  	  }
-    }
-  if(Async_Port6.Active)		//max pulse count == 20
-  {
-	  if(Async_Port6.fcount > 0){
-		  if(HAL_GPIO_ReadPin(ASYNC6_GPIO_Port, ASYNC6_Pin)){
-			  if(!(--Async_Port6.fcount)){
-				  Async_Port6.scount = 20;
-				  Async_Port6.PulseState ^= 1;
-			  }
-			  HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
-		  } else
-			  HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_SET);
-	  }else if(Async_Port6.PulseState){
-		  if(!(--Async_Port6.scount)){
-			  Async_Port6.fcount=5;
-			  HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
-			  Async_Port6.Active =  --Async_Port6.PulseCount;
-		  }
-		  if(HAL_GPIO_ReadPin(ASYNC6_GPIO_Port, ASYNC6_Pin))
-			  HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
-	  }else{
-		  if(!(--Async_Port6.scount)){
-			  Async_Port6.fcount = 5;
-			  HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
-		  }
-		  else if(!HAL_GPIO_ReadPin(ASYNC6_GPIO_Port, ASYNC6_Pin)){
-			  HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_SET);
-		  }
-	  }
-  }
-  if(Async_Port7.Active)		//max pulse count == 20
-  {
-	  if(Async_Port7.fcount > 0){
-		  if(HAL_GPIO_ReadPin(ASYNC7_GPIO_Port, ASYNC7_Pin)){
-			  if(!(--Async_Port7.fcount)){
-				  Async_Port7.scount = 20;
-				  Async_Port7.PulseState ^= 1;
-			  }
-			  HAL_GPIO_WritePin(ASYNC7_GPIO_Port, ASYNC7_Pin, GPIO_PIN_RESET);
-		  } else
-			  HAL_GPIO_WritePin(ASYNC7_GPIO_Port, ASYNC7_Pin, GPIO_PIN_SET);
-	  }else if(Async_Port7.PulseState){
-		  if(!(--Async_Port7.scount)){
-			  Async_Port7.fcount=5;
-			  HAL_GPIO_WritePin(ASYNC7_GPIO_Port, ASYNC7_Pin, GPIO_PIN_RESET);
-			  Async_Port7.Active =  --Async_Port7.PulseCount;
-		  }
-		  if(HAL_GPIO_ReadPin(ASYNC7_GPIO_Port, ASYNC7_Pin))
-			  HAL_GPIO_WritePin(ASYNC7_GPIO_Port, ASYNC7_Pin, GPIO_PIN_RESET);
-	  }else{
-		  if(!(--Async_Port7.scount)){
-			  Async_Port7.fcount = 5;
-			  HAL_GPIO_WritePin(ASYNC7_GPIO_Port, ASYNC7_Pin, GPIO_PIN_RESET);
-		  }
-		  else if(!HAL_GPIO_ReadPin(ASYNC7_GPIO_Port, ASYNC7_Pin)){
-			  HAL_GPIO_WritePin(ASYNC7_GPIO_Port, ASYNC7_Pin, GPIO_PIN_SET);
-		  }
-	  }
-  }
-  if(Async_Port8.Active)		//max pulse count == 20
-  {
-	  if(Async_Port8.fcount > 0){
-		  if(HAL_GPIO_ReadPin(ASYNC8_GPIO_Port, ASYNC8_Pin)){
-			  if(!(--Async_Port8.fcount)){
-				  Async_Port8.scount = 20;
-				  Async_Port8.PulseState ^= 1;
-			  }
-			  HAL_GPIO_WritePin(ASYNC8_GPIO_Port, ASYNC8_Pin, GPIO_PIN_RESET);
-		  } else
-			  HAL_GPIO_WritePin(ASYNC8_GPIO_Port, ASYNC8_Pin, GPIO_PIN_SET);
-	  }else if(Async_Port8.PulseState){
-		  if(!(--Async_Port8.scount)){
-			  Async_Port8.fcount=5;
-			  HAL_GPIO_WritePin(ASYNC8_GPIO_Port, ASYNC8_Pin, GPIO_PIN_RESET);
-			  Async_Port8.Active =  --Async_Port8.PulseCount;
-		  }
-		  if(HAL_GPIO_ReadPin(ASYNC8_GPIO_Port, ASYNC8_Pin))
-			  HAL_GPIO_WritePin(ASYNC8_GPIO_Port, ASYNC8_Pin, GPIO_PIN_RESET);
-	  }else{
-		  if(!(--Async_Port8.scount)){
-			  Async_Port8.fcount = 5;
-			  HAL_GPIO_WritePin(ASYNC8_GPIO_Port, ASYNC8_Pin, GPIO_PIN_RESET);
-		  }
-		  else if(!HAL_GPIO_ReadPin(ASYNC8_GPIO_Port, ASYNC8_Pin)){
-			  HAL_GPIO_WritePin(ASYNC8_GPIO_Port, ASYNC8_Pin, GPIO_PIN_SET);
-		  }
-	  }
-  }
-  if(Async_Port9.Active)		//max pulse count == 20
-  {
-	  if(Async_Port9.fcount > 0){
-		  if(HAL_GPIO_ReadPin(ASYNC9_GPIO_Port, ASYNC9_Pin)){
-			  if(!(--Async_Port9.fcount)){
-				  Async_Port9.scount = 20;
-				  Async_Port9.PulseState ^= 1;
-			  }
-			  HAL_GPIO_WritePin(ASYNC9_GPIO_Port, ASYNC9_Pin, GPIO_PIN_RESET);
-		  } else
-			  HAL_GPIO_WritePin(ASYNC9_GPIO_Port, ASYNC9_Pin, GPIO_PIN_SET);
-	  }else if(Async_Port9.PulseState){
-		  if(!(--Async_Port9.scount)){
-			  Async_Port9.fcount=5;
-			  HAL_GPIO_WritePin(ASYNC9_GPIO_Port, ASYNC9_Pin, GPIO_PIN_RESET);
-			  Async_Port9.Active =  --Async_Port9.PulseCount;
-		  }
-		  if(HAL_GPIO_ReadPin(ASYNC9_GPIO_Port, ASYNC9_Pin))
-			  HAL_GPIO_WritePin(ASYNC9_GPIO_Port, ASYNC9_Pin, GPIO_PIN_RESET);
-	  }else{
-		  if(!(--Async_Port9.scount)){
-			  Async_Port9.fcount = 5;
-			  HAL_GPIO_WritePin(ASYNC9_GPIO_Port, ASYNC9_Pin, GPIO_PIN_RESET);
-		  }
-		  else if(!HAL_GPIO_ReadPin(ASYNC9_GPIO_Port, ASYNC9_Pin)){
-			  HAL_GPIO_WritePin(ASYNC9_GPIO_Port, ASYNC9_Pin, GPIO_PIN_SET);
-		  }
-	  }
-  }
+  for (uint8 i = Port_1;i <= Port_9; i++ ) {
+	  if(Port[i].Async.Active) {//max pulse count == 20
+	    	  if(Port[i].Async.fcount > 0) {
+	    		  if(HAL_GPIO_ReadPin(Port[i].Async.Port, Port[i].Async.Pin)) {
+	    			  if(!(--Port[i].Async.fcount)) {
+	    				  Port[i].Async.scount = 20;
+	    				  Port[i].Async.PulseState ^= 1;
+	    			  }
+	    			  HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
+	    		  } else
+	    			  HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_SET);
+	    	  } else if(Port[i].Async.PulseState) {
+	    		  if(!(--Port[i].Async.scount)) {
+	    			  Port[i].Async.fcount=5;
+	    			  HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
+	    			  Port[i].Async.Active =  --Port[i].Async.PulseCount;
+	    		  }
+	    		  if(HAL_GPIO_ReadPin(Port[i].Async.Port, Port[i].Async.Pin))
+	    			  HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
+	    	  } else {
+	    		  if (!(--Port[i].Async.scount)) {
+	    			  Port[i].Async.fcount = 5;
+	    			  HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
+	    		  } else if (!HAL_GPIO_ReadPin(Port[i].Async.Port, Port[i].Async.Pin)) {
+	    			  HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_SET);
+	    		  }
+	    	  }
+	      }
 
-  if(!Async_Port1.Active && !Async_Port2.Active && !Async_Port3.Active && !Async_Port4.Active && !Async_Port5.Active && !Async_Port6.Active && !Async_Port7.Active && !Async_Port8.Active && !Async_Port9.Active)//
+  if(!Port[Port_1].Async.Active && !Port[Port_2].Async.Active && !Port[Port_3].Async.Active && !Port[Port_4].Async.Active && !Port[Port_5].Async.Active && !Port[Port_6].Async.Active && !Port[Port_7].Async.Active && !Port[Port_8].Async.Active && !Port[Port_9].Async.Active)//
 	  AsyncComplete = true;
-
+  }
   /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 1 */
 }
 
@@ -1119,30 +893,12 @@ void USART6_IRQHandler(void)
 				if ( SDSstate == SDSquery ) {
 						USART6->CR1 &= ~(USART_CR1_RE);
 							//Set Address
-						if ( SDI_Port1.Enabled ) {
-							SDI_Port1.Enabled = false;
-							SDIAddress = SDI_Port1.Address;
-							SDIMeasurement = SDI_Port1.setValue;
-						} else if ( SDI_Port2.Enabled ) {
-							SDI_Port2.Enabled = false;
-							SDIAddress = SDI_Port2.Address;
-							SDIMeasurement = SDI_Port2.setValue;
-						} else if ( SDI_Port3.Enabled ) {
-							SDI_Port3.Enabled = false;
-							SDIAddress = SDI_Port3.Address;
-							SDIMeasurement = SDI_Port3.setValue;
-						} else if ( SDI_Port4.Enabled ) {
-							SDI_Port4.Enabled = false;
-							SDIAddress = SDI_Port4.Address;
-							SDIMeasurement = SDI_Port4.setValue;
-						} else if ( SDI_Port5.Enabled ) {
-							SDI_Port5.Enabled = false;
-							SDIAddress = SDI_Port5.Address;
-							SDIMeasurement = SDI_Port5.setValue;
-						} else if ( SDI_Port6.Enabled ) {
-							SDI_Port6.Enabled = false;
-							SDIAddress = SDI_Port6.Address;
-							SDIMeasurement = SDI_Port6.setValue;
+						for (uint8 i = Port_1; i <= Port_6;i++) {
+							if (Port[i].Sdi.Enabled) {
+								Port[i].Sdi.Enabled = false;
+								SDIAddress = Port[i].Sdi.Address;
+								SDIMeasurement = Port[i].Sdi.setValue;
+							}
 						}
 						HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_RESET);
 						sprintf(debugTransmitBuffer,"%d\x0D\x0A", (SDIAddress));
@@ -1178,11 +934,31 @@ void USART6_IRQHandler(void)
 			RSstate = RSundef;
 		} else if (UART6status & USART_SR_RXNE) {
 				uns_ch UART6data = (USART6->DR & 0X7F);
-				if ( (UART6data == '9') && (RSstate == RSundef) ) {
-					RSstate = RSquery;
-				} else if ( (UART6data == '9') && (RSstate == RSquery) ) {
-
-				}
+				if (UART6data == '\r') {
+					if (RSstate == RSundef)
+						RSstate = RSquery;
+					else if (RSstate == RSM)
+						RSstate = RSdPending;
+				} else if (UART6data == '\n') {
+					if (RSstate == RSquery)
+						RSstate = RS9pending;
+					else if (RSstate == RSdPending)
+						RSstate = RSd;
+				} else if ( UART6data == '9') {
+					if (RSstate == RS9pending)
+						RSstate = RS9;
+					else if (RSstate == RS9)
+						RSstate = RSMpending;
+				} else if (UART6data == 'M' && RSstate == RSMpending)
+					RSstate = RSM;
+		}
+		if (RSstate == RSd) {
+			//Put the RS485 data in here
+			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_SET);
+			sprintf(RS485buffer, "1,1,%.3f,2,%.3f,3,%.3f,4,%.3f,5,%.3f,6,%.3f,7,%.3f,8,%.3f,9,%.3f\r\n",	//
+					RS_SENSOR_1,RS_SENSOR_2,RS_SENSOR_3, RS_SENSOR_4, RS_SENSOR_5, RS_SENSOR_6, RS_SENSOR_7, RS_SENSOR_8, RS_SENSOR_9);
+			HAL_UART_Transmit(&SDI_UART, &RS485buffer, strlen(RS485buffer), HAL_MAX_DELAY);
+			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 		}
 	}
 

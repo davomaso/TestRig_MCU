@@ -61,5 +61,4 @@ void LatchTestInit() {
 	LatchPortB.HighPulseWidth = 0;
 	LatchPortB.lowVoltage = 4096.0;
 	LatchPortB.LowPulseWidth = 0;
-
 }

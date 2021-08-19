@@ -119,7 +119,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -127,7 +127,6 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
-
 
   /* USER CODE BEGIN SysInit */
 
@@ -153,11 +152,10 @@ int main(void)
   MX_TIM11_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_Delay(50);
-  HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
+//  HAL_Delay(50); //I2C delay
   HAL_I2C_Init(&hi2c1);
   LCD_init();
-  ChangeCharacterSet('A');
+  ChangeCharacterSet('A');	//Character set A for Progress Bar
 
   TestRig_Init();
   SDfileInit();
@@ -174,19 +172,21 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 //=========================================================================================================//
-	  if (ProcessState == psComplete) {
-		  retryCount = 0;
-	  }
-//=========================================================================================================//
-
-
-//=========================================================================================================//
 	  /*
 	   * When a process is complete, via either a response from the target board or a timeout the system
 	   * will return here to continue with the testing procedure, resetting the current state and resetting
 	   * the process state to waiting.
 	   */
 	  	    switch(CurrentState) {
+	  	    	case csIDLE:
+  	        			handleIdle(&BoardConnected, &ProcessState);
+  	        		break;
+	  	    	case csSolarCharger:
+	  	    			handleSolarCharger(&BoardConnected, &ProcessState);
+					break;
+	  	    	case csInputVoltage:
+	  	    			handleInputVoltage(&BoardConnected, &ProcessState);
+	  	    		break;
 	  	    	case csInitialising:
 	  	    		// Following the testing procedure this will configure the baord to be placed into stock
 	  	    			handleInitialising(&BoardConnected, &ProcessState);
@@ -224,9 +224,7 @@ int main(void)
 	  	        case csSerialise:
 	  	        		handleSerialise(&BoardConnected, &ProcessState);
 	  	        	break;
-	  	        case csIDLE:
-	  	        		handleIdle(&BoardConnected, &ProcessState);
-	  	        	break;
+
 	  	    }
 //=========================================================================================================//
 
@@ -249,40 +247,6 @@ int main(void)
 	  	}
 //=========================================================================================================//
 
-
-//=========================================================================================================//
-	  	if ((strlen(previousTestBuffer) > 0) && (CurrentState == csIDLE) ) {
-		  	//Display previous Test results
-	  	}
-//=========================================================================================================//
-
-
-//=========================================================================================================//
-		  	  //Calibration Routine
-		  if((KP_7.Pressed && KP_9.Pressed) && (CurrentState == csIDLE) && (ProcessState == psWaiting)){
-			  KP_7.Count = KP_7.Pressed = 0;
-			  KP_9.Count = KP_9.Pressed = 0;
-
-			  LCD_Clear();
-			  LCD_setCursor(1, 6);
-			  sprintf(debugTransmitBuffer,"Test Rig");
-			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-			  LCD_setCursor(2, 0);
-			  sprintf(debugTransmitBuffer, "Calibrate Test Rig");
-			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-			  LCD_setCursor(3, 5);
-			  sprintf(debugTransmitBuffer, "1V - Port 1");
-			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-			  printT("\n\n==========  Calibration Routine  ==========\n");
-			  Calibration();
-			  LCD_Clear();
-			  TestRig_Init();
-			  TestRig_MainMenu();
-			  printT("\n\n==========  Test Rig  ==========\n");
-			}
   }
 //=========================================================================================================//
 
@@ -448,8 +412,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 16;
-
+  hsd.Init.ClockDiv = 2;
   /* USER CODE BEGIN SDIO_Init 2 */
 
   /* USER CODE END SDIO_Init 2 */
@@ -896,7 +859,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LED1_Pin|LED2_Pin|DAC_CS3_Pin|DAC_CS2_Pin
-                          |DAC_CS1_Pin, GPIO_PIN_RESET);
+                          |DAC_CS1_Pin|SOLAR_CH_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOG, MUX_WRodd2_Pin|MUX_WReven2_Pin|ASYNC3_Pin|ASYNC4_Pin
@@ -938,8 +901,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED1_Pin DAC_CS3_Pin DAC_CS2_Pin DAC_CS1_Pin */
-  GPIO_InitStruct.Pin = LED1_Pin|DAC_CS3_Pin|DAC_CS2_Pin|DAC_CS1_Pin;
+  /*Configure GPIO pins : LED1_Pin DAC_CS3_Pin DAC_CS2_Pin DAC_CS1_Pin
+                           SOLAR_CH_EN_Pin */
+  GPIO_InitStruct.Pin = LED1_Pin|DAC_CS3_Pin|DAC_CS2_Pin|DAC_CS1_Pin
+                          |SOLAR_CH_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

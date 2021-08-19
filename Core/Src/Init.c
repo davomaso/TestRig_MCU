@@ -15,51 +15,41 @@ void TestRig_Init() {
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 
 	LCD_CursorOn_Off(false);
-	LCD_printf("      Test Rig      ", 1, 0);
-
+	LCD_printf("Test Rig      ", 1, 0);
+	sprintf(&lcdBuffer, "Firmware: v%.1f", FIRMWARE_VERSION);
+	LCD_printf(&lcdBuffer, 2, 0);
 	Para[0] = 0;
 	Paralen = 0;
 
-	ProcessState = psWaiting;
+	ProcessState = psInitalisation;
 	CurrentState = csIDLE;
 	ReceiveState = RxWaiting;
 
 	UART2_RecPos = 0;
 	samplesUploading = false;
 
+	HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
 	//Set DAC to zero
 	reset_ALL_DAC();
 	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_GPIO_Port, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(MUX_EN_GPIO_Port, MUX_EN_Pin, GPIO_PIN_SET);
 	reset_ALL_MUX();
 
-	Async_Port1.Active = false;
-	Async_Port2.Active = false;
-	Async_Port3.Active = false;
-	Async_Port4.Active = false;
-	Async_Port5.Active = false;
-	Async_Port6.Active = false;
-	Async_Port7.Active = false;
-	Async_Port8.Active = false;
-	Async_Port9.Active = false;
-
-	Port1.lowItestComplete = false;
-	Port2.lowItestComplete = false;
-	Port3.lowItestComplete = false;
-	Port4.lowItestComplete = false;
-	Port5.lowItestComplete = false;
-	Port6.lowItestComplete = false;
-
-
-	HAL_TIM_Base_Start_IT(&htim6);
-	HAL_TIM_Base_Start_IT(&htim7);
-	HAL_TIM_Base_Start_IT(&htim10);
-	HAL_TIM_Base_Start_IT(&htim14);
-	HAL_TIM_Base_Start_IT(&htim11);
+	ASYNCinit();
+	SDIinit();
+	for (uint8 i = Port_1; i <= Port_9;i++){
+		Port[i].Async.Active = false;
+		if (i <= Port_6)
+			Port[i].lowItestComplete = false;
+	}
+	HAL_TIM_Base_Start_IT(&htim6); 	// LED blink, Scan Loom timer
+	HAL_TIM_Base_Start_IT(&htim7);	// Scan keypad timer
+	HAL_TIM_Base_Start_IT(&htim10);	// Calibration & Latch test timer
+	HAL_TIM_Base_Start_IT(&htim11);	// Timeout, Input/Solar Voltage, Sampling timer
+	HAL_TIM_Base_Start_IT(&htim14);	// Async Timer
 
 	LoomChecking = true;
-	LoomState = bNone;
-	PrevLoomState = bNone;
+	LoomState = 0xFF; // Ensure that checkloom() initialises LCD first iteration
 
 	timeOutCount = 0;
 	timeOutEn = false;
@@ -70,13 +60,13 @@ void initialiseTargetBoard(TboardConfig * Board) {
 
 	uns_ch Command;
 	Command = 0xCC;
-	SetPara(Board, Command);
+	Para[0] = 0x49;
+	Paralen = 1;
 	communication_array(Command, &Para[0], Paralen);
 }
 
 void interrogateTargetBoard() {
 	LCD_printf("   Interrogating    ",2,0);
-
 	uns_ch Command;
 	Command = 0x10;
 	communication_arraySerial(Command, 0, 0);
@@ -166,3 +156,28 @@ uint8 getCurrentVersion(TloomConnected Board) {
 	}
 	return 255;
 }
+
+void SDIinit() {
+	Port[Port_1].Sdi.setValue = 7.064;
+	Port[Port_2].Sdi.setValue = 9.544;
+	Port[Port_3].Sdi.setValue = 4.408;
+	Port[Port_4].Sdi.setValue = 6.515;
+	Port[Port_5].Sdi.setValue = 5.892;
+	Port[Port_6].Sdi.setValue = 6.922;
+}
+
+void ASYNCinit() {
+	Port[Port_1].Async.Port = ASYNC1_GPIO_Port;
+	Port[Port_1].Async.Pin = ASYNC1_Pin;
+	Port[Port_2].Async.Port = ASYNC2_GPIO_Port;
+	Port[Port_2].Async.Pin = ASYNC2_Pin;
+	Port[Port_3].Async.Port = ASYNC3_GPIO_Port;
+	Port[Port_3].Async.Pin = ASYNC3_Pin;
+	Port[Port_4].Async.Port = ASYNC4_GPIO_Port;
+	Port[Port_4].Async.Pin = ASYNC4_Pin;
+	Port[Port_5].Async.Port = ASYNC5_GPIO_Port;
+	Port[Port_5].Async.Pin = ASYNC5_Pin;
+	Port[Port_6].Async.Port = ASYNC6_GPIO_Port;
+	Port[Port_6].Async.Pin = ASYNC6_Pin;
+}
+

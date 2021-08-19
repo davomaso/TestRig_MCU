@@ -26,7 +26,7 @@ extern TIM_HandleTypeDef htim14;
 
 //VARIABLE DEFINITIONS
 //B2 21 NOTIFIES the boards that data is being transmitted
- //following the B2 21, the next byte signifies the length of the array
+//following the B2 21, the next byte signifies the length of the array
 //Length: 				1 byte
 //NET ID: 				2 bytes
 //Dir/direction: 		1 byte
@@ -139,7 +139,7 @@ void communication_response(TboardConfig * Board, uns_ch * Response, uns_ch *dat
 				samplesUploading = true;
 				samplesUploaded = false;
 				sampleCount = 0;
-				sampleTime = 100;
+				sampleTime = 500;
 			break;
 		case 0xCD:	// Initialise board command
 				printT("\n=====     Board Initialised     =====\n");
@@ -149,10 +149,7 @@ void communication_response(TboardConfig * Board, uns_ch * Response, uns_ch *dat
 }
 
 _Bool CRC_Check(uns_ch *input, uint8 length)
-{
-	/*
-	 * Basic CRC check to determine whether the string received is correct, and add the CRC at the end of the string being sent
-	 */
+{	// Basic CRC check to determine whether the string received is correct, also add the CRC at the end of the string prior to transmission
 	uint16 Crc_response;
 	Crc_response = uart_CalcCRC16(input,length-2);
 	input += (length-2);
@@ -162,8 +159,7 @@ _Bool CRC_Check(uns_ch *input, uint8 length)
 		return false;
 }
 
-void SetPara(TboardConfig * Board, uns_ch Command)
-{
+void SetPara(TboardConfig * Board, uns_ch Command) {
 	/*
 	 * Set Communication Parameters Routine
 	 * Dependant on the command being transmitted to the target device a different parameter is required to be sent
@@ -185,7 +181,7 @@ void SetPara(TboardConfig * Board, uns_ch Command)
 				printT("Target Board Uploading Samples...\n");
 			break;
 		case 0x56:
-				sprintf(debugTransmitBuffer, "\nConfiguring Board...\n");
+				sprintf(&debugTransmitBuffer, "\nConfiguring Board...\n");
 				printT(&debugTransmitBuffer);
 				SetTestParam(Board, Board->GlobalTestNum, &Para[0], &Paralen);
 				if( BoardConnected.GlobalTestNum == 0) {
@@ -195,10 +191,6 @@ void SetPara(TboardConfig * Board, uns_ch Command)
 						sprintf(&lcdBuffer,"%x   S/N: %d  ", Board->BoardType, Board->SerialNumber);
 					LCD_printf(&lcdBuffer[0], 1,0);
 					}
-			break;
-		case 0xCC:
-				Para[0] = 0x49;
-				Paralen = 1;
 			break;
 	}
 }

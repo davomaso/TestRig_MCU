@@ -3,23 +3,12 @@
 
 #include "interogate_project.h"
 
-#define CALIBRATION_TIMEOUT 4000
+#define CALIBRATION_TIMEOUT 10000
 
 void Calibration();
 float Current_calibration(uint8);
 float Voltage_calibration(uint8);
 
-typedef struct{
-	int8 CalibrationFactor[6];
-	bool lowItestComplete;
-}TportCalibration;
-
-TportCalibration Port1;
-TportCalibration Port2;
-TportCalibration Port3;
-TportCalibration Port4;
-TportCalibration Port5;
-TportCalibration Port6;
 
 //Calibration Enums
 typedef enum {V_1 = 0, V_05 = 1, V_24 = 2, I_20 = 3, I_4 = 4, I_175 = 5, Done = 6}TcalTestConfig;

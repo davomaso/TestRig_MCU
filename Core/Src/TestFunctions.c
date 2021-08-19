@@ -119,81 +119,17 @@ float setCurrentTestDAC(uint8 Test_Port) {
 	uint16 Corrected_DACvalue;
 	uint16 DAC_Value;
 	//Correction Factor
-	switch (Test_Port) {
-		case Port_1:
-			if(!Port1.lowItestComplete){
-				current = 4;
-				Port1.lowItestComplete = true;
-				DAC_Value = DAC_4amp;
-				Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[I_4];
-			} else {
-				current = 17.5;
-				DAC_Value = DAC_175amp;
-				Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[I_175];
-			}
-			break;
-		case Port_2:
-			if(!Port2.lowItestComplete){
-				current = 4;
-				Port2.lowItestComplete = true;
-				DAC_Value = DAC_4amp;
-				Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[I_4];
-			} else {
-				current = 17.5;
-				DAC_Value = DAC_175amp;
-				Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[I_175];
-			}
-			break;
-		case Port_3:
-			if(!Port3.lowItestComplete){
-				current = 4;
-				Port3.lowItestComplete = true;
-				DAC_Value = DAC_4amp;
-				Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[I_4];
-			} else {
-				current = 17.5;
-				DAC_Value = DAC_175amp;
-				Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[I_175];
-			}
-			break;
-		case Port_4:
-			if(!Port4.lowItestComplete){
-				current = 4;
-				Port4.lowItestComplete = true;
-				DAC_Value = DAC_4amp;
-				Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[I_4];
-			} else {
-				current = 17.5;
-				DAC_Value = DAC_175amp;
-				Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[I_175];
-			}
-			break;
-		case Port_5:
-			if(!Port5.lowItestComplete){
-				current = 4;
-				Port5.lowItestComplete = true;
-				DAC_Value = DAC_4amp;
-				Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[I_4];
-			} else {
-				current = 17.5;
-				DAC_Value = DAC_175amp;
-				Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[I_175];
-			}
-			break;
-		case Port_6:
-			if(!Port6.lowItestComplete){
-				current = 4;
-				Port6.lowItestComplete = true;
-				DAC_Value = DAC_4amp;
-				Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[I_4];
-			} else {
-				current = 17.5;
-				DAC_Value = DAC_175amp;
-				Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[I_175];
-			}
-			break;
-		}
-
+	if (!Port[Test_Port].lowItestComplete) {
+		current = 4.0;
+		Port[Test_Port].lowItestComplete = true;
+		DAC_Value = DAC_4amp;
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_4];
+	} else {
+		current = 17.5;
+		Port[Test_Port].lowItestComplete = true;
+		DAC_Value = DAC_175amp;
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_175];
+	}
 	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)
 		Corrected_DACvalue += 0x3000;
 	else if (Test_Port == Port_2 || Test_Port == Port_4 || Test_Port == Port_6)
@@ -220,50 +156,10 @@ float setVoltageTestDAC(uint8 Test_Port, uint8 TestCode) {
 				DAC_Value = DAC_24volt;
 			break;
 	}
-	switch (Test_Port) {
-	case Port_1:
-		if (TestCode == ONE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[V_05];
-		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port1.CalibrationFactor[V_24];
-		}
-		break;
-	case Port_2:
-		if (TestCode == ONE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[V_05];
-		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port2.CalibrationFactor[V_24];
-		}
-		break;
-	case Port_3:
-		if (TestCode == ONE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[V_05];
-		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port3.CalibrationFactor[V_24];
-		}
-		break;
-	case Port_4:
-		if (TestCode == ONE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[V_05];
-		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port4.CalibrationFactor[V_24];
-		}
-		break;
-	case Port_5:
-		if (TestCode == ONE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[V_05];
-		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port5.CalibrationFactor[V_24];
-		}
-		break;
-	case Port_6:
-		if (TestCode == ONE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[V_05];
-		} else if (TestCode == TWOFIVE_VOLT) {
-			Corrected_DACvalue = DAC_Value + Port6.CalibrationFactor[V_24];
-		}
-		break;
-	}
+	if (TestCode == ONE_VOLT)
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_05];
+	else if (TestCode == TWOFIVE_VOLT)
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_24];
 
 //	randDACvolt = round((Corrected_voltage * 4096 / 3.6864)); //round((voltage * 3448) / 3.014);
 	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)
@@ -280,208 +176,26 @@ float setVoltageTestDAC(uint8 Test_Port, uint8 TestCode) {
 
 //	===================================   ASYNC   ===================================	//
 float setAsyncPulseCount(TboardConfig * Board, uint8 Test_Port) {
-	switch (Test_Port) {
-	//Port 2
-	case Port_1:
-		HAL_GPIO_WritePin(ASYNC1_GPIO_Port, ASYNC1_Pin, GPIO_PIN_RESET);
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port1.PulseCount = 10;
-			break;
-		case 2:
-		case 3:
-			Async_Port1.PulseCount = 10;
-			break;
-		case 4:
-		case 5:
-			Async_Port1.PulseCount = 10;
-			break;
-		}
-		HAL_Delay(10);
-		Async_Port1.fcount = 5;
-		Async_Port1.PulseState = true;
-		return (float) Async_Port1.FilterEnabled ?  Async_Port1.PulseCount : (11*Async_Port1.PulseCount);
+	HAL_GPIO_WritePin(Port[Test_Port].Async.Port, Port[Test_Port].Async.Pin, GPIO_PIN_RESET);
+	MUX_Sel(Test_Port, ASYNC_PULSE);
+	switch (Board->GlobalTestNum) {
+	case 0:
+	case 1:
+		Port[Test_Port].Async.PulseCount = 5;
 		break;
-		//Port 3
-	case Port_2:
-		HAL_GPIO_WritePin(ASYNC2_GPIO_Port, ASYNC2_Pin, GPIO_PIN_RESET);
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port2.PulseCount = 5;
-			break;
-		case 2:
-		case 3:
-			Async_Port2.PulseCount = 5;
-			break;
-		case 4:
-		case 5:
-			Async_Port2.PulseCount = 10;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		HAL_Delay(10);
-		Async_Port2.fcount = 5;
-		Async_Port2.PulseState = true;
-		return (float) Async_Port2.FilterEnabled ?  Async_Port2.PulseCount : (11*Async_Port2.PulseCount);
+	case 2:
+	case 3:
+		Port[Test_Port].Async.PulseCount = 10;
 		break;
-		//Port 4
-	case Port_3:
-		HAL_GPIO_WritePin(ASYNC3_GPIO_Port, ASYNC3_Pin, GPIO_PIN_RESET);
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port3.PulseCount = 8;
-			break;
-		case 2:
-		case 3:
-			Async_Port3.PulseCount = 10;
-			break;
-		case 4:
-		case 5:
-			Async_Port3.PulseCount = 7;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		HAL_Delay(5);
-		Async_Port3.fcount = 5;
-		Async_Port3.PulseState = true;
-		return (float) Async_Port3.FilterEnabled ?  Async_Port3.PulseCount : (11*Async_Port3.PulseCount);
-		break;
-		//Port 5
-	case Port_4:
-		HAL_GPIO_WritePin(ASYNC4_GPIO_Port, ASYNC4_Pin, GPIO_PIN_RESET);
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port4.PulseCount = 10;
-			break;
-		case 2:
-		case 3:
-			Async_Port4.PulseCount = 8;
-			break;
-		case 4:
-		case 5:
-			Async_Port4.PulseCount = 12;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		HAL_Delay(5);
-		Async_Port4.fcount = 5;
-		Async_Port4.PulseState = true;
-		return (float) Async_Port4.FilterEnabled ?  Async_Port4.PulseCount : (11*Async_Port4.PulseCount);
-		break;
-	case Port_5:
-		HAL_GPIO_WritePin(ASYNC5_GPIO_Port, ASYNC5_Pin, GPIO_PIN_RESET);
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port5.PulseCount = 10;
-			break;
-		case 2:
-		case 3:
-			Async_Port5.PulseCount = 8;
-			break;
-		case 4:
-		case 5:
-			Async_Port5.PulseCount = 12;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		HAL_Delay(5);
-		Async_Port5.fcount = 5;
-		Async_Port5.PulseState = true;
-		return (float) Async_Port5.FilterEnabled ?  Async_Port5.PulseCount : (11*Async_Port5.PulseCount);
-			break;
-
-	case Port_6:
-		HAL_GPIO_WritePin(ASYNC6_GPIO_Port, ASYNC6_Pin, GPIO_PIN_RESET);
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port6.PulseCount = 10;
-			break;
-		case 2:
-		case 3:
-			Async_Port6.PulseCount = 8;
-			break;
-		case 4:
-		case 5:
-			Async_Port6.PulseCount = 12;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		HAL_Delay(5);
-		Async_Port6.fcount = 5;
-		Async_Port6.PulseState = true;
-		return (float) Async_Port6.FilterEnabled ?  Async_Port6.PulseCount : (11*Async_Port6.PulseCount);
-		break;
-
-	case Port_7:
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port7.PulseCount = 5;
-			break;
-		case 2:
-		case 3:
-			Async_Port7.PulseCount = 5;
-			break;
-		case 4:
-		case 5:
-			Async_Port7.PulseCount = 5;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		Async_Port7.fcount = 5;
-		Async_Port7.PulseState = true;
-		return (float) Async_Port7.PulseCount;
-		break;
-
-	case Port_8:
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port8.PulseCount = 7;
-			break;
-		case 2:
-		case 3:
-			Async_Port8.PulseCount = 7;
-			break;
-		case 4:
-		case 5:
-			Async_Port8.PulseCount = 7;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		Async_Port8.fcount = 5;
-		Async_Port8.PulseState = true;
-		return (float) Async_Port8.PulseCount;
-		break;
-	case Port_9:
-		switch (Board->GlobalTestNum) {
-		case 0:
-		case 1:
-			Async_Port9.PulseCount = 7;
-			break;
-		case 2:
-		case 3:
-			Async_Port9.PulseCount = 7;
-			break;
-		case 4:
-		case 5:
-			Async_Port9.PulseCount = 7;
-			break;
-		}
-		MUX_Sel(Test_Port, ASYNC_PULSE);
-		Async_Port9.fcount = 5;
-		Async_Port9.PulseState = true;
-		return (float) Async_Port9.PulseCount;
+	case 4:
+	case 5:
+		Port[Test_Port].Async.PulseCount = 15;
 		break;
 	}
-	return 0;
+	HAL_Delay(10);
+	Port[Test_Port].Async.fcount = 5;
+	Port[Test_Port].Async.PulseState = true;
+	return (float) Port[Test_Port].Async.FilterEnabled ?  Port[Test_Port].Async.PulseCount : (11*Port[Test_Port].Async.PulseCount);
 }
 //	===================================================================================	//
 
@@ -490,45 +204,9 @@ float setAsyncPulseCount(TboardConfig * Board, uint8 Test_Port) {
 float setSDItwelveValue(uint8 Test_Port){
 	MUX_Sel(Test_Port, SDI_TWELVE);
 	SDSstate = SDSundef;
-	switch (Test_Port) {
-	case Port_1:
-		SDI_Port1.Enabled = true;
-		SDI_Port1.Address = Test_Port;
-		SDI_Port1.setValue = 7.064;
-		return SDI_Port1.setValue;
-		break;
-	case Port_2:
-		SDI_Port2.Enabled = true;
-		SDI_Port2.Address = Test_Port;
-		SDI_Port2.setValue = 9.544;
-		return SDI_Port2.setValue;
-		break;
-	case Port_3:
-		SDI_Port3.Enabled = true;
-		SDI_Port3.Address = Test_Port;
-		SDI_Port3.setValue = 4.408;
-		return SDI_Port3.setValue;
-		break;
-	case Port_4:
-		SDI_Port4.Enabled = true;
-		SDI_Port4.Address = Test_Port;
-		SDI_Port4.setValue = 6.515;
-		return SDI_Port4.setValue;
-		break;
-	case Port_5:
-		SDI_Port5.Enabled = true;
-		SDI_Port5.Address = Test_Port;
-		SDI_Port5.setValue = 5.892;
-		return SDI_Port5.setValue;
-		break;
-	case Port_6:
-		SDI_Port6.Enabled = true;
-		SDI_Port6.Address = Test_Port;
-		SDI_Port6.setValue = 6.922;
-		return SDI_Port6.setValue;
-		break;
-	}
-
+	Port[Test_Port].Sdi.Enabled = true;
+	Port[Test_Port].Sdi.Address = Test_Port;
+	return Port[Test_Port].Sdi.setValue;
 }
 //	===================================================================================	//
 
@@ -747,11 +425,8 @@ void normaliseLatchResults() {
 }
 
 void TransmitResults(){
-		sprintf(debugTransmitBuffer, "==============   ADC Average Results   ==============");
-		CDC_Transmit_FS(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-		  HAL_UART_Transmit(&huart1, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
-		for(int i = 0;i<LatchCountTimer;i++)
-		{
+		printT("==============   ADC Average Results   ==============");
+		for(int i = 0;i<LatchCountTimer;i++) {
 			sprintf(debugTransmitBuffer, "%d,%d,%d,%d\n",i,LatchPortA.avg_Buffer[i],LatchPortB.avg_Buffer[i],Vfuse.avg_Buffer[i]);
 			printT(&debugTransmitBuffer);
 		}

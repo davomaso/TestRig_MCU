@@ -63,6 +63,8 @@ SPI_HandleTypeDef DAC_SPI;
 #define EEPROM_R_ADDRESS 0x51 //EEPROM I2C Read Address
 #define LCD_ADR 0x3C	//LCD I2C Address
 
+#define FIRMWARE_VERSION 1.0
+
 //==============	 CURRENT BOARD VERSIONS 	==============//
 #define BOARD_935x 0x51
 #define BOARD_937x 0x51
@@ -117,6 +119,8 @@ typedef enum {	csIDLE 			= 0, 		//
 				csTestBegin 	= 10, 		//
 				csLatchTest 	= 11, 		//
 				csAsyncTest 	= 12,		//
+				csSolarCharger  = 13,		//
+				csInputVoltage 	= 14,		//
 }TcurrentState;
 TcurrentState CurrentState;
 
@@ -246,6 +250,8 @@ void Error_Handler(void);
 #define Radio_EN_GPIO_Port GPIOD
 #define RS485_EN_Pin GPIO_PIN_7
 #define RS485_EN_GPIO_Port GPIOD
+#define SOLAR_CH_EN_Pin GPIO_PIN_5
+#define SOLAR_CH_EN_GPIO_Port GPIOB
 #define SD_Det_Pin GPIO_PIN_1
 #define SD_Det_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */

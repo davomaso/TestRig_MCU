@@ -40,7 +40,7 @@ void ConfigInit() {
 	OnevoltTest.Code = ONE_VOLT;
 	OnevoltTest.Channels = 1;
 	OnevoltTest.Options = 0;
-	OnevoltTest.GateTime = 0;
+	OnevoltTest.GateTime = 64;
 
 	TwovoltTest.Code = TWOFIVE_VOLT;
 	TwovoltTest.Channels = 1;
@@ -67,8 +67,8 @@ void ConfigInit() {
 
 	//RS485 Test
 	rs485Test.Code = AQUASPY;
-	rs485Test.Channels = 0;
-	rs485Test.Options = 1;
+	rs485Test.Channels = 1;
+	rs485Test.Options = 0;
 	rs485Test.GateTime = 0;
 	//No Test
 	noTest.Code = NOTEST;
@@ -177,7 +177,7 @@ void TestConfig401x(TboardConfig * Board){
 void TestConfig402x(TboardConfig * Board){
 		//Port Test Array
 	uint32 *tempTestARR[70] = {
-			&sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &currentTest, &currentTest, &asyncTest, &asyncTest, &asyncDigitalTest, &outputTest,				//
+			&OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &asyncTest, &asyncTest, &asyncTest, &outputTest,				//
 			&currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &currentTest, &OnevoltTest, &asyncDigitalTest, &asyncTest, &asyncTest, &outputTest,				//
 			&currentTest, &TwovoltTest, &sdi12Test, &currentTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest,					//
 			&OnevoltTest, &currentTest, &currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &asyncTest, &asyncTest, &asyncDigitalTest, &noTest,					//
@@ -188,17 +188,17 @@ void TestConfig402x(TboardConfig * Board){
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 		//Port Code Array	//Watch PARAMcount on 4021 boards as config on iConfigure had 5 parameters but 0x00 in the 5th config param, may not be required but check results
-	uint8 tempPcARR[10][4] = {
-			{ 0xA0, 0xA2, 0xA1, 0xA3},
-			{ 0xA8, 0xAA, 0xA9, 0xAB},
-			{ 0xB0, 0xB2, 0xB1, 0xB3},
-			{ 0xB8, 0xBA, 0xB9, 0xBB},
-			{ 0xC0, 0xC2, 0xC1, 0xC3},
-			{ 0xC8, 0xCA, 0xC9, 0xCB},
-			{ 0xD0, 0xDA, 0xD1, 0xD3},
-			{ 0xD8, 0xDA, 0xD9, 0xDB},
-			{ 0xE0, 0xE2, 0xE1, 0xE3},
-			{ 0xE8, 0x00, 0x00, 0x00},
+	uint8 tempPcARR[40] = {
+			0xA0, 0xA2, 0xA1, 0xA3,	//
+			0xA8, 0xAA, 0xA9, 0xAB,	//
+			0xB0, 0xB2, 0xB1, 0xB3,	//
+			0xB8, 0xBA, 0xB9, 0xBB,	//
+			0xC0, 0xC2, 0xC1, 0xC3,	//
+			0xC8, 0xCA, 0xC9, 0xCB,	//
+			0xD0, 0xDA, 0xD1, 0xD3,	//
+			0xD8, 0xDA, 0xD9, 0xDB,	//
+			0xE0, 0xE2, 0xE1, 0xE3,	//
+			0xE8, 0x00, 0x00, 0x00,	//
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 		//Board Type
@@ -285,9 +285,24 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 					*Para = 0x64; (*Count)++; Para++;
 					*Para = 0x83; (*Count)++; Para++;
 					*Para = 0x80; (*Count)++; Para++;
+				} else if ((Board->BoardType == b402x) && (Board->GlobalTestNum == 0) ) {
+					*Para = 0x15; (*Count)++; Para++;
+					*Para = 0x6E; (*Count)++; Para++;
+					*Para = 0x16; (*Count)++; Para++;
+					*Para = 0x78; (*Count)++; Para++;
+					*Para = 0x80; (*Count)++; Para++;
+					*Para = 0x01; (*Count)++; Para++;
+					*Para = 0x81; (*Count)++; Para++;
+					*Para = 0x02; (*Count)++; Para++;
+					*Para = 0x82; (*Count)++; Para++;
+					*Para = 0x14; (*Count)++; Para++;
+					*Para = 0x83; (*Count)++; Para++;
+					*Para = 0x1E; (*Count)++; Para++;
+					*Para = 0x84; (*Count)++; Para++;
+					*Para = 0x00; (*Count)++; Para++;
 				}
 			for (uint8 PortCount = 0; PortCount < TotalPort; PortCount++) {
-				Set_Test(Board, PortCount);	//Increment This test to the next testarray variable
+				Set_Test(Board, PortCount, TotalPort);	//Increment This test to the next testarray variable
 				if(Board->ThisTest->Code){
 					*Para = *PCptr++;
 					(*Count)++; Para++;
@@ -321,48 +336,30 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 				if (Board->ThisTest->Code == AQUASPY)
 					RS485enabled = true;
 				if (Board->ThisTest->Code == ASYNC_PULSE) {
-					switch( PortCount - (Board->latchPortCount) ) {
-						case Port_1:
-							Async_Port1.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
-							break;
-						case Port_2:
-							Async_Port2.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
-						case Port_3:
-							Async_Port3.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
-						case Port_4:
-							Async_Port4.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
-						case Port_5:
-							Async_Port5.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
-						case Port_6:
-							Async_Port6.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
-						case Port_7:
-							Async_Port7.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
-						case Port_8:
-							Async_Port8.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
-						case Port_9:
-							Async_Port9.FilterEnabled = (Board->ThisTest->Options & 0x20);
-							break;
+					Port[PortCount - (Board->latchPortCount)].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 					}
-				}
 			}
-			if( ( (Board->BoardType == b935x) || (Board->BoardType == b937x) ) && (Board->GlobalTestNum == 0)){
+			if( ( (Board->BoardType == b935x) || (Board->BoardType == b937x) ) && (Board->GlobalTestNum < 3)){
 				*Para = 0xA0; (*Count)++; Para++;
-				*Para = 0x02; (*Count)++; Para++;
+				if (Board->GlobalTestNum == 2)
+					*Para = 0x00;
+				else
+					*Para = 0x02;
+				(*Count)++; Para++;
 				*Para = 0xA1; (*Count)++; Para++;
-				*Para = 0x01; (*Count)++; Para++;
+				if (Board->GlobalTestNum == 0)
+					*Para = 0x00;
+				else
+					*Para = 0x01;
+				(*Count)++; Para++;
 				*Para = 0xA2; (*Count)++; Para++;
 				*Para = 0x01; (*Count)++; Para++;
 			}
 	}
 
-void Set_Test(TboardConfig *Board, uint8 Port) {
+void Set_Test(TboardConfig *Board, uint8 Port, uint8 TotalPort) {
+	if (Port == 0)
+		Board->ArrayPtr = Board->GlobalTestNum * TotalPort;
 	Board->ThisTest =  Board->TestArray[Board->ArrayPtr++];
 	Board->TestCode[Port] = Board->ThisTest->Code;
 }
@@ -393,8 +390,9 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 			}
 		}
-			//Not 100% required
-		if ( (Board->TPR == 0xFFFF) )
+		CheckPowerRegisters(Board);
+
+		if ( (Board->TPR == 0xFFFF) && READ_BIT(Board->BSR,BOARD_POWER_STABLE) )
 			SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		return false;
 	}

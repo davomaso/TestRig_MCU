@@ -49,7 +49,6 @@ _Bool CheckLoom;
 _Bool LoomChecking;
 uint16 LoomCheckCount;
 uint8 LoomState;
-uint8 PrevLoomState;
 
 //0x1A and 0x1B Command and Response
 uint16 sampleTime;
@@ -66,18 +65,9 @@ typedef struct{
 	uint16 scount;
 	_Bool PulseState;
 	_Bool FilterEnabled;
+	uint16 Pin;
+	GPIO_TypeDef* Port;
 }TasyncConfig;
-
-TasyncConfig Async_Port1;
-TasyncConfig Async_Port2;
-TasyncConfig Async_Port3;
-TasyncConfig Async_Port4;
-TasyncConfig Async_Port5;
-TasyncConfig Async_Port6;
-TasyncConfig Async_Port7;
-TasyncConfig Async_Port8;
-TasyncConfig Async_Port9;
-
 _Bool AsyncComplete;
 
 //SDI Twelve Variables
@@ -88,20 +78,33 @@ typedef struct{
 	bool Enabled;
 }TsdiConfig;
 
-TsdiConfig SDI_Port1;
-TsdiConfig SDI_Port2;
-TsdiConfig SDI_Port3;
-TsdiConfig SDI_Port4;
-TsdiConfig SDI_Port5;
-TsdiConfig SDI_Port6;
-
 uint8 SDIAddress;
 float SDIMeasurement;
 typedef enum {SDSundef, SDSquery, SDSaddress, SDSc, SDSdPending, SDSd}TsdiState;
 TsdiState SDSstate;
 
-typedef enum {RSundef, RSquery, RSaddress, RSc, RSdPending, RSd} TrsState;
+typedef struct {
+	TasyncConfig Async;
+	TsdiConfig Sdi;
+	int8 CalibrationFactor[6];
+	_Bool lowItestComplete;
+}TaportConfig;
+
+TaportConfig Port[9];
+
+#define RS_SENSOR_1 7.444
+#define RS_SENSOR_2 3.145
+#define RS_SENSOR_3 6.724
+#define RS_SENSOR_4 1.528
+#define RS_SENSOR_5 4.927
+#define RS_SENSOR_6 9.016
+#define RS_SENSOR_7 42.401
+#define RS_SENSOR_8 12.619
+#define RS_SENSOR_9 19.960
+
+typedef enum {RSundef, RSquery, RS9pending, RS9, RSMpending, RSM, RSdPending, RSd} TrsState;
 TrsState RSstate;
+uns_ch RS485buffer[128];
 
 //Latch Variables
 uint16_t LatchCountTimer;
@@ -135,6 +138,8 @@ TADCconfig MOSFETvoltageA;
 TADCconfig MOSFETvoltageB;
 TADCconfig Vin;
 TADCconfig Vuser;
+
+float fuseBuffer[3];
 
 typedef struct{
 	// Latch Pulse Widths and Voltages
@@ -182,7 +187,6 @@ TkeypadConfig KP_0;
 TkeypadConfig KP_hash;
 TkeypadConfig KP_star;
 
-int8 CorrectionFactors[36];
 uint8 QuitCount;
 
 	//Serial Number variables

@@ -18,8 +18,8 @@ void Mount_SD (const TCHAR* path) {
 //			 Unmount_SD("/");
 	} else {
 		printT("SD CARD mounted successfully...\n");
-		LCD_setCursor(2, 0);
-		sprintf(debugTransmitBuffer, " SD card Connected  ");
+		LCD_setCursor(3, 0);
+		sprintf(debugTransmitBuffer, "SD Card:");
 		LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 	}
 }
@@ -353,8 +353,8 @@ void Check_SD_Space ()
     printT(buf);
     free(buf);
     free_space /= 1000;
-    LCD_setCursor(3, 0);
-    sprintf (debugTransmitBuffer, "%d mb Free", free_space);
+    LCD_setCursor(4, 0);
+    sprintf (debugTransmitBuffer, "%d MB Free", free_space);
     LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 }
 

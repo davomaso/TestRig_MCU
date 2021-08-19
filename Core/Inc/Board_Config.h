@@ -30,6 +30,11 @@
 	#define BOARD_CALIBRATED 	(1 << 2)
 	#define BOARD_PROGRAMMED	(1 << 3)
 	#define BOARD_SERIALISED	(1 << 4)
+	#define BOARD_POWER_STABLE	(1 << 5)
+
+	//============		BOARD VOLTAGE VARIABLES		===========//
+	#define BOARD_FUSE_STABLE	(1 << 0)
+	#define BOARD_SOLAR_STABLE	(1 << 1)
 
 	//============		TEST PASSED VARIABLES		===========//
 	#define TEST_ONE_PASSED 	(1 << 0)
@@ -98,6 +103,7 @@
 			uint8 BSR; //Board Status Register
 			uint8 LTR; //Latch Test Register
 			uint8 BPR; //Board Programming Register
+			uint8 BVR;
 	}TboardConfig;
 
 	TboardConfig BoardConnected;
