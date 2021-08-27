@@ -102,9 +102,8 @@ void LCD_CursorOn_Off(bool Cursor) {
 }
 
 void LCD_Clear() {
-	uint8 Byte;
-	Byte = 0x01;
-	HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
+	uint8 CLScommand = 0x01;
+	HAL_I2C_Mem_Write( &hi2c1, (LCD_ADR << 1), 0x00, 0x01, &CLScommand, 0x01, HAL_MAX_DELAY);
 	delay_us(50);
 }
 

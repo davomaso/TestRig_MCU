@@ -44,6 +44,8 @@ void communication_array(uns_ch Command, uns_ch * Para, uint8_t  Paralen)
 	 * puts the CRC at the end of the string from uart_CRC.
 	 *
 	 */
+	uint8 Comlen;
+	uns_ch Com_buffer[LRGBUFFER];
 	uint16 Length;
 	uint16 Crc;
 	UART2_ReceiveComplete = false;
@@ -169,21 +171,21 @@ void SetPara(TboardConfig * Board, uns_ch Command) {
 	switch (Command) {
 		case 0x18:
 				for	(uint8 i = 0; i <= 15; i++)	{
-						Para[i] = i;
-						Paralen = i+1;
+						BoardCommsParameters[i] = i;
+						BoardCommsParametersLength = i+1;
 					}
 			break;
 		case 0x1A:
 				for (uint8 i = 0; i <= 15; i++) {
-						Para[i] = i;
-						Paralen = i+1;
+						BoardCommsParameters[i] = i;
+						BoardCommsParametersLength = i+1;
 					}
 				printT("Target Board Uploading Samples...\n");
 			break;
 		case 0x56:
 				sprintf(&debugTransmitBuffer, "\nConfiguring Board...\n");
 				printT(&debugTransmitBuffer);
-				SetTestParam(Board, Board->GlobalTestNum, &Para[0], &Paralen);
+				SetTestParam(Board, Board->GlobalTestNum, &BoardCommsParameters[0], &BoardCommsParametersLength);
 				if( BoardConnected.GlobalTestNum == 0) {
 					if (Board->Subclass)
 						sprintf(&lcdBuffer,"%x%c   S/N: %d  ", Board->BoardType, Board->Subclass, Board->SerialNumber);
@@ -203,9 +205,11 @@ void communication_arraySerial(uns_ch Command,uint32 CurrentSerial , uint32 NewS
 	 * else a new serial number is being programmed to the board by which both serial numbers
 	 * are required
 	 */
+	uint8 Comlen;
+	uns_ch Com_buffer[LRGBUFFER];
 	UART2_ReceiveComplete = false;
 	uint8 Length = NewSerial ? 11:7;
-	uint8 Comlen = Length + 3;
+	Comlen = Length + 3;
 	uint16 Crc;
 //Assign Elements to Communications Buffer Array
 	Com_buffer[0] = 0xB2;

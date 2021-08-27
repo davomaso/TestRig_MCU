@@ -12,15 +12,11 @@ void Mount_SD (const TCHAR* path) {
 	 * An explanation of each of these responses can be found at http://elm-chan.org/fsw/ff/00index_e.html
 	 */
 	SDcard.fresult = f_mount(&SDcard.fatfs, path, 1);
-	if (SDcard.fresult != FR_OK) {
-		 printT("ERROR!!! in mounting SD CARD...\n\n");
-//		 if (fresult == FR_DISK_ERR)
-//			 Unmount_SD("/");
-	} else {
+	if (SDcard.fresult != FR_OK)
+		printT("ERROR!!! in mounting SD CARD...\n\n");
+	else {
 		printT("SD CARD mounted successfully...\n");
-		LCD_setCursor(3, 0);
-		sprintf(debugTransmitBuffer, "SD Card:");
-		LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+		LCD_printf("SD Card:", 3, 0);
 	}
 }
 
@@ -263,9 +259,6 @@ void Close_File(char * name) {
 		sprintf (buf, "ERROR No. %d in closing file *%s*\n\n", SDcard.fresult, name);
 		printT(buf);
 		free(buf);
-		if (SDcard.fresult == FR_DISK_ERR || SDcard.fresult == FR_LOCKED) {
-			Close_File(name);
-		}
 	} else {
 		char *buf = malloc(100*sizeof(char));
 		sprintf (buf, "File *%s* CLOSED successfully\n\n", name);
@@ -280,8 +273,9 @@ FRESULT Update_File (char *name, char *data)
 {
 	/**** check whether the file exists or not ****/
 		SDcard.fresult = f_write(&SDcard.file, data, strlen (data), &SDcard.bw);
-		f_sync(&SDcard.file);
-	    if (SDcard.fresult != FR_OK) {
+//		f_sync(&SDcard.file);
+//		SDcard.fresult = f_puts(data, &SDcard.file);
+		if (SDcard.fresult != FR_OK) {
 	    	char *buf = malloc(100*sizeof(char));
 	    	sprintf (buf, "ERROR!!! No. %d in writing file *%s*\n\n", SDcard.fresult, name);
 	    	printT(buf);

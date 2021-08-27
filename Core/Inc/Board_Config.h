@@ -103,7 +103,7 @@
 			uint8 BSR; //Board Status Register
 			uint8 LTR; //Latch Test Register
 			uint8 BPR; //Board Programming Register
-			uint8 BVR;
+			uint8 BVR; // Board voltage register
 	}TboardConfig;
 
 	TboardConfig BoardConnected;

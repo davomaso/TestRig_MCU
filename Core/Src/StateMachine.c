@@ -7,7 +7,6 @@
 #include "File_Handling.h"
 
 void handleIdle(TboardConfig *Board, TprocessState * State) {
-
 	switch (*State) {
 		case psInitalisation:
 				*State = psWaiting;
@@ -15,16 +14,12 @@ void handleIdle(TboardConfig *Board, TprocessState * State) {
 		case psWaiting:
 			if (CheckLoom)
 				scanLoom(&BoardConnected); //Scan loom to determine which board is connected
-			if (KP_1.Pressed  || KP_6.Pressed) {
-//						HAL_Delay(125); 	//Delay for key repeat
-						KP_1.Pressed = false;
-				  		KP_1.Count = 0;
-				  		if (KP_6.Pressed)
+			if (KP[1].Pressed  || KP[6].Pressed) {
+				  		if (KP[6].Pressed)
 				  			OldBoardMode = true;	// No requirements for programming if 6 is pressed
 				  		else
 				  			OldBoardMode = false;	//Otherwise program immediately
-				  		KP_6.Pressed = false;
-				  		KP_6.Count = 0;
+				  		KP[1].Pressed = KP[6].Pressed = false;
 
 				  		TestRig_Init();
 				  		TargetBoardParamInit();
@@ -34,24 +29,9 @@ void handleIdle(TboardConfig *Board, TprocessState * State) {
 				  		*State = psInitalisation;
 				  		}
 		  	  //Calibration Routine
-		  if((KP_7.Pressed && KP_9.Pressed) ){
-			  KP_7.Count = KP_7.Pressed = 0;
-			  KP_9.Count = KP_9.Pressed = 0;
+		  if((KP[7].Pressed && KP[9].Pressed) ){
+			  KP[7].Pressed = KP[9].Pressed = false;
 
-			  LCD_Clear();
-			  LCD_setCursor(1, 6);
-			  sprintf(debugTransmitBuffer,"Test Rig");
-			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-			  LCD_setCursor(2, 0);
-			  sprintf(debugTransmitBuffer, "Calibrate Test Rig");
-			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-			  LCD_setCursor(3, 5);
-			  sprintf(debugTransmitBuffer, "1V - Port 1");
-			  LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-
-			  printT("\n\n==========  Calibration Routine  ==========\n");
 			  Calibration();
 			  LCD_Clear();
 			  TestRig_Init();
@@ -154,13 +134,13 @@ void handleInitialising(TboardConfig *Board, TprocessState * State) {
 			}
 		break;
 	case psWaiting:
-			if (ReceiveState == RxGOOD) {
+			if (BoardCommsReceiveState == RxGOOD) {
 				Response = Data_Buffer[0];
 				if(Response == 0xCD)
 					*State = psComplete;
 				else
 					*State = psFailed;
-			} else if (ReceiveState == RxBAD) {
+			} else if (BoardCommsReceiveState == RxBAD) {
 				*State = psFailed;
 			}
 		break;
@@ -186,36 +166,30 @@ void handleInitialising(TboardConfig *Board, TprocessState * State) {
 void handleTestBegin(TboardConfig *Board, TprocessState * State) {
 	switch (*State) {
 	case psInitalisation:
-//		sprintf(&lcdBuffer, "    %x     v%x  ",Board->BoardType,Board->Version);
-////		LCD_displayString(&debugTransmitBuffer, strlen(debugTransmitBuffer));//
-//		LCD_printf(&lcdBuffer[0], 1, 0);
-		sprintf(&lcdBuffer, "    S/N  %d",Board->SerialNumber);
-		LCD_printf(&lcdBuffer,2,0);
-		LCD_printf("1 - Reprog  Exit - *",3,0);
-		LCD_printf("3 - New SN  Test - #",4,0);
-		*State = psWaiting;
+			sprintf(&lcdBuffer, "    S/N  %d",Board->SerialNumber);
+			LCD_printf(&lcdBuffer,2,0);
+			LCD_printf("1 - Reprog  Exit - *",3,0);
+			LCD_printf("3 - New SN  Test - #",4,0);
+			*State = psWaiting;
 		break;
 	case psWaiting:
-			if (KP_hash.Pressed || KP_1.Pressed || KP_3.Pressed)
+			if (KP[hash].Pressed || KP[1].Pressed || KP[3].Pressed)
 				*State = psComplete;
 		break;
 	case psComplete:
-			if (KP_hash.Pressed) {
-				KP_hash.Pressed = false;
-				KP_hash.Count = 0;
+			if (KP[hash].Pressed) {
+				KP[hash].Pressed = false;
 				HAL_Delay(125);
 				CurrentState = csConfiguring;
 				*State = psInitalisation;
-			} else if (KP_1.Pressed) {
-				KP_1.Pressed = false;
-				KP_1.Count = 0;
+			} else if (KP[1].Pressed) {
+				KP[1].Pressed = false;
 				HAL_Delay(125);
 				CLEAR_BIT(Board->BSR, BOARD_PROGRAMMED);
 				CurrentState = csProgramming;
 				*State = psInitalisation;
-			} else if (KP_3.Pressed) {
-				KP_3.Pressed = false;
-				KP_3.Count = 0;
+			} else if (KP[3].Pressed) {
+				KP[3].Pressed = false;
 				HAL_Delay(125);
 				CLEAR_BIT(Board->BSR, BOARD_SERIALISED);
 				CurrentState = csSerialise;
@@ -423,13 +397,13 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 			}
 		break;
 	case psWaiting:
-			if (ReceiveState == RxGOOD) {
+			if (BoardCommsReceiveState == RxGOOD) {
 				Response = Data_Buffer[0];
 				if(Response == 0xC1)
 					*State = psComplete;
 				else
 					*State = psFailed;
-			} else if (ReceiveState == RxBAD) {
+			} else if (BoardCommsReceiveState == RxBAD) {
 				*State = psFailed;
 			}
 		break;
@@ -446,7 +420,7 @@ void handleCalibrating(TboardConfig *Board, TprocessState * State) {
 				CLEAR_REG(CalibrationStatusRegister);
 				TargetBoardCalibration_Voltage(Board);
 				ProcessState = psWaiting;
-				ReceiveState = RxWaiting;
+				BoardCommsReceiveState = RxWaiting;
 			} else {
 				*State = psInitalisation;
 				CurrentState = csIDLE;
@@ -464,13 +438,13 @@ void handleInterogating(TboardConfig *Board, TprocessState * State) {
 			*State = psWaiting;
 		break;
 	case psWaiting:
-			if (ReceiveState == RxGOOD) {
+			if (BoardCommsReceiveState == RxGOOD) {
 				Response = Data_Buffer[4];
 				if(Response == 0x11)
 					*State = psComplete;
 				else
 					*State = psFailed;
-			} else if (ReceiveState == RxBAD) {
+			} else if (BoardCommsReceiveState == RxBAD) {
 				*State = psFailed;
 			}
 		break;
@@ -496,7 +470,7 @@ void handleInterogating(TboardConfig *Board, TprocessState * State) {
 			CurrentState = csProgramming;
 			*State = psInitalisation;
 		} else {
-			ReceiveState = RxWaiting;
+			BoardCommsReceiveState = RxWaiting;
 			*State = psInitalisation;
 		}
 		break;
@@ -516,7 +490,7 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 					*State = psWaiting;
 			break;
 		case psWaiting:
-				if (ReceiveState == RxGOOD) {
+				if (BoardCommsReceiveState == RxGOOD) {
 					if ( !OutputsSet )	//only set the outputs once
 						TestFunction(Board);
 					Response = Data_Buffer[0];
@@ -526,7 +500,7 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 						*State = psComplete;
 					} else
 						*State = psFailed;
-				} else if (ReceiveState == RxBAD) {
+				} else if (BoardCommsReceiveState == RxBAD) {
 					*State = psFailed;
 				} else if (!OutputsSet) {
 					TestFunction(Board);
@@ -545,7 +519,7 @@ void handleConfiguring(TboardConfig *Board, TprocessState * State) {
 				HAL_Delay(100);
 				configureTargetBoard(Board);
 				*State = psWaiting;
-				ReceiveState = RxWaiting;
+				BoardCommsReceiveState = RxWaiting;
 			}
 			break;
 	}
@@ -569,28 +543,28 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 				if(READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {	//If input voltage is stable
 						if (!READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
 							SET_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING); //Begin Latch on sampling
-							Para[0] = LatchTestParam(LatchTestPort, 1);
-							communication_array(0x26, &Para[0], 1);
+							BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 1);
+							communication_array(0x26, &BoardCommsParameters[0], 1);
 						} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister,LATCH_ON_SAMPLING))	{
-							if (ReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
-								if (ReceiveState == RxGOOD) {
+							if (BoardCommsReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
+								if (BoardCommsReceiveState == RxGOOD) {
 									Response = Data_Buffer[0];
 									if (Response == 0x27) {
 										CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
 										CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
 										stableVoltageCount = 25;
 									}
-									ReceiveState = RxWaiting;
-								} else if (ReceiveState == RxBAD)
+									BoardCommsReceiveState = RxWaiting;
+								} else if (BoardCommsReceiveState == RxBAD)
 									*State = psFailed;
 							}
 						} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) 	{
 							SET_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING); //Begin Latch off sampling
-							Para[0] = LatchTestParam(LatchTestPort, 0);
-							communication_array(0x26, &Para[0], 1);
+							BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 0);
+							communication_array(0x26, &BoardCommsParameters[0], 1);
 						} else if (READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) 	{
-							if (ReceiveState != RxWaiting) { //Latch off sampling complete, reset voltage stability check
-								if (ReceiveState == RxGOOD) {
+							if (BoardCommsReceiveState != RxWaiting) { //Latch off sampling complete, reset voltage stability check
+								if (BoardCommsReceiveState == RxGOOD) {
 									Response = Data_Buffer[0];
 									if (Response == 0x27) {
 										CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
@@ -598,8 +572,8 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 										stableVoltageCount = 25;
 										runLatchTimeOut(2000);
 									}
-									ReceiveState = RxWaiting;
-								} else if (ReceiveState == RxBAD)
+									BoardCommsReceiveState = RxWaiting;
+								} else if (BoardCommsReceiveState == RxBAD)
 									*State = psFailed;
 							}
 						} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
@@ -672,8 +646,8 @@ void handleLatchTest(TboardConfig *Board, TprocessState * State) {
 					CurrentState = csIDLE;
 					ProcessState = psWaiting;
 				} else {
-					if (Para[0] & 0x80) {
-						communication_array(0x26, &Para[0], 1);
+					if (BoardCommsParameters[0] & 0x80) {
+						communication_array(0x26, &BoardCommsParameters[0], 1);
 					}
 					retryCount++;
 					*State = psInitalisation;
@@ -686,7 +660,7 @@ void handleAsyncTest(TboardConfig *Board, TprocessState *State) {
 	switch(*State) {
 		case psInitalisation:
 				AsyncComplete = false;
-				for (uint8 i = Port_1; i <= Port_6;i++){
+				for (uint8 i = Port_1; i <= Port_9;i++) {
 					Port[i].Async.Active = Port[i].Async.PulseCount ? true:false;
 				}
 				*State = psWaiting;
@@ -719,25 +693,25 @@ void handleSampling(TboardConfig *Board, TprocessState * State) {
 			LCD_printf("      Sampling      ", 2, 0);
 			Command = 0x1A;
 			SetPara(Board, Command);
-			communication_array(Command,&Para, Paralen);
+			communication_array(Command,&BoardCommsParameters, BoardCommsParametersLength);
 			*State = psWaiting;
 		break;
 	case psWaiting:
-			if (ReceiveState == RxGOOD) {
+			if (BoardCommsReceiveState == RxGOOD) {
 				Response = Data_Buffer[0];
 				if(Response == 0x1B || Response == 0x03)	//TODO: change this to wait until samples uploaded!
 					communication_response(Board, &Response, &Data_Buffer[1], Datalen);
-				ReceiveState = RxWaiting;
-			} else if (ReceiveState == RxBAD) {
+				BoardCommsReceiveState = RxWaiting;
+			} else if (BoardCommsReceiveState == RxBAD) {
 				*State = psFailed;
-				ReceiveState = RxWaiting;
+				BoardCommsReceiveState = RxWaiting;
 			}
 			if (samplesUploaded) {
 				sampleCount = 0;
 				samplesUploading = false;
 				samplesUploaded = false;
 				*State = psComplete;
-				ReceiveState = RxWaiting;
+				BoardCommsReceiveState = RxWaiting;
 			}
 			if (SDSstate == SDSd)
 				samplesUploaded = true;
@@ -774,14 +748,14 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 			*State = psWaiting;
 		break;
 	case psWaiting:
-			if (ReceiveState == RxGOOD) {
+			if (BoardCommsReceiveState == RxGOOD) {
 				Response = Data_Buffer[0];
 				if(Response == 0x19)	//TODO: change this to wait until samples uploaded!
 					*State = psComplete;
 				if(Response == 0x03)
 					communication_response(Board,&Response, &Data_Buffer, Datalen);
-				ReceiveState = RxWaiting;
-			} else if (ReceiveState == RxBAD) {
+				BoardCommsReceiveState = RxWaiting;
+			} else if (BoardCommsReceiveState == RxBAD) {
 				*State = psFailed;
 			}
 			if (samplesUploaded) {
@@ -789,7 +763,7 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 				samplesUploading = false;
 				samplesUploaded = false;
 				uploadSamplesTargetBoard(Board);
-				ReceiveState = RxWaiting;
+				BoardCommsReceiveState = RxWaiting;
 			}
 
 		break;
@@ -799,7 +773,7 @@ void handleUploading(TboardConfig *Board, TprocessState * State) {
 			CurrentState = csSortResults;
 		break;
 	case psFailed:
-		ReceiveState = RxWaiting;
+		BoardCommsReceiveState = RxWaiting;
 		if (retryCount > 16) {
 			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
@@ -873,7 +847,7 @@ void handleSerialise(TboardConfig *Board, TprocessState * State) {
 				}
 			break;
 		case psWaiting:
-			if(ReceiveState == RxGOOD) {
+			if(BoardCommsReceiveState == RxGOOD) {
 				tempSerial = ReadSerialNumber(&Response, &Data_Buffer[0], Datalen);
 				if (Response == 0x11) {
 							//Load Current Serial Number
@@ -893,7 +867,7 @@ void handleSerialise(TboardConfig *Board, TprocessState * State) {
 						*State = psComplete;
 					}
 				}
-			} else if (ReceiveState == RxBAD)
+			} else if (BoardCommsReceiveState == RxBAD)
 				*State = psComplete;
 			break;
 		case psComplete:

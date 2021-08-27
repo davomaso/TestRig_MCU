@@ -114,7 +114,7 @@ void TestConfig935x(TboardConfig * Board) {
 void TestConfig937x(TboardConfig * Board) {
 		// Port Test Array
 	TportConfig *tempTestARR[24] = {	// Array size must not exceed size of MAX_TEST_ARRAY_SIZE
-					&latchTest, &noTest, &asyncTest, &asyncDigitalTest,	//
+					&latchTest, &noTest, &TwovoltTest, &asyncDigitalTest,	//
 					&noTest, &latchTest, &TwovoltTest, &asyncTest,	//
 					&noTest, &noTest, &sdi12Test, &currentTest,	//
 					&noTest, &noTest, &asyncDigitalTest, &sdi12Test,	//
@@ -242,7 +242,7 @@ void TestConfig422x(TboardConfig * Board){
 
 void TestConfig427x(TboardConfig * Board){
 	uint32 *tempTestARR[20] = {
-			&latchTest, &noTest, &noTest, &noTest, &sdi12Test,		//
+			&latchTest, &noTest, &noTest, &noTest, &asyncTest,		//
 			&noTest, &latchTest, &noTest, &noTest, &OnevoltTest,	//
 			&noTest, &noTest, &latchTest, &noTest, &currentTest,	//
 			&noTest, &noTest, &noTest, &latchTest, &asyncTest		//
@@ -380,8 +380,9 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
-		for (uint8 i = 0; i < Test; i++) {
-			if ( ( Board->TPR & (1 << i) ) == false) {
+		SET_BIT(Board->BSR, BOARD_TEST_PASSED);
+		for (uint8 i = 0; i < maxTest; i++) {
+			if ( Board->TPR & (1 << i) == true) {
 				sprintf(debugTransmitBuffer, "X ");
 				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
 				CLEAR_BIT( Board->BSR, BOARD_TEST_PASSED );
@@ -392,7 +393,7 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		}
 		CheckPowerRegisters(Board);
 
-		if ( (Board->TPR == 0xFFFF) && READ_BIT(Board->BSR,BOARD_POWER_STABLE) )
+		if ( (Board->TPR != 0) && READ_BIT(Board->BSR,BOARD_POWER_STABLE) )
 			SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		return false;
 	}

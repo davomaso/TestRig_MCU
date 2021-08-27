@@ -264,13 +264,13 @@ _Bool ContinueWithCurrentProgram() {
 	LCD_setCursor(4, 0);
 	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
 	while (1) {
-		if (KP_hash.Pressed) {
-			KP_hash.Count = KP_hash.Pressed = 0;
+		if (KP[hash].Pressed) {
+			KP[hash].Pressed = 0;
 			SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
 			return false;
 		}
-		if (KP_star.Pressed) {
-			KP_star.Count = KP_star.Pressed = 0;
+		if (KP[star].Pressed) {
+			KP[star].Pressed = 0;
 			CLEAR_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
 			return true;
 		}

@@ -13,51 +13,61 @@ void scanLoom(TboardConfig *Board) {
 			LoomState |= (1 << (i));
 		}
 	}	// ###### add loom checking to occur during testing
-	if(LoomState != PrevLoomState) {
-		LCD_Clear();
-		switch(LoomState){
-		case 0:
-			LCD_printf("Connect Loom",2,4);
-			printT("Connect Loom...\n");
-			break;
-		case 1:
-			Board->BoardType = b935x;
-			LCD_printf("9352 Loom Connected",1,0);
-			printT("9352 Connected...\n");
-			break;
-		case 2:
-			Board->BoardType = b937x;
-			LCD_printf("9371 Loom Connected",1,0);
-			printT("9371 Connected...\n");
-			break;
-		case 3:
-			Board->BoardType = b401x;
-			LCD_printf("4012 Loom Connected",1,0);
-			printT("401x Connected...\n");
-			break;
-		case 4:
-			Board->BoardType = b402x;
-			LCD_printf("4022 Loom Connected",1,0);
-			printT("4022 Connected...\n");
-			break;
-		case 5:
-			Board->BoardType = b427x;
-			LCD_printf("4271 Loom Connected",1,0);
-			printT("4271 Connected...\n");
-			break;
-		case 0x0A: //change to 6 when loom is fixed
-			Board->BoardType = b422x;
-			LCD_printf("4220 Loom Connected",1,0);
-			printT("4220 Connected...\n");
-			break;
-		default:
-			Board->BoardType = bNone;
-			LCD_printf("Unknown Loom",1,0);
-			printT("Unknown Loom...\n");
-		}
-		LCD_printf("   1 - Begin Test ",4,0);	// change wording to be dependant on state and loom connected
-		printT("Press 1 - Begin Test \n");
-	}
+	if( LoomState != PrevLoomState) {
+//		if (CurrentState == csIDLE) {
+			LCD_Clear();
+					switch(LoomState){
+					case 0:
+						LCD_printf("Connect Loom",2,4);
+						printT("Connect Loom...\n");
+						break;
+					case 1:
+						Board->BoardType = b935x;
+						LCD_printf("9352 Loom Connected",1,0);
+						printT("9352 Connected...\n");
+						break;
+					case 2:
+						Board->BoardType = b937x;
+						LCD_printf("9371 Loom Connected",1,0);
+						printT("9371 Connected...\n");
+						break;
+					case 3:
+						Board->BoardType = b401x;
+						LCD_printf("4012 Loom Connected",1,0);
+						printT("401x Connected...\n");
+						break;
+					case 4:
+						Board->BoardType = b402x;
+						LCD_printf("4022 Loom Connected",1,0);
+						printT("4022 Connected...\n");
+						break;
+					case 5:
+						Board->BoardType = b427x;
+						LCD_printf("4271 Loom Connected",1,0);
+						printT("4271 Connected...\n");
+						break;
+					case 0x0A: //change to 6 when loom is fixed
+						Board->BoardType = b422x;
+						LCD_printf("4220 Loom Connected",1,0);
+						printT("4220 Connected...\n");
+						break;
+					default:
+						Board->BoardType = bNone;
+						LCD_printf("Unknown Loom",1,0);
+						printT("Unknown Loom...\n");
+					}
+					if ( (LoomState != bNone ) && (LoomState != 0) ) {
+						LCD_printf("   1 - Begin Test ",4,0);	// change wording to be dependant on state and loom connected
+						printT("Press 1 - Begin Test \n");
+					}
+				}
+//	else {
+//			CurrentState = csIDLE;
+//			ProcessState = psInitalisation;
+//			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
+//			LCD_Clear();
+//			LCD_printf("Loom disconnected", 2, 0);
+//		}
 
 }
 

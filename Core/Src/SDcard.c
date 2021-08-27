@@ -30,17 +30,17 @@
 void SDfileInit() {
 	if (SDcard.fatfs.last_clst == 0) //Last CLST > 0 if drive is mounted
 		Mount_SD("/");
-	Check_SD_Space();
-	SDcard.fresult = Create_Dir("TEST_RESULTS");
-	if ( (SDcard.fresult != FR_OK) && (SDcard.fresult != FR_EXIST) ) {
-		for(uint8 i = 0;i < 50; i++) {
-			Mount_SD("/");	//##### remove while(1) loop
-			HAL_Delay(100);
-			if (SDcard.fresult == FR_OK) {
-				break;
-			}
-		}
+	if (SDcard.fresult != FR_OK) {
+		printT("Reattempting to mount SD Card\n");
+		Mount_SD("/");
 	}
+	if (SDcard.fresult == FR_OK) {
+		Check_SD_Space();
+		SDcard.fresult = Create_Dir("TEST_RESULTS");
+	} else {
+		LCD_printf("SD Card not mounted", 3, 0);
+	}
+
 }
 
 _Bool FindBoardFile(TboardConfig *Board, char * fileLocation) {

@@ -7,7 +7,6 @@
 
 //store the various global variables here that will be accessible across the entire project
 //once the system is working correctly, pointers should be implemented so that addresses can be passed rather than variables
-
 #ifndef INC_INTEROGATE_PROJECT_H_
 #define INC_INTEROGATE_PROJECT_H_
 
@@ -19,14 +18,14 @@
 
 //Routines
 void communication_array(uns_ch, uns_ch*, uint8);
-void communication_response(TboardConfig *,uns_ch*, uns_ch*, uint8);
-void communication_command(uns_ch *);
-void SetPara(TboardConfig *,uns_ch);
+void communication_response(TboardConfig*, uns_ch*, uns_ch*, uint8);
+void communication_command(uns_ch*);
+void SetPara(TboardConfig*, uns_ch);
 void BoardConfig(void);
 void ADC_Init(void);
 void TransmitResults(void);
 void PrintLatchResults(void);
-void LatchErrorCheck(TboardConfig *);
+void LatchErrorCheck(TboardConfig*);
 //void printLatchError(uint8 *);
 void ADC_MUXsel(uint8);
 
@@ -37,17 +36,15 @@ void ADC_MUXsel(uint8);
 
 //variables for communication.c
 //variables for communication array/command
-uint8 Comlen;
-uns_ch Com_buffer[LRGBUFFER];
 uint8 Datalen;
 uns_ch Data_Buffer[LRGBUFFER];
-uint8 Paralen;
-uns_ch Para[LRGBUFFER];
+uint8 BoardCommsParametersLength;
+uns_ch BoardCommsParameters[LRGBUFFER];
 
 //Loom Variables
 _Bool CheckLoom;
 _Bool LoomChecking;
-uint16 LoomCheckCount;
+uint8 LoomCheckCount;
 uint8 LoomState;
 
 //0x1A and 0x1B Command and Response
@@ -58,29 +55,31 @@ _Bool samplesUploaded;
 unsigned char sampleBuffer[256];
 
 //Async Variables
-typedef struct{
+typedef struct {
 	_Bool Active;
 	uint8 PulseCount;
 	uint8 fcount;
 	uint16 scount;
 	_Bool PulseState;
 	_Bool FilterEnabled;
-	uint16 Pin;
-	GPIO_TypeDef* Port;
-}TasyncConfig;
+	uint16_t Pin;
+	GPIO_TypeDef *Port;
+} TasyncConfig;
 _Bool AsyncComplete;
 
 //SDI Twelve Variables
-typedef struct{
+typedef struct {
 	uint8 Address;
 	float setValue;
 	float measuredValue;
 	bool Enabled;
-}TsdiConfig;
+} TsdiConfig;
 
 uint8 SDIAddress;
 float SDIMeasurement;
-typedef enum {SDSundef, SDSquery, SDSaddress, SDSc, SDSdPending, SDSd}TsdiState;
+typedef enum {
+	SDSundef, SDSquery, SDSaddress, SDSc, SDSdPending, SDSd
+} TsdiState;
 TsdiState SDSstate;
 
 typedef struct {
@@ -88,7 +87,7 @@ typedef struct {
 	TsdiConfig Sdi;
 	int8 CalibrationFactor[6];
 	_Bool lowItestComplete;
-}TaportConfig;
+} TaportConfig;
 
 TaportConfig Port[9];
 
@@ -102,7 +101,9 @@ TaportConfig Port[9];
 #define RS_SENSOR_8 12.619
 #define RS_SENSOR_9 19.960
 
-typedef enum {RSundef, RSquery, RS9pending, RS9, RSMpending, RSM, RSdPending, RSd} TrsState;
+typedef enum {
+	RSundef, RSquery, RS9pending, RS9, RSMpending, RSM, RSdPending, RSd
+} TrsState;
 TrsState RSstate;
 uns_ch RS485buffer[128];
 
@@ -114,7 +115,7 @@ uint8 LatchTestPort;
 
 #define ADC_BUF_LEN 2048
 
-typedef struct{
+typedef struct {
 	uint32_t total;
 	float average;
 	float avg_Buffer[ADC_BUF_LEN];
@@ -129,7 +130,7 @@ typedef struct{
 	float highVoltage;
 	float lowVoltage;
 
-}TADCconfig;
+} TADCconfig;
 
 TADCconfig LatchPortA;
 TADCconfig LatchPortB;
@@ -141,7 +142,7 @@ TADCconfig Vuser;
 
 float fuseBuffer[3];
 
-typedef struct{
+typedef struct {
 	// Latch Pulse Widths and Voltages
 	uint8 tOn;
 	uint8 tOff;
@@ -161,41 +162,37 @@ typedef struct{
 	float MOSonLow;
 	float MOSoffHigh;
 	float MOSoffLow;
-}TlatchResults;
+} TlatchResults;
 
 TlatchResults LatchRes;
 
 //uint8 usADCcount; 			//us ADC count to poll the ADC every 100us
 uint8_t PulseCountDown;		// Stable voltage pulse
 
-	//Keypad Variables
+//Keypad Variables
 typedef struct {
+	uint16_t RowPin;
+	GPIO_TypeDef *RowPort;
+	uint16_t ColPin;
+	GPIO_TypeDef *ColPort;
+	bool PreviousState;
+	bool State;
 	bool Pressed;
-	uint8 Count;
-}TkeypadConfig;
+	uint8 debounceCount;
+} TkeypadConfig;
 
-TkeypadConfig KP_1;
-TkeypadConfig KP_2;
-TkeypadConfig KP_3;
-TkeypadConfig KP_4;
-TkeypadConfig KP_5;
-TkeypadConfig KP_6;
-TkeypadConfig KP_7;
-TkeypadConfig KP_8;
-TkeypadConfig KP_9;
-TkeypadConfig KP_0;
-TkeypadConfig KP_hash;
-TkeypadConfig KP_star;
+TkeypadConfig KP[12];
+typedef enum { hash = 10, star = 11 }TkeypadSpecialChars;
+
 
 uint8 QuitCount;
 
-	//Serial Number variables
+//Serial Number variables
 uint8 SerialNumber[9];
 uint8 SerialCount;
 uint8 BarcodeCount;
 uint8 BarcodeBuffer[9];
 _Bool BarcodeScanned;
-
 
 _Bool OldBoardMode;
 //	Timeout functionality, Loop action until timeout is met
