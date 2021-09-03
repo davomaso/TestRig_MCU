@@ -1,8 +1,11 @@
+
 #include <main.h>
-#include "calibration.h"
-#include "interogate_project.h"
+#include "Global_Variables.h"
+#include "Calibration.h"
+
 #include "UART_Routine.h"
 #include "DAC_Variables.h"
+#include "EEPROM.h"
 
 void Calibration(){
 	uint16 DACval;

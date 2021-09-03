@@ -5,59 +5,34 @@
 #include "stdbool.h"
 #include "Board_Config.h"
 #include "File_Handling.h"
-#include "ff.h"
+#include "UART_Routine.h"
 #include "SetVsMeasured.h"
+#include "LCD.h"
 
-//void WriteSDresults(TtestType *Code, float *Set, float *Measured) {
-//	PortCount = BoardConnected.latchPortCount + BoardConnected.analogInputCount + BoardConnected.digitalInputCout;
-//	if (Open_Afile(&FILEname[0]) != FR_OK) {
-//		Mount_SD("/");
-//		Open_Afile(&FILEname[0]);
-//	}
-//	for (int i = 0; i < PortCount;i++) {
-//		if (i < BoardConnected.latchPortCount) {
-//			sprintf(debugTransmitBuffer, "%d,%d,L%d,%d,%.3f,%.3f\n", BoardConnected.BoardType,BoardConnected.GlobalTestNum, (i+1) ,*Code++,*Set++,*Measured++);
-//			Update_File(&FILEname[0], &debugTransmitBuffer[0]);
-//		} else {
-//			sprintf(debugTransmitBuffer, "%d,%d,%d,%d,%.3f,%.3f\n", BoardConnected.BoardType,BoardConnected.GlobalTestNum, ((i+1)-BoardConnected.latchPortCount) ,*Code++,*Set++,*Measured++);
-//			Update_File(&FILEname[0], &debugTransmitBuffer[0]);
-//		}
-//		HAL_Delay(50);
-//	}
-//	Close_File(&FILEname[0]);
-//}
-
-void SDfileInit() {
-	if (SDcard.fatfs.last_clst == 0) //Last CLST > 0 if drive is mounted
-		Mount_SD("/");
-	if (SDcard.fresult != FR_OK) {
-		printT("Reattempting to mount SD Card\n");
-		Mount_SD("/");
+FRESULT SDInit(TfileConfig *file, TCHAR *path) {
+	FRESULT res;
+	res = Mount_SD(file, path);
+	if (res == FR_OK) {
+		SDcard.freeSpace = Check_SD_Space(&SDcard);
+		res = Create_Dir("/TEST_RESULTS");
 	}
-	if (SDcard.fresult == FR_OK) {
-		Check_SD_Space();
-		SDcard.fresult = Create_Dir("TEST_RESULTS");
-	} else {
-		LCD_printf("SD Card not mounted", 3, 0);
-	}
-
+	return res;
 }
 
-_Bool FindBoardFile(TboardConfig *Board, char * fileLocation) {
-	   	if(Board->Subclass)
-	   		sprintf(fileLocation,"%x%c", Board->BoardType, Board->Subclass);
-	   	else sprintf(fileLocation, "%x", Board->BoardType);
-		if (Find_File(&SDcard, "FIRMWARE", fileLocation)) {
-			char * tempDir;
-			tempDir = "/FIRMWARE/";
-			strcpy(fileLocation, tempDir);
-			strcat(fileLocation, SDcard.fileInfo.fname);
-			return true;
-		} else {
-			sprintf(debugTransmitBuffer, "hex file not found");
-			LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
-			printT(debugTransmitBuffer[0]);
-			return false;
-			}
+_Bool FindBoardFile(TboardConfig *Board, TfileConfig *FAT) {
+	if (Board->Subclass)
+		sprintf(&(FAT->FILEname[0]), "%x%c", Board->BoardType, Board->Subclass);
+	else
+		sprintf(&(FAT->FILEname[0]), "%x", Board->BoardType);
+	if (Find_File(FAT, "FIRMWARE")) {
+		strcpy(&(FAT->FILEname[0]), "/FIRMWARE/");
+		strcat((char*) &(FAT->FILEname[0]), (char*) &(FAT->fileInfo).fname);
+		return true;
+	} else {
+		sprintf((char*) &debugTransmitBuffer[0], "hex FAT not found");
+		LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
+		printT((uns_ch*) &debugTransmitBuffer[0]);
 		return false;
+	}
+	return false;
 }

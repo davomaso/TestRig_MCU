@@ -4,7 +4,7 @@
  *  Created on: 11 Sep 2020
  *      Author: Admin
  */
-
+#include "HexToAsc.h"
 
 int hex_to_int(char c){
         int first = c / 16 - 3;

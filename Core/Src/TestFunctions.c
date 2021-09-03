@@ -9,25 +9,14 @@
 //	in the same .C file
 // */
 #include "main.h"
+#include "Global_Variables.h"
+#include "TestFunctions.h"
 #include "Test.h"
-#include "Board_Config.h"
-#include <time.h>
-#include "interogate_project.h"
-#include "calibration.h"
-#include "ADC_Variables.h"
+#include "DAC.h"
 #include "DAC_Variables.h"
-
-_Bool twoWireLatching(TboardConfig*, uint8, _Bool);
-float setCurrentTestDAC(uint8);
-float setVoltageTestDAC(uint8, uint8);
-float setAsyncPulseCount(TboardConfig*, uint8);
-float setSDItwelveValue(uint8);
-//void DAC_set(uint8, int);
-
-void MUX_Sel(uint8, uint8);
-
-extern void delay_us(int);
-extern double round(double);
+#include "Calibration.h"
+#include "Delay.h"
+#include "UART_Routine.h"
 
 void TestFunction(TboardConfig *Board) {
 	//	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_Pin, GPIO_PIN_SET);
@@ -312,48 +301,54 @@ void ADC_MUXsel(uint8 ADCport) {
 void PrintLatchResults() {
 	float LatchCurrent1;
 	float LatchCurrent2;
-	printT("\n\n =======================  Latch Test  =======================\n\n");
-	sprintf(&debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n",
+	printT((uns_ch*) "\n\n =======================  Latch Test  =======================\n\n");
+	sprintf((char*) &debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n",
 			LatchPortA.HighPulseWidth, LatchPortA.LowPulseWidth);
-	printT(&debugTransmitBuffer);
+	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   Port A Voltage:   High: %.3f Low: %.3f   ==============\n",
-			LatchPortA.highVoltage, LatchPortA.lowVoltage);
-	printT(&debugTransmitBuffer);
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port A Voltage:   High: %.3f Low: %.3f   ==============\n", LatchPortA.highVoltage,
+			LatchPortA.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
 
 	//Port B Latch Time
-	sprintf(&debugTransmitBuffer, "\n==============   Port B Latch time:   High: %d  Low: %d   ==============\n",
-			LatchPortB.HighPulseWidth, LatchPortB.LowPulseWidth);
-	printT(&debugTransmitBuffer);
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port B Latch time:   High: %d  Low: %d   ==============\n", LatchPortB.HighPulseWidth,
+			LatchPortB.LowPulseWidth);
+	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   Port B Voltage:   High: %.3f Low: %.3f   ==============\n\n",
-			LatchPortB.highVoltage, LatchPortB.lowVoltage);
-	printT(&debugTransmitBuffer);
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port B Voltage:   High: %.3f Low: %.3f   ==============\n\n", LatchPortB.highVoltage,
+			LatchPortB.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %.3f Min: %.3f   ==============\n",
+	sprintf((char*) &debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %.3f Min: %.3f   ==============\n",
 			Vin.average, Vin.lowVoltage);
-	printT(&debugTransmitBuffer);
+	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %.3f Min: %.3f   ==============\n",
+	sprintf((char*) &debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %.3f Min: %.3f   ==============\n",
 			Vfuse.average, Vfuse.lowVoltage);
-	printT(&debugTransmitBuffer);
+	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 1 Voltage:   High: %.3f Low: %.3f   ==============\n",
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   MOSFET 1 Voltage:   High: %.3f Low: %.3f   ==============\n",
 			MOSFETvoltageA.highVoltage, MOSFETvoltageA.lowVoltage);
-	printT(&debugTransmitBuffer);
+	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf(&debugTransmitBuffer, "\n==============   MOSFET 2 Voltage:   High: %.3f Low: %.3f   ==============\n",
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   MOSFET 2 Voltage:   High: %.3f Low: %.3f   ==============\n",
 			MOSFETvoltageB.highVoltage, MOSFETvoltageB.lowVoltage);
-	printT(&debugTransmitBuffer);
+	printT((uns_ch*) &debugTransmitBuffer);
 
 	LatchCurrent2 = LatchPortB.highVoltage - LatchPortA.lowVoltage;
 	LatchCurrent1 = LatchPortA.highVoltage - LatchPortB.lowVoltage;
 	LatchCurrent1 /= ADC_Rcurrent;
 	LatchCurrent2 /= ADC_Rcurrent;
 
-	sprintf(&debugTransmitBuffer, "\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n",
-			LatchCurrent1, LatchCurrent2);
-	printT(&debugTransmitBuffer);
+	sprintf((char*) &debugTransmitBuffer[0],
+			"\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent1,
+			LatchCurrent2);
+	printT((uns_ch*) &debugTransmitBuffer);
 }
 
 void normaliseLatchResults() {
@@ -392,11 +387,11 @@ void normaliseLatchResults() {
 }
 
 void TransmitResults() {
-	printT("==============   ADC Average Results   ==============");
+	printT((uns_ch*) "==============   ADC Average Results   ==============");
 	for (int i = 0; i < LatchCountTimer; i++) {
-		sprintf(debugTransmitBuffer, "%d,%d,%d,%d\n", i, LatchPortA.avg_Buffer[i], LatchPortB.avg_Buffer[i],
-				Vfuse.avg_Buffer[i]);
-		printT(&debugTransmitBuffer);
+		sprintf((char*) &debugTransmitBuffer[0], "%i,%.2f,%.2f,%.2f\n", i, LatchPortA.avg_Buffer[i],
+				LatchPortB.avg_Buffer[i], Vfuse.avg_Buffer[i]);
+		printT((uns_ch*) &debugTransmitBuffer);
 	}
 }
 //	=================================================================================//

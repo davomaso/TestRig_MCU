@@ -11,6 +11,7 @@
 #define INC_INTEROGATE_PROJECT_H_
 
 #include "main.h"
+#include "Global_Variables.h"
 #include "Test.h"
 #include "Board_Config.h"
 #include <time.h>
@@ -182,7 +183,7 @@ typedef struct {
 } TkeypadConfig;
 
 TkeypadConfig KP[12];
-typedef enum { hash = 10, star = 11 }TkeypadSpecialChars;
+typedef enum { star = 10, hash = 11 }TkeypadSpecialChars;
 
 
 uint8 QuitCount;

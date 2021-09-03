@@ -9,20 +9,13 @@
 
 //INCLUDES
 #include "main.h"
-#include "stm32f4xx_it.h"
-#include "interogate_project.h"
+#include "Global_Variables.h"
+#include "Communication.h"
+
+#include "CRC16_Slow.h"
 #include "UART_Routine.h"
 #include "Board_Config.h"
 #include "Test.h"
-
-
-_Bool CRC_Check(uns_ch *, uns_ch);
-
-extern UART_HandleTypeDef huart2;
-extern UART_HandleTypeDef huart3;
-extern UART_HandleTypeDef huart6;
-extern TIM_HandleTypeDef htim6;
-extern TIM_HandleTypeDef htim14;
 
 //VARIABLE DEFINITIONS
 //B2 21 NOTIFIES the boards that data is being transmitted

@@ -5,7 +5,8 @@
  *      Author: mason
  */
 #include "main.h"
-#include "interogate_project.h"
+#include "v1.h"
+#include "Global_Variables.h"
 
 void clearTestStatusLED() {
 	HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);
@@ -15,14 +16,14 @@ void clearTestStatusLED() {
 
 void testInputVoltage() {
 	HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-	LCD_printf("Board Power Test", 2, 0);
+	LCD_printf((uns_ch*)"Board Power Test", 2, 0);
 	InputVoltageTimer = 2500;
 	InputVoltageSampling = true;
 }
 
 void testSolarCharger() {
 	HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_SET);
-	LCD_printf("Solar Charger Test", 2, 1);
+	LCD_printf((uns_ch*)"Solar Charger Test", 2, 1);
 	SolarChargerTimer = 2500;
 	SolarChargerSampling = true;
 }
@@ -57,13 +58,13 @@ void TestComplete(TboardConfig *Board) {
 		HAL_GPIO_WritePin(PASS_GPIO_Port, PASS_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
-		sprintf(previousTestBuffer, "Previous Test Passed");
+		sprintf((char*)&previousTestBuffer[0], "Previous Test Passed");
 	} else {
 		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(PASS_GPIO_Port, PASS_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
-		sprintf(previousTestBuffer, "Previous Test Failed");
+		sprintf((char*)&previousTestBuffer[0], "Previous Test Failed");
 	}
 	timeOutEn = false;
-	LCD_printf(&previousTestBuffer, 2, 0);
+	LCD_printf(&previousTestBuffer[0], 2, 0);
 }

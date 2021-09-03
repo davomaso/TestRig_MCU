@@ -1,16 +1,15 @@
+#include "main.h"
 #include "Test.h"
 #include "stdio.h"
+#include "LCD.h"
 #include "Board_Config.h"
 #include "main.h"
-#include "interogate_project.h"
+#include "v1.h"
+#include "Global_Variables.h"
 #include "SetVsMeasured.h"
-
-void SetTestParam(TboardConfig*, uint8, uns_ch *, uint8 *);
-extern TestFunction(TboardConfig *);
-
-extern set_ALL_DAC(int);
-
-
+#include "UART_Routine.h"
+#include "DAC.h"
+#include "TestFunctions.h"
 
 // ==================	Global Assignment of Port Configs	================== //
 void ConfigInit() {
@@ -82,18 +81,18 @@ void ConfigInit() {
 //=====================================================  SINGLE & DUAL BOARDS  =====================================================//
 void TestConfig935x(TboardConfig * Board) {
 		// Port Test Array
-	uint32 *tempTestARR[30] = {
-			&latchTest, &TwovoltTest,&OnevoltTest, &asyncTest, &asyncDigitalTest, 				//
-			&noTest, &sdi12Test, &currentTest, &asyncDigitalTest, &asyncTest,				//
-			&noTest, &asyncDigitalTest, &sdi12Test, &asyncDigitalTest,&asyncDigitalTest, 		//
-			&noTest, &asyncTest, &currentTest, &asyncTest, &asyncDigitalTest, 				//
-			&noTest, &currentTest, &TwovoltTest, &asyncDigitalTest, &asyncTest, 				//
-			&noTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncDigitalTest		 		//
+	uint32 *tempTestARR[30] = {	//
+			(uint32*)&latchTest, (uint32*)&TwovoltTest, (uint32*)&OnevoltTest, (uint32*)&asyncTest, (uint32*)&asyncDigitalTest, 				//
+			(uint32*)&noTest, (uint32*)&sdi12Test, (uint32*)&currentTest, (uint32*)&asyncDigitalTest, (uint32*)&asyncTest,				//
+			(uint32*)&noTest, (uint32*)&asyncDigitalTest, (uint32*)&sdi12Test, (uint32*)&asyncDigitalTest, (uint32*)&asyncDigitalTest, 		//
+			(uint32*)&noTest, (uint32*)&asyncTest, (uint32*)&currentTest, (uint32*)&asyncTest, (uint32*)&asyncDigitalTest, 				//
+			(uint32*)&noTest, (uint32*)&currentTest, (uint32*)&TwovoltTest, (uint32*)&asyncDigitalTest, (uint32*)&asyncTest, 				//
+			(uint32*)&noTest, (uint32*)&currentTest, (uint32*)&asyncTest, (uint32*)&asyncDigitalTest, (uint32*)&asyncDigitalTest		 		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR) );
 	Board->ArrayPtr = 0;
 		// Port Code Array
-	uint8 tempPcARR[5][4] = {
+	uint8 tempPcARR[20] = {
 			 0x80, 0x81, 0x82, 0x83 ,	//
 			 0xC0, 0xC1, 0xC2, 0xC3 ,	//
 			 0xD0, 0xD1, 0xD2, 0xD3 ,	//
@@ -124,7 +123,7 @@ void TestConfig937x(TboardConfig * Board) {
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 		// Port Code Array
-	 uint8 tempPcARR[4][4] = {	//
+	 uint8 tempPcARR[16] = {	//
 			 0x80, 0x81, 0x00, 0x00 ,	//
 			 0x84, 0x85, 0x88, 0x89 ,	//
 			 0xC0, 0xC1, 0xC2, 0x00 ,	//
@@ -146,9 +145,9 @@ void TestConfig937x(TboardConfig * Board) {
 //====================================================  INPUT EXPANSION BOARDS  ====================================================//
 void TestConfig401x(TboardConfig * Board){
 		// Port Test Array
-	uint32 *tempTestARR[24] = {
-			&asyncDigitalTest, &OnevoltTest, &currentTest, &asyncTest,		//
-			&asyncTest, &sdi12Test, &OnevoltTest, &currentTest,				//
+	TportConfig *tempTestARR[24] = {
+			&(asyncDigitalTest), &(OnevoltTest), &(currentTest), &(asyncTest),		//
+			&asyncTest,   &sdi12Test, &OnevoltTest, &currentTest,				//
 			&currentTest, &asyncTest, &sdi12Test, &OnevoltTest,				//
 			&OnevoltTest, &currentTest, &asyncTest, &sdi12Test,				//
 			&TwovoltTest, &currentTest, &TwovoltTest, &currentTest,			//
@@ -176,7 +175,7 @@ void TestConfig401x(TboardConfig * Board){
 
 void TestConfig402x(TboardConfig * Board){
 		//Port Test Array
-	uint32 *tempTestARR[70] = {
+	TportConfig *tempTestARR[70] = {
 			&OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &asyncTest, &asyncTest, &asyncTest, &outputTest,				//
 			&currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &currentTest, &OnevoltTest, &asyncDigitalTest, &asyncTest, &asyncTest, &outputTest,				//
 			&currentTest, &TwovoltTest, &sdi12Test, &currentTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest,					//
@@ -215,7 +214,7 @@ void TestConfig402x(TboardConfig * Board){
 
 //====================================================  OUTPUT EXPANSION BOARDS  ====================================================//
 void TestConfig422x(TboardConfig * Board){
-	uint32 *tempTestARR[16] = {
+	TportConfig *tempTestARR[16] = {
 			&latchTest, &noTest, &noTest, &noTest,		//
 			&noTest, &latchTest, &noTest, &noTest,		//
 			&noTest, &noTest, &latchTest, &noTest,		//
@@ -241,7 +240,7 @@ void TestConfig422x(TboardConfig * Board){
 }
 
 void TestConfig427x(TboardConfig * Board){
-	uint32 *tempTestARR[20] = {
+	TportConfig *tempTestARR[20] = {
 			&latchTest, &noTest, &noTest, &noTest, &asyncTest,		//
 			&noTest, &latchTest, &noTest, &noTest, &OnevoltTest,	//
 			&noTest, &noTest, &latchTest, &noTest, &currentTest,	//
@@ -368,27 +367,27 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 	uint8 Test = Board->GlobalTestNum;
 	uint8 maxTest = Board->testNum;
 	if (Test == maxTest) {
-		sprintf(&debugTransmitBuffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
-		printT(&debugTransmitBuffer);
+		sprintf((char*) &debugTransmitBuffer,"\n ========== Maximum Test Number Reached: %d ==========\n",Test);
+		printT((uns_ch*)&debugTransmitBuffer);
 		reset_ALL_MUX();
 		reset_ALL_DAC();
 
 		LCD_ClearLine(3);
 		LCD_ClearLine(4);
-		LCD_printf("    Test Results    ",2,0);
+		LCD_printf((uns_ch*)"    Test Results    ",2,0);
 		uint8 spacing = (20 - (Test) - (Test-1));
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
 		SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		for (uint8 i = 0; i < maxTest; i++) {
-			if ( Board->TPR & (1 << i) == true) {
-				sprintf(debugTransmitBuffer, "X ");
-				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+			if ( (Board->TPR & (1 << i) ) == true) {
+				sprintf((char*)&debugTransmitBuffer[0], "X ");
+				LCD_displayString((uns_ch*)&debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
 				CLEAR_BIT( Board->BSR, BOARD_TEST_PASSED );
 			} else {
-				sprintf(debugTransmitBuffer, ". ");
-				LCD_displayString(&debugTransmitBuffer[0], strlen(debugTransmitBuffer));
+				sprintf((char*)&debugTransmitBuffer[0], ". ");
+				LCD_displayString((uns_ch*)&debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
 			}
 		}
 		CheckPowerRegisters(Board);

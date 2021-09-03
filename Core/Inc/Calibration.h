@@ -1,13 +1,14 @@
 #ifndef INC_CALIBRATION_H_
 #define INC_CALIBRATION_H_
 
-#include "interogate_project.h"
+#include "main.h"
+#include "Board_Config.h"
 
 #define CALIBRATION_TIMEOUT 10000
 
-void Calibration();
-float Current_calibration(uint8);
-float Voltage_calibration(uint8);
+void Calibration(void);
+void TargetBoardCalibration_Voltage(TboardConfig *);
+void TargetBoardCalibration_Current(TboardConfig *);
 
 
 //Calibration Enums

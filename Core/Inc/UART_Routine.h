@@ -12,6 +12,9 @@
 //#include "interogate_project.h"
 #include "stdbool.h"
 
+void UART2_transmit(unsigned char *, unsigned char);
+void printT(uns_ch *);
+
 //Defines
 #define LRGBUFFER 254
 #define SMLBUFFER 32

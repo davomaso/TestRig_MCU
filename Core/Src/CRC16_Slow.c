@@ -1,4 +1,6 @@
 #include "main.h"
+#include "CRC16_Slow.h"
+
 unsigned short uart_CalcCRC16(unsigned char* ptr, unsigned char count) {
 	uns_ch bit;
 	uint16 CRC16=0xFFFF;

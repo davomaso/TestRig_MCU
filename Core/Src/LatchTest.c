@@ -1,8 +1,9 @@
 #include "main.h"
-#include "interogate_project.h"
+#include "Global_Variables.h"
 #include "UART_Routine.h"
+#include "LatchTest.h"
 
-uint8 runLatchTest(TboardConfig *Board, uint8 Test_Port){
+uint8 runLatchTest(TboardConfig *Board, uint8 Test_Port) {
 	ADC_MUXsel(Test_Port);
 	PulseCountDown = latchCountTo = 2000;
 	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);

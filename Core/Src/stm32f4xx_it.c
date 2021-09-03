@@ -20,13 +20,18 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "Calibration.h"
+#include "ADC.h"
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "interogate_project.h"
+#include "Global_Variables.h"
 #include "UART_Routine.h"
 #include "Programming.h"
-#include "calibration.h"
+#include "CRC16_Slow.h"
+#include "Init.h"
+#include "Communication.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,7 +100,7 @@ void NMI_Handler(void) {
 void HardFault_Handler(void) {
 	/* USER CODE BEGIN HardFault_IRQn 0 */
 	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-	printT("\n\n\nHard Fault Reset Device!!!!...\n");
+	printT((uns_ch*) "\n\n\nHard Fault Reset Device!!!!...\n");
 	/* USER CODE END HardFault_IRQn 0 */
 	while (1) {
 		/* USER CODE BEGIN W1_HardFault_IRQn 0 */
@@ -171,8 +176,7 @@ void DebugMon_Handler(void) {
  */
 void PendSV_Handler(void) {
 	/* USER CODE BEGIN PendSV_IRQn 0 */
-
-	/* USER CODE END PendSV_IRQn 0 */
+	/* USER CODE END PendSV_IRQns 0 */
 	/* USER CODE BEGIN PendSV_IRQn 1 */
 
 	/* USER CODE END PendSV_IRQn 1 */
@@ -554,7 +558,7 @@ void USART2_IRQHandler(void) {
 					BoardCommsReceiveState = RxGOOD;
 				} else {
 					BoardCommsReceiveState = RxBAD;
-					printT("CRC Error...\n");
+					printT((uns_ch*) "CRC Error...\n");
 				}
 				USART2->CR1 &= ~(USART_CR1_RXNEIE);
 			}
@@ -745,12 +749,16 @@ void TIM7_IRQHandler(void) {
 		HAL_GPIO_WritePin(KP_R4_GPIO_Port, KP_R4_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(KP[currentScan].RowPort, KP[currentScan].RowPin, GPIO_PIN_RESET);
 
-		HAL_GPIO_ReadPin(KP[currentScan].ColPort, KP[currentScan].ColPin) ? --KP[currentScan].debounceCount : ++KP[currentScan].debounceCount;
 		KP[currentScan].PreviousState = KP[currentScan].State;
-		if (KP[currentScan].debounceCount >= 250) {
-			KP[currentScan].debounceCount = 250;
+		if (HAL_GPIO_ReadPin(KP[currentScan].ColPort, KP[currentScan].ColPin))
+			(KP[currentScan].debounceCount)--;
+		else
+			(KP[currentScan].debounceCount)++;
+
+		if ((KP[currentScan].debounceCount >= 100)) {
+			KP[currentScan].debounceCount = 100;
 			KP[currentScan].State = true;
-		} else if (KP[currentScan].debounceCount <= 5) {
+		} else if ((KP[currentScan].debounceCount <= 5)) {
 			KP[currentScan].debounceCount = 5;
 			KP[currentScan].State = false;
 		}
@@ -817,24 +825,30 @@ void USART6_IRQHandler(void) {
 						}
 					}
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_RESET);
-					sprintf(debugTransmitBuffer, "%d\x0D\x0A", (SDIAddress));
-					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), 10);
+					sprintf((char*) &debugTransmitBuffer[0], "%d\x0D\x0A", (SDIAddress));
+					HAL_UART_Transmit(&SDI_UART, (uint8_t*) &debugTransmitBuffer[0],
+							strlen((char*) debugTransmitBuffer), 10);
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
 					USART6->CR1 |= (USART_CR1_RE);
 					SDSstate = SDSundef;
 				} else if (SDSstate == SDSc) {
 					USART6->CR1 &= ~(USART_CR1_RE); //					Return Time till sample
-					uns_ch *SDIrqMeasurements = "00001";
+					char *SDIrqMeasurements = malloc(4 * sizeof(char));
+					sprintf(SDIrqMeasurements, "00001");
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_RESET);
-					sprintf(debugTransmitBuffer, "%d%s\x0D\x0A", (SDIAddress), SDIrqMeasurements);
-					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+					sprintf((char*) &debugTransmitBuffer[0], "%d%s\x0D\x0A", (SDIAddress), SDIrqMeasurements);
+					HAL_UART_Transmit(&SDI_UART, (uint8_t*) &debugTransmitBuffer[0],
+							strlen((char*) debugTransmitBuffer), HAL_MAX_DELAY);
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
 					USART6->CR1 |= (USART_CR1_RE);
+					free(SDIrqMeasurements);
 				} else if (SDSstate == SDSd) {
 					USART6->CR1 &= ~(USART_CR1_RE); //					Return Time till sample
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_RESET);
-					sprintf(debugTransmitBuffer, "%d+%f\x0D\x0A", (SDIAddress), SDIMeasurement);
-					HAL_UART_Transmit(&SDI_UART, &debugTransmitBuffer[0], strlen(debugTransmitBuffer), HAL_MAX_DELAY);
+					sprintf((char*) &debugTransmitBuffer[0], "%d+%f\x0D\x0A", (SDIAddress), SDIMeasurement);
+					HAL_UART_Transmit(&SDI_UART, (uint8_t*) &debugTransmitBuffer[0],
+							strlen((char*) debugTransmitBuffer),
+							HAL_MAX_DELAY);
 					HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);
 					USART6->CR1 |= (USART_CR1_RE);
 
@@ -845,7 +859,6 @@ void USART6_IRQHandler(void) {
 	}
 	if (RS485enabled) {
 		uint16 UART6status = USART6->SR;
-		uns_ch UART6data = (USART6->DR & 0X7F);
 		if (UART6status & USART_ERROR_MASK) {
 			RSstate = RSundef;
 		} else if (UART6status & USART_SR_RXNE) {
@@ -871,10 +884,10 @@ void USART6_IRQHandler(void) {
 		if (RSstate == RSd) {
 			//Put the RS485 data in here
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_SET);
-			sprintf(RS485buffer, "1,1,%.3f,2,%.3f,3,%.3f,4,%.3f,5,%.3f,6,%.3f,7,%.3f,8,%.3f,9,%.3f\r\n",	//
+			sprintf((char*) &RS485buffer[0], "1,1,%.3f,2,%.3f,3,%.3f,4,%.3f,5,%.3f,6,%.3f,7,%.3f,8,%.3f,9,%.3f\r\n", //
 					RS_SENSOR_1, RS_SENSOR_2, RS_SENSOR_3, RS_SENSOR_4, RS_SENSOR_5, RS_SENSOR_6, RS_SENSOR_7,
 					RS_SENSOR_8, RS_SENSOR_9);
-			HAL_UART_Transmit(&SDI_UART, &RS485buffer, strlen(RS485buffer), HAL_MAX_DELAY);
+			HAL_UART_Transmit(&SDI_UART, (uint8_t*) &RS485buffer[0], strlen((char*) &RS485buffer[0]), HAL_MAX_DELAY);
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 		}
 	}

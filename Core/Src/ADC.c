@@ -6,7 +6,8 @@
  */
 
 #include "main.h"
-#include "interogate_project.h"
+#include "Global_Variables.h"
+#include "ADC.h"
 
 	//ADC Port A
 void ADC_Ch0sel() {

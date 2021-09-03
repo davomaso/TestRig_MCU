@@ -3,14 +3,18 @@
  */
 #include <main.h>
 #include "fatfs.h"
-#include "interogate_project.h"
+#include "Init.h"
+#include "LCD.h"
+#include "Global_Variables.h"
 #include "Programming.h"
 #include "File_Handling.h"
+#include "Communication.h"
+#include "UART_Routine.h"
 
 extern SD_HandleTypeDef hsd;
 
-_Bool populatePageBuffer(uns_ch*, uint16*,uns_ch*,uint8*);
-_Bool VerifyPage(uint8 , uns_ch *);
+_Bool populatePageBuffer(uns_ch*, uint16*, uns_ch*, uint8*);
+_Bool VerifyPage(uint8, uns_ch*);
 _Bool EnableProgramming(void);
 void SetSDclk(_Bool);
 
@@ -19,20 +23,20 @@ void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	 * Routine to sort through a line of INTEL hex format data
 	 * Put the data into a line buffer that can be handled by the populate page buffer routine.
 	 */
-	uint8 data[4];
+	uint8 len;
 	*Position = 0;
 	if (*Line++ == ':') {
-		len = Ascii2hex(Line);
+		len = Ascii2hex((char*) Line);
 		Line += 2;
-		hexAddress = (Ascii2hex(Line) << 8);
+		hexAddress = (Ascii2hex((char*) Line) << 8);
 		Line += 2;
-		hexAddress += Ascii2hex(Line);
+		hexAddress += Ascii2hex((char*) Line);
 		Line += 2;
-		hexRecType = Ascii2hex(Line);
+		hexRecType = Ascii2hex((char*) Line);
 		Line += 2;
 		while (len > 0) {
 			len--;
-			*lineBuffer = Ascii2hex(Line);
+			*lineBuffer = Ascii2hex((char*) Line);
 			lineBuffer++;
 			(*Position)++;
 			Line += 2;
@@ -88,7 +92,7 @@ void SetClkAndLck() {
 		data[2] = 0x00;
 		data[3] = 0x00;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_MAX_DELAY);
 	}
 
 	//Fuse High Byte
@@ -105,7 +109,7 @@ void SetClkAndLck() {
 		data[2] = 0x00;
 		data[3] = 0x00;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_MAX_DELAY);
 	}
 
 	//Fuse Extended Byte
@@ -123,7 +127,7 @@ void SetClkAndLck() {
 		data[2] = 0x00;
 		data[3] = 0x00;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_MAX_DELAY);
 	}
 
 	//Lock Byte
@@ -140,19 +144,9 @@ void SetClkAndLck() {
 		data[2] = 0x00;
 		data[3] = 0x00;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
-				HAL_MAX_DELAY);
+		HAL_MAX_DELAY);
 
 	}
-}
-
-void ProgrammingInit() {
-	/*
-	 * Routine to enable programming
-	 * Poll the device until ready, erase device, and change clk to 8Mhz to program at a greater speed
-	 */
-	//Erase Chip
-	uns_ch data[4];
-	uns_ch response[4];
 }
 
 uint8 findVer(char *data) {
@@ -232,13 +226,13 @@ void PollReady() {
 	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
-	while ( ((receive[3] & 0x01) != 0) && (ProcessState != psFailed) ) {
+	while (((receive[3] & 0x01) != 0) && (ProcessState != psFailed)) {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
 	}
 }
 
 void pageCommit(uint8 currPage) {
-	spi_transaction(0x4C, (currPage >> 1), ( (currPage & 0x01) << 7), 0x00);
+	spi_transaction(0x4C, (currPage >> 1), ((currPage & 0x01) << 7), 0x00);
 }
 
 _Bool ContinueWithCurrentProgram() {
@@ -247,22 +241,22 @@ _Bool ContinueWithCurrentProgram() {
 	 * the current firmware that is currently loaded onto the board.
 	 */
 	LCD_ClearLine(2);
-	sprintf(lcdBuffer, "  Update Program?");
-	printT(&lcdBuffer);
+	sprintf((char*)&lcdBuffer[0], "  Update Program?");
+	printT((uns_ch*) &lcdBuffer[0]);
 	LCD_setCursor(2, 0);
-	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString((uns_ch*)&lcdBuffer, strlen((char*)lcdBuffer));
 
 	LCD_ClearLine(3);
-	sprintf(lcdBuffer, "Current Version:  %x", BoardConnected.Version);
+	sprintf((char*)lcdBuffer, "Current Version:  %x", BoardConnected.Version);
 	LCD_setCursor(3, 0);
-	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
-	printT(&lcdBuffer);
+	LCD_displayString((uns_ch*)&lcdBuffer, strlen((char*)lcdBuffer));
+	printT((uns_ch*)&lcdBuffer);
 
 	LCD_ClearLine(4);
-	sprintf(lcdBuffer, "*-Reprogram   #-Keep");
-	printT(&lcdBuffer);
+	sprintf((char*) &lcdBuffer[0], "*-Reprogram   #-Keep");
+	printT(&lcdBuffer[0]);
 	LCD_setCursor(4, 0);
-	LCD_displayString(&lcdBuffer, strlen(lcdBuffer));
+	LCD_displayString((uns_ch*) &lcdBuffer, strlen((char*) lcdBuffer));
 	while (1) {
 		if (KP[hash].Pressed) {
 			KP[hash].Pressed = 0;
@@ -297,7 +291,7 @@ _Bool EnableProgramming() {
 	//Poll Ready
 	data[0] = 0xF0;
 	data[1] = 0x00;
-	while (ProcessState) {//TODO: Add timeout functionality here if no response is received
+	while (ProcessState) {		//TODO: Add timeout functionality here if no response is received
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		if (((response[3] & 0x01) == 0))
 			return true;
@@ -313,7 +307,6 @@ _Bool VerifyPage(uint8 page, uns_ch *PageByte) {
 	uns_ch HighByte;
 	uns_ch data[4];
 	uns_ch receive[4];
-	uns_ch RecBuffer[MAX_PAGE_LENGTH];
 	for (uint8 i = 0; i < 128; i++) {
 		data[0] = 0x20;
 		data[1] = (page >> 1);
@@ -337,23 +330,21 @@ void ProgressBar(uint8 Percentage) {
 	/*
 	 * Passing a percentage to this routine will update the progress bar present on the LCD screen
 	 */
-	uns_ch Byte;
-	uns_ch ProgressBarBlock = 0x1F;
-	uns_ch HalfProgressBarBlock = 0xD9;
-	uint8 Pos;
 	if (Percentage <= 100) {
+		uns_ch Byte;
 		if (!(Percentage & 0x01)) {
 			LCD_setCursor(4, 9);
-			sprintf(debugTransmitBuffer, "%d", Percentage);
-			LCD_displayString(&debugTransmitBuffer, strlen(debugTransmitBuffer));
+			sprintf((char*) &debugTransmitBuffer[0], "%d", Percentage);
+			LCD_displayString((uns_ch*) &debugTransmitBuffer, strlen((char*) debugTransmitBuffer));
 			Byte = 0x25;
 			LCD_displayString(&Byte, 1);
+//			uint8 Pos;
 			switch (Percentage % 10) {
 			case 0:
 				Byte = 0xD0;
 				LCD_setCursor(3, (5 + (Percentage / 10)));
 				LCD_displayString(&Byte, 1);
-				Pos++;
+//				Pos++;
 				break;
 			case 2:
 				Byte = 0xD4;
@@ -382,10 +373,9 @@ void ProgressBar(uint8 Percentage) {
 }
 
 void SetSDclk(_Bool OnOff) {
-	HAL_Delay(10);
-	if(OnOff) {
+	if (OnOff) {
 		hsd.Instance->CLKCR &= 0xFF00;
-		hsd.Instance->CLKCR |= 2;
+		hsd.Instance->CLKCR |= 4;
 	} else {
 		hsd.Instance->CLKCR &= 0xFF00;
 		hsd.Instance->CLKCR |= 16;

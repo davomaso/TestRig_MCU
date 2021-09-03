@@ -4,7 +4,8 @@
  *      Author: David
  */
 #include "main.h"
-#include "interogate_project.h"
+#include "Global_Variables.h"
+#include "Channel_Analysis.h"
 
 void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	uint8 CH_count = 0;
