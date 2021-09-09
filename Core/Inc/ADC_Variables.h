@@ -16,6 +16,8 @@ Latch Port Input________|________/\/\/\______________OPAMP
 #ifndef INC_ADC_VARIABLES_H_
 #define INC_ADC_VARIABLES_H_
 
+#include "math.h"
+
 #define ADC_R1 6200
 #define ADC_R2 5100
 #define ADC_R3 1000
@@ -26,8 +28,8 @@ Latch Port Input________|________/\/\/\______________OPAMP
 #define ADC_RESOLUTION 4096
 #define ADC_MAX_INPUT_VOLTAGE ( ADC_VREF * ( (ADC_R2+ADC_R3) / ADC_R3 ) )
 
-#define LATCH_HIGH_VOLTAGE_THRESHOLD ( (10 * 0.9) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH high voltage is above 90% of source voltage
-#define LATCH_LOW_VOLTAGE_THRESHOLD ( (10 * 0.2 ) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH low voltage is below 10% of source voltage
+#define LATCH_HIGH_VOLTAGE_THRESHOLD  ( (9.8 * 0.9) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH high voltage is above 90% of source voltage
+#define LATCH_LOW_VOLTAGE_THRESHOLD  ( (9.8 * 0.2 ) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH low voltage is below 10% of source voltage
 
 
 // Input Voltages
@@ -66,6 +68,7 @@ Latch Port Input________|________/\/\/\______________OPAMP
 
 uint8 LatchTestErrorRegister;
 
+	// Latch Test Status Registers
 #define STABLE_INPUT_VOLTAGE 	1
 #define LATCH_ON_COMPLETE 		2
 #define LATCH_OFF_COMPLETE		4
@@ -74,5 +77,10 @@ uint8 LatchTestErrorRegister;
 #define LATCH_OFF_SAMPLING		32
 
 uint8 LatchTestStatusRegister;
+
+	// Voltage Constants	// Thresholds for voltage calculations in stm32_f4_it.c
+#define VIN_STABLE_THRESHOLD	3000
+#define LATCH_ON_THRESHOLD		2400
+#define LATCH_OFF_THRESHOLD		100
 
 #endif /* INC_ADC_VARIABLES_H_ */

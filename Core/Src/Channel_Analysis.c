@@ -10,6 +10,7 @@
 void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	uint8 CH_count = 0;
 	uint32 Channel_value;
+	Channel_value = 0;
 	uint8 Compression_type;
 	uint8 length = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;
 	while (CH_count <= length) {

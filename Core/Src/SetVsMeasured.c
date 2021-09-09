@@ -19,17 +19,19 @@ void CompareResults(TboardConfig *Board, float *SetVal) {
 	float fMeasured;
 	float comp_max;
 	float comp_min;
+	comp_max = comp_min = 0;
 	Tresult TresultStatus;
 
 	Open_AppendFile(&SDcard);
-	sprintf((char*)&debugTransmitBuffer[0], "\n====================	Test %d	====================\n\n", Board->GlobalTestNum + 1);
-	printT((uns_ch*)&debugTransmitBuffer[0]);
+	sprintf((char*) &debugTransmitBuffer[0], "\n====================	Test %d	====================\n\n",
+			Board->GlobalTestNum + 1);
+	printT((uns_ch*) &debugTransmitBuffer[0]);
 	LCD_ClearLine(2);
 	LCD_ClearLine(3);
 	LCD_ClearLine(4);
 	LCD_setCursor(2, 0);
-	sprintf((char*)&debugTransmitBuffer[0], "       Test %d       ", Board->GlobalTestNum + 1);
-	LCD_displayString((uns_ch*)&debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
+	sprintf((char*) &debugTransmitBuffer[0], "       Test %d       ", Board->GlobalTestNum + 1);
+	LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 	LCD_ClearLine(3);
 	LCD_setCursor(3, 0);
 
@@ -43,7 +45,7 @@ void CompareResults(TboardConfig *Board, float *SetVal) {
 		switch (Board->TestCode[currResult]) {
 		case TWO_WIRE_LATCHING:
 			fMeasured = (float) MeasuredVal;
-			printT((uns_ch*)"Testing Latch\n");
+			printT((uns_ch*) "Testing Latch\n");
 			PortTypes[currResult] = TTLatch;
 			comp_max = comp_min = 0;
 			break;
@@ -58,86 +60,76 @@ void CompareResults(TboardConfig *Board, float *SetVal) {
 			else if (Board->TestCode[currResult] == THREE_VOLT)
 				comp_max = comp_min = (3 * 0.01) + (0.005 * *SetVal);
 			fMeasured = (float) MeasuredVal / 1000;
-			printT((uns_ch*)"Testing Voltage\n");
+			printT((uns_ch*) "Testing Voltage\n");
 			PortTypes[currResult] = TTVoltage;
 			break;
 
 		case TWENTY_AMP:
 			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = comp_min = (20 * 0.005) + (0.005 * *SetVal);
-			printT((uns_ch*)"Testing Currrent\n");
+			printT((uns_ch*) "Testing Currrent\n");
 			PortTypes[currResult] = TTCurrent;
 			break;
 		case ASYNC_PULSE:
 			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = 0; //Once this works decrease the multiplication factor to improve testing accuracy
 			comp_min = 0;
-			printT((uns_ch*)"Testing Async\n");
+			printT((uns_ch*) "Testing Async\n");
 			PortTypes[currResult] = TTAsync;
 			break;
 		case SDI_TWELVE:
 			fMeasured = (float) MeasuredVal / 1000;
 			comp_max = (*SetVal); //Once this works decrease the multiplication factor to improve testing accuracy
 			comp_min = (*SetVal);
-			printT((uns_ch*)"Testing SDI-12\n");
+			printT((uns_ch*) "Testing SDI-12\n");
 			PortTypes[currResult] = TTSDI;
 			break;
 		case NOTEST:
 			fMeasured = (float) 0;
-			PortTypes[currResult] = TTNo;
+			PortTypes[currResult] = TTNoTest;
 			break;
 		}
 
-			//Results
-		if ( ( (fMeasured <= (*SetVal + comp_max) ) && (fMeasured >= (*SetVal - comp_min) ) )
-				|| (PortTypes[currResult] == TTNo) ) {
+		//Results
+		if (((fMeasured <= (*SetVal + comp_max)) && (fMeasured >= (*SetVal - comp_min)))
+				|| (PortTypes[currResult] == TTNoTest)) {
 			//Pass
-			sprintf((char*)&debugTransmitBuffer[0], "**Port %d** PASSED\n", currResult + 1);
-			printT((uns_ch*)&debugTransmitBuffer);
-			sprintf((char*)&debugTransmitBuffer[0], "Measured Value: %.03f		Set Value: %.03f \n\n", fMeasured, *SetVal); //(float)
-			printT((uns_ch*)&debugTransmitBuffer);
-			sprintf((char*)&debugTransmitBuffer[0], ". ");
-			LCD_displayString((uns_ch*)&debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
+			sprintf((char*) &debugTransmitBuffer[0], "**Port %d** PASSED\n", currResult + 1);
+			printT((uns_ch*) &debugTransmitBuffer);
+			sprintf((char*) &debugTransmitBuffer[0], "Measured Value: %.03f		Set Value: %.03f \n\n", fMeasured,
+					*SetVal); //(float)
+			printT((uns_ch*) &debugTransmitBuffer);
+			sprintf((char*) &debugTransmitBuffer[0], ". ");
+			LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 			TresultStatus = TRpassed;
 		} else {
 			//Fail
-			sprintf((char*)&debugTransmitBuffer[0], "**Port %d** FAILED\n", currResult + 1);
-			printT((uns_ch*)&debugTransmitBuffer);
-			sprintf((char*)&debugTransmitBuffer[0], "Measured Value: %.03f		Set Value: %.03f \n\n", fMeasured, *SetVal); //(float)
-			printT((uns_ch*)&debugTransmitBuffer);
-			sprintf((char*)&debugTransmitBuffer[0], "X ");
-			LCD_displayString((uns_ch*)&debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
+			sprintf((char*) &debugTransmitBuffer[0], "**Port %d** FAILED\n", currResult + 1);
+			printT((uns_ch*) &debugTransmitBuffer);
+			sprintf((char*) &debugTransmitBuffer[0], "Measured Value: %.03f		Set Value: %.03f \n\n", fMeasured,
+					*SetVal); //(float)
+			printT((uns_ch*) &debugTransmitBuffer);
+			sprintf((char*) &debugTransmitBuffer[0], "X ");
+			LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 			SET_BIT(Board->TPR, (1 << Board->GlobalTestNum));
 			TresultStatus = TRfailed;
 		}
 		//Write Results to file
 		if ((currResult < Board->latchPortCount) && (PortTypes[currResult] == TTLatch)) {
-			sprintf((char*)&TestResultsBuffer[0], "%x,%d,L%d,%c,%c,,,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",
+			sprintf((char*) &TestResultsBuffer[0], "%x,%d,L%d,%c,%c,,,%d,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
 					Board->BoardType, Board->GlobalTestNum + 1, (currResult + 1), PortTypes[currResult], TresultStatus,
-					LatchRes.tOn, LatchRes.tOff,							//	Latch pulse width
-					LatchPortA.highVoltage, LatchPortB.lowVoltage,			// 	Latch on voltage
-					LatchPortB.highVoltage, LatchPortA.lowVoltage,			// 	Latch off voltage
-					Vin.average, Vin.lowVoltage,							//	Vin voltages
-					Vfuse.average, Vfuse.lowVoltage,						//	Vfuse voltages
-					MOSFETvoltageA.highVoltage, MOSFETvoltageB.lowVoltage,	//	MOSFET on voltages
-					MOSFETvoltageB.highVoltage, MOSFETvoltageA.lowVoltage	// 	MOSFET off voltages
-					);
-		} else if ((PortTypes[currResult] != TTNo)) {
-			sprintf((char*)&TestResultsBuffer[0], "%x,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType, Board->GlobalTestNum + 1,
-					(currResult + 1) - Board->latchPortCount, PortTypes[currResult], TresultStatus,
-					CHval[Board->GlobalTestNum][currResult], fMeasured);
+					LatchRes.tOn, LatchPortA.highVoltage, LatchPortB.lowVoltage, MOSFETvoltageA.highVoltage,
+					MOSFETvoltageB.lowVoltage, LatchRes.tOff, LatchPortB.highVoltage, LatchPortA.lowVoltage,
+					MOSFETvoltageB.highVoltage, MOSFETvoltageA.lowVoltage, Vin.average, Vin.lowVoltage, Vfuse.average,
+					Vfuse.lowVoltage);
+		} else if ((PortTypes[currResult] != TTNoTest)) {
+			sprintf((char*) &TestResultsBuffer[0], "%x,%d,%d,%c,%c,%f,%f\r\n", Board->BoardType,
+					Board->GlobalTestNum + 1, (currResult + 1) - Board->latchPortCount, PortTypes[currResult],
+					TresultStatus, CHval[Board->GlobalTestNum][currResult], fMeasured);
 		}
-		Update_File(&SDcard, (char*)&SDcard.FILEname[0], (char*) &TestResultsBuffer[0]);
+		if ((PortTypes[currResult] != TTNoTest))
+			Update_File(&SDcard, (char*) &SDcard.FILEname[0], (char*) &TestResultsBuffer[0]);
 		SetVal++;
 	}
 	Close_File(&SDcard);
-	if (SDcard.fresult != FR_OK) {
-		uint8 SDcardRetry = 0;
-		while (SDcard.fresult != FR_OK && SDcardRetry < 15) {
-			HAL_Delay(100);
-			Close_File(&SDcard);
-			SDcardRetry++;
-		}
-	}
-
 }

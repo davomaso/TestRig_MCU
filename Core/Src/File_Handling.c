@@ -2,6 +2,7 @@
 #include "LCD.h"
 #include "stm32f4xx_hal.h"
 #include "Programming.h"
+#include "UART_Routine.h"
 
 /* =============================>>>>>>>> NO CHANGES AFTER THIS LINE =====================================>>>>>>> */
 FRESULT Mount_SD(TfileConfig *file, const TCHAR *path) {
@@ -13,10 +14,10 @@ FRESULT Mount_SD(TfileConfig *file, const TCHAR *path) {
 	FRESULT res;
 	res = f_mount(&(file->fatfs), path, 1);
 	if (res != FR_OK)
-		printT("ERROR!!! in mounting SD CARD...\n\n");
+		printT((uns_ch*) "ERROR!!! in mounting SD CARD...\n\n");
 	else {
-		printT("SD CARD mounted successfully...\n");
-		LCD_printf("SD Card:", 3, 0);
+		printT((uns_ch*) "SD CARD mounted successfully...\n");
+		LCD_printf((uns_ch*) "SD Card:", 3, 0);
 	}
 	return res;
 }
@@ -29,9 +30,10 @@ FRESULT Unmount_SD(TfileConfig *file, const TCHAR *path) {
 	FRESULT res;
 	res = f_mount(0, "", 1);
 	if (res == FR_OK)
-		printT("SD CARD UNMOUNTED successfully...\n\n\n");
+		printT((uns_ch*) "SD CARD UNMOUNTED successfully...\n\n\n");
 	else
-		printT("ERROR!!! in UNMOUNTING SD CARD\n\n\n");
+		printT((uns_ch*) "ERROR!!! in UNMOUNTING SD CARD\n\n\n");
+	return res;
 }
 
 FRESULT Scan_SD(char *pat) {
@@ -40,6 +42,7 @@ FRESULT Scan_SD(char *pat) {
 	 * Similary to the previous routines this will return an FRESULT to determine correct operation
 	 */
 	UINT i;
+	i = 0;
 	SDcard.fresult = f_opendir(&SDcard.directory, pat);
 	if (SDcard.fresult == FR_OK) {
 		for (;;) {
@@ -50,9 +53,9 @@ FRESULT Scan_SD(char *pat) {
 			{
 				if (!(strcmp("SYSTEM~1", SDcard.fileInfo.fname)))
 					continue;
-				char *buf = malloc(30 * sizeof(char));
+				char *buf = malloc(255 * sizeof(char));
 				sprintf(buf, "Dir: %s\r\n", SDcard.fileInfo.fname);
-				printT(buf);
+				printT((uns_ch*) buf);
 				free(buf);
 				i = strlen(pat);
 				sprintf(pat, "/%s", SDcard.fileInfo.fname);
@@ -61,9 +64,9 @@ FRESULT Scan_SD(char *pat) {
 					break;
 //                pat[i] = 0;
 			} else { /* It is a file. */
-				char *buf = malloc(30 * sizeof(char));
+				char *buf = malloc(255 * sizeof(char));
 				sprintf(buf, "File: %s/%s\n", pat, SDcard.fileInfo.fname);
-				printT(buf);
+				printT((uns_ch*) buf);
 				free(buf);
 			}
 		}
@@ -85,10 +88,11 @@ FRESULT Close_Dir(TfileConfig *file) {
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR!!! No. %d in closing directory *\n\n", res);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 		return res; //return result if error when opening file
 	}
+	return res;
 }
 _Bool Find_File(TfileConfig *FAT, char *path) {
 	/*
@@ -99,17 +103,20 @@ _Bool Find_File(TfileConfig *FAT, char *path) {
 	uint8 i;
 	FRESULT res;
 	res = f_opendir(&FAT->directory, path);
+
 	if (res == FR_OK) {
 		for (;;) {
 			res = f_readdir(&(FAT->directory), &(FAT->fileInfo)); /* Read a directory item */
+			printT((uns_ch*) &(FAT->fileInfo.fname[0]));
+			printT("\r\n");
 			if (res != FR_OK || FAT->fileInfo.fname[0] == 0)
 				break; /* Break on error or end of dir */
 			if (FAT->fileInfo.fattrib & AM_DIR) { /* Check if it is a directory */
 				if (!(strcmp("SYSTEM~1", FAT->fileInfo.fname)))
 					continue; // Ensure directory is not SYSTEM~1
-				char *buf = malloc(30 * sizeof(char));
+				char *buf = malloc(255 * sizeof(char));
 				sprintf(buf, "Dir: %s\r\n", FAT->fileInfo.fname);
-				printT(buf);
+				printT((uns_ch*) buf);
 				free(buf);
 				i = strlen(path);
 				sprintf(&path[i], "/%s", FAT->fileInfo.fname);
@@ -121,8 +128,9 @@ _Bool Find_File(TfileConfig *FAT, char *path) {
 				if (memcmp(&(FAT->fileInfo.fname), &(FAT->FILEname[0]), 4) == 0) {
 					char *buf = malloc((_MAX_LFN + 1) * sizeof(char));
 					sprintf(buf, "File: %s/%s\n", path, FAT->fileInfo.fname);
-					printT(buf);
+					printT((uns_ch*) buf);
 					free(buf);
+					HAL_Delay(2);
 					res = f_closedir(&FAT->directory);
 					return (res == FR_OK);
 				}
@@ -145,7 +153,7 @@ FRESULT Write_File(TfileConfig *file, TCHAR *name, char *data) {
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR!!! No. %d in opening file *%s*\n\n", res, name);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 	}
 	return res;
@@ -164,7 +172,7 @@ FRESULT Read_File(TfileConfig *file, char *name) {
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR!!! No. %d in opening file *%s*\n\n", res, name);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 		return res;
 	}
@@ -174,22 +182,22 @@ FRESULT Read_File(TfileConfig *file, char *name) {
 		char *buf = malloc(100 * sizeof(char));
 		free(buffer);
 		sprintf(buf, "ERROR!!! No. %d in reading file *%s*\n\n", res, name);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 	} else {
-		printT(buffer);
+		printT((uns_ch*) buffer);
 		free(buffer);
 		/* Close file */
 		res = f_close(&(file->file));
 		if (res != FR_OK) {
 			char *buf = malloc(100 * sizeof(char));
 			sprintf(buf, "ERROR!!! No. %d in closing file *%s*\n\n", res, name);
-			printT(buf);
+			printT((uns_ch*) buf);
 			free(buf);
 		} else {
 			char *buf = malloc(100 * sizeof(char));
 			sprintf(buf, "File *%s* CLOSED successfully\n", name);
-			printT(buf);
+			printT((uns_ch*) buf);
 			free(buf);
 		}
 	}
@@ -202,23 +210,23 @@ FRESULT Create_File(TfileConfig *file) {
 	 * read and write privileges. FRESULT returned to determine if successful.
 	 */
 	FRESULT res;
-	res = f_open(&(file->file), &(file->FILEname[0]), FA_CREATE_ALWAYS | FA_READ | FA_WRITE);
+	res = f_open(&(file->file), &(file->FILEname[0]), FA_CREATE_ALWAYS | FA_WRITE | FA_READ);
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR!!! No. %d in creating file *%s*\n\n", res, &(file->FILEname[0]));
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 		return res;
 	} else {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "*%s* created successfully\n Now use Write_File to write data\n", &(file->FILEname[0]));
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 	}
 	return res;
 }
 
-FRESULT Open_AppendFile(TfileConfig *file) {
+FRESULT Open_AppendFile(TfileConfig *FAT) {
 	/*
 	 * First the routine opens the file passed to the function. Read and Write permissions are
 	 * granted. Open Append allows for the creation of a file if it has not previously existed,
@@ -226,28 +234,28 @@ FRESULT Open_AppendFile(TfileConfig *file) {
 	 * As previous FRESULT is returned to inform of any errors
 	 */
 	FRESULT res;
-	res = f_open(&(file->file), &(file->FILEname[0]), FA_OPEN_APPEND | FA_WRITE | FA_READ);
+	res = f_open(&(FAT->file), &(FAT->FILEname[0]), FA_OPEN_APPEND | FA_WRITE | FA_READ);
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
-		sprintf(buf, "ERROR!!! No. %d in opening file *%s*\n\n", res, (file->FILEname));
-		printT(buf);
+		sprintf(buf, "ERROR!!! No. %d in opening file *%s*\n\n", res, (FAT->FILEname));
+		printT((uns_ch*) buf);
 		free(buf);
 	}
 	return res;
 }
 
-FRESULT Close_File(TfileConfig *file) {
+FRESULT Close_File(TfileConfig *FAT) {
 	FRESULT res;
-	res = f_close(&(file->file));
+	res = f_close(&(FAT->file));
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
-		sprintf(buf, "ERROR No. %d in closing file *%s*\n\n", res, (file->FILEname));
-		printT(buf);
+		sprintf(buf, "ERROR No. %d in closing file *%s*\n\n", res, (FAT->FILEname));
+		printT((uns_ch*) buf);
 		free(buf);
 	} else {
 		char *buf = malloc(100 * sizeof(char));
-		sprintf(buf, "File *%s* CLOSED successfully\n\n", (file->FILEname[0]));
-		printT(buf);
+		sprintf(buf, "File *%s* CLOSED successfully\n\n", (char*) &(FAT->FILEname[0]));
+		printT((uns_ch*) buf);
 		free(buf);
 	}
 	return res;
@@ -260,12 +268,12 @@ FRESULT Update_File(TfileConfig *file, char *name, char *data) {
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR!!! No. %d in writing file *%s*\n\n", res, name);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 	} else {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "*%s* UPDATED successfully\n", name);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 	}
 	return res;
@@ -281,17 +289,17 @@ FRESULT Create_Dir(TCHAR *name) {
 	if (res == FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "*%s* has been created successfully\n", name);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 	} else {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR No. %d in creating directory *%s*\n\n", res, name);
-		printT(buf);
+		printT((uns_ch*) buf);
 		free(buf);
 	}
 	return res;
 }
-void OpenFile(TfileConfig *file) {
+FRESULT OpenFile(TfileConfig *FAT) {
 	/*
 	 * Routine to open file
 	 * Failure if the file does not exist
@@ -299,31 +307,20 @@ void OpenFile(TfileConfig *file) {
 	 * If the file is found the size of the file is displayed on the terminal
 	 */
 	FRESULT res;
-	uint8 Retry = 0;
-	res = f_open(&(file->file), &(file->FILEname[0]), FA_OPEN_EXISTING | FA_READ);
-	HAL_Delay(100);
-	while (Retry < 5) {
-		if (res != FR_OK) {
-			res = f_close(&(file->file));
-			HAL_Delay(100);
-			res = f_open(&(file->file), &(file->FILEname), FA_OPEN_EXISTING | FA_READ);
-			HAL_Delay(100);
-			Retry++;
-		} else
-			break;
-	}
+	res = f_open(&(FAT->file), &(FAT->FILEname[0]), FA_OPEN_EXISTING | FA_READ);
 	if (res != FR_OK) {
-		sprintf(&debugTransmitBuffer[0], "Error %d attempting to open file", res);
+		sprintf((char*) &debugTransmitBuffer[0], "Error %d attempting to open %s", res, (char*) &(FAT->FILEname));
 		printT(&debugTransmitBuffer[0]);
 	} else {
-		fileSize = (file->file).obj.objsize;
-		sprintf((char*)&debugTransmitBuffer[0], "File Size: ");
+		fileSize = (FAT->file).obj.objsize;
+		sprintf((char*) &debugTransmitBuffer[0], "File Size: ");
 		printT(&debugTransmitBuffer[0]);
-		sprintf((char*)&debugTransmitBuffer[0], "%.03f kB\n", (float) fileSize / 1000);
+		sprintf((char*) &debugTransmitBuffer[0], "%.03f kB\n", (float) fileSize / 1000);
 		printT(&debugTransmitBuffer[0]);
-		sprintf((char*) &debugTransmitBuffer[0], "***  %s Opened Successfully  ***\n", (char *) &(file->FILEname) );
+		sprintf((char*) &debugTransmitBuffer[0], "***  %s Opened Successfully  ***\n", (char*) &(FAT->FILEname));
 		printT(&debugTransmitBuffer[0]);
 	}
+	return res;
 }
 
 uint32 Check_SD_Space(TfileConfig *file) {
@@ -344,36 +341,44 @@ uint32 Check_SD_Space(TfileConfig *file) {
 	total = (uint32) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
 	char *buf = malloc(255 * sizeof(char));
 	sprintf(buf, "SD CARD Total Size: \t%lu\n", total);
-	printT(buf);
+	printT((uns_ch*) buf);
 	free_space = (uint32) (fre_clust * pfs->csize * 0.5);
 	sprintf(buf, "SD CARD Free Space: \t%lu\n", free_space);
-	printT(buf);
+	printT((uns_ch*) buf);
 	free(buf);
 	free_space /= 1000;
 	LCD_setCursor(4, 0);
 	sprintf((char*) &debugTransmitBuffer[0], "%lu MB Free", free_space);
-	LCD_displayString((char*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
+	LCD_displayString((uint8*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
 	return free_space;
 }
 
 FRESULT CreateResultsFile(TfileConfig *file, TboardConfig *Board) {
-	sprintf(&(file->FILEname[0]), "/TEST_RESULTS/%lu.CSV", Board->SerialNumber);
-	HAL_Delay(100);
+	sprintf(&(file->FILEname[0]), "/TEST_RESULTS/%lu/%lu.CSV", Board->SerialNumber, Board->SerialNumber);
 	FRESULT res;
 	res = Create_File(file);
 	if (res == 0) {
-		sprintf((char *)&debugTransmitBuffer[0],
-				"Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, toff, V1h, V2l, V2h, V1l, VinAVG, VinLow, VfuseAVG, VfuseLow, MOSonHigh, MOSonLow, MOSoffHigh, MOSoffLow\r\n");
-		HAL_Delay(100);
-		res = Write_File(&SDcard, &SDcard.FILEname, &debugTransmitBuffer[0]);
+		sprintf((char*) &debugTransmitBuffer[0],
+				"Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, VonH, VonL, MOSonH, MOSonL, toff, VoffH, VoffL, MOSoffHigh, MOSoffLow, VinAVG, VinLow, VfuseAVG, VfuseLow \r\n");
+		res = Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);
 	}
 	return res;
 }
 
-_Bool FetchLine(TfileConfig *file, char *TempLine) {
-	f_gets(TempLine, MAX_LINE_LENGTH, &(file->file));
-	if (strlen(TempLine))
-		return 1;
-	else
-		return 0;
+FRESULT WriteVoltages(TboardConfig* Board, TfileConfig * FAT) {
+	FRESULT res;
+	sprintf(FAT->FILEname, "/TEST_RESULTS/%lu/%lu.CSV", Board->SerialNumber, Board->SerialNumber);
+	res = Open_AppendFile(FAT);
+	if (res == FR_OK) {
+		if ( (Board->BoardType == b427x) || (Board->BoardType == b422x) )
+			sprintf((char*) &TestResultsBuffer, "Voltages\nSolar, %.3f\n Input, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",Board->VoltageBuffer[V_SOLAR], Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);
+		else
+			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n", Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);
+
+		res = Update_File(FAT, (char*)FAT->FILEname[0], &TestResultsBuffer[0]);
+		if (res == FR_OK)
+			res = Close_File(FAT);
+	}
+	return res;
 }
+

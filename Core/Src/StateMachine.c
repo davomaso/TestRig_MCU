@@ -30,11 +30,10 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			scanLoom(&BoardConnected); //Scan loom to determine which board is connected
 		if (KP[1].Pressed || KP[6].Pressed) {
 			if (KP[6].Pressed)
-				OldBoardMode = true;	// No requirements for programming if 6 is pressed
+				TestRigMode = OldBoardMode;	// No requirements for programming if 6 is pressed
 			else
-				OldBoardMode = false;	//Otherwise program immediately
+				TestRigMode = NormalMode;	//Otherwise program immediately
 			KP[1].Pressed = KP[6].Pressed = false;
-
 			TestRig_Init();
 			TargetBoardParamInit();
 			clearTestStatusLED();
@@ -108,8 +107,10 @@ void handleInputVoltage(TboardConfig *Board, TprocessState *State) {
 		break;
 	case psWaiting:
 		if (InputVoltageStable) {
+			SET_BIT(Board->BVR, BOARD_FUSE_STABLE);
 			*State = psComplete;
 		} else if (!InputVoltageTimer) {
+			CLEAR_BIT(Board->BVR, BOARD_FUSE_STABLE);
 			*State = psFailed;
 		}
 		break;
@@ -117,7 +118,7 @@ void handleInputVoltage(TboardConfig *Board, TprocessState *State) {
 		InputVoltageSampling = InputVoltageStable = false;
 		InputVoltageTimer = InputVoltageCounter = 0;
 		printT((uns_ch*) "Input Voltage Stable...\n");
-		HAL_Delay(1200);
+		HAL_Delay(1200);	//Delay for target board reset
 		if (OldBoardMode)
 			CurrentState = csInterogating;
 		else
@@ -176,9 +177,10 @@ void handleInitialising(TboardConfig *Board, TprocessState *State) {
 }
 
 void handleTestBegin(TboardConfig *Board, TprocessState *State) {
+	FRESULT res;
 	switch (*State) {
 	case psInitalisation:
-		sprintf((char*) &lcdBuffer, "    S/N  %lu", (unsigned long) Board->SerialNumber);
+		sprintf((char*) &lcdBuffer, "    S/N  %lu", Board->SerialNumber);
 		LCD_printf((uns_ch*) &lcdBuffer, 2, 0);
 		LCD_printf((uns_ch*) "1 - Reprog  Exit - *", 3, 0);
 		LCD_printf((uns_ch*) "3 - New SN  Test - #", 4, 0);
@@ -191,16 +193,12 @@ void handleTestBegin(TboardConfig *Board, TprocessState *State) {
 	case psComplete:
 		if (KP[hash].Pressed) {
 			KP[hash].Pressed = false;
-			SDcard.fresult = CreateResultsFile(&SDcard, Board);
-			if (SDcard.fresult != 0) {
-				Close_File(&SDcard);
-				HAL_Delay(100);
-				OpenFile(&SDcard);
-				if (SDcard.fresult == 0) {
-					HAL_Delay(100);
-					SDcard.fresult = CreateResultsFile(&SDcard, Board);
-				}
-
+			char boardResultsFile[255];
+			sprintf(boardResultsFile, "/TEST_RESULTS/%lu" ,Board->SerialNumber);
+			res = Create_Dir(&boardResultsFile);
+			res = CreateResultsFile(&SDcard, Board);
+			if (res == FR_OK) {
+				res = Close_File(&SDcard);
 			}
 			CurrentState = csConfiguring;
 			*State = psInitalisation;
@@ -240,6 +238,7 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 	uint8 response[4];
 	response[2] = 0;
 	uns_ch tempLine[100];
+	FRESULT res;
 	switch (*State) {
 	case psInitalisation:
 		if (!READ_BIT(Board->BPR, PROG_INITIALISED)) {
@@ -260,75 +259,86 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 			HAL_Delay(20);
 			if (response[2] == 0x53)
 				SET_BIT(Board->BPR, PROG_ENABLED);
-		} else {
-			data[0] = 0xAC;
+		} else if (!READ_BIT(Board->BPR, CHIP_ERASED)) {
+			data[0] = 0xAC;	//	Chip Erase
 			data[1] = 0x80;
 			data[2] = 0x00;
 			data[3] = 0x00;
 			HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
+			HAL_Delay(10);	// Chip erase delay
+			SET_BIT(Board->BPR, CHIP_ERASED);
+		} else if (!READ_BIT(Board->BPR, CLOCK_SET)) {
 			//Poll RDY
 			PollReady();
 			//Set Clk to 8Mhz
 			data[0] = 0xAC;
 			data[1] = 0xA0;		//Fuse Low Byte
 			data[2] = 0x00;
-			data[3] = 0xD2;
+			data[3] = HIGH_CLK_LOW_FUSE;
 			HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 			HAL_Delay(20);
 			data[1] = 0xA8;		//Fuse High Byte
-			data[3] = 0xD7;
+			data[3] = HIGH_CLK_HIGH_FUSE;
 			HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 			HAL_Delay(20);
 			data[1] = 0xA4;		//Fuse Extended Byte
-			data[3] = 0xFD;
+			data[3] = HIGH_CLK_EXT_FUSE;
 			HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+
 			HAL_Delay(20);
 			SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_256);
 			SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_32);
 			ProgrammingCount = 0;
 			HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+			SET_BIT(Board->BPR, CLOCK_SET);
+		} else if (!READ_BIT(Board->BPR, FUSE_VALIDATED)) {
 			EnableProgramming();
-
 			// Read Fuse Bits
-			data[0] = 0x50;
+			data[0] = 0x50;	//	Read Low Byte
 			data[1] = 0x00;
 			data[2] = 0x00;
 			data[3] = 0x00;
 			HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-			data[1] = 0x08;
-			HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-			data[0] = 0x58;
-			HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+			if (response[3] == HIGH_CLK_LOW_FUSE) {
+				data[1] = 0x08;
+				HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+				if (response[3] == HIGH_CLK_EXT_FUSE) {
+					data[0] = 0x58;
+					HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
+					if (response[3] == HIGH_CLK_HIGH_FUSE)
+						SET_BIT(Board->BPR, FUSE_VALIDATED);
+				}
+			}
+
+		} else if (!READ_BIT(Board->BPR, FILE_FOUND_OPEN)) {
 			//Find file
 			if (FindBoardFile(Board, &SDcard)) {
-				OpenFile(&SDcard);
+				res = OpenFile(&SDcard);
+				if (res != FR_OK) {
+					*State = psFailed;
+					break;
+				}
 				TestRig_MainMenu();
 				LCD_printf((uns_ch*) "    Programming    ", 2, 0);
 				ProgressBarTarget = round((float) ((fileSize / 2) / MAX_PAGE_LENGTH) * 0.7);
-//				SetSDclk(1);
-				page = PageBufferPosition = LineBufferPosition = 0;
+				SetSDclk(1);
+				page = PageBufferPosition = LineBufferCount = 0;
 				CLEAR_REG(Board->BPR);
 				*State = psWaiting;
 			} else {
 				printT((uns_ch*) "Could not find hex file...\n");
 				CurrentState = csProgramming;
-				ProcessState = psFailed;
+				*State = psFailed;
 			}
 		}
 		break;
 	case psWaiting:
 		if (f_gets((TCHAR*) &tempLine, sizeof(tempLine), &(SDcard.file))) {
-			sortLine((uns_ch*) &tempLine[0], &LineBuffer[0], &LineBufferPosition);
-			LeftOverLineDataPos = LineBufferPosition;
-			if (populatePageBuffer((uns_ch*) &PageBuffer[PageBufferPosition], &PageBufferPosition,
-					(uns_ch*) &LineBuffer, &LineBufferPosition))
+			sortLine((uns_ch*) &tempLine[0], &LineBuffer[0], &LineBufferCount);
+			if (populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, (uns_ch*) &LineBuffer,
+					&LineBufferCount))
 				SET_BIT(Board->BPR, PAGE_WRITE_READY);
 		} else {
-			if (page < ProgressBarTarget) {
-				printT((uns_ch*) "Error reading file\n");
-				*State = psFailed;
-				break;
-			}
 			while (PageBufferPosition < MAX_PAGE_LENGTH) {
 				PageBuffer[PageBufferPosition++] = 0xFF;
 			}
@@ -360,12 +370,11 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 				SPI3->CR1 &= ~(SPI_BAUDRATEPRESCALER_32);
 				SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
 				HAL_Delay(10);
-				SetClkAndLck();
-				HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+				SetClkAndLck(Board);
 			} else {
-				if (LineBufferPosition)
-					populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition,
-							&LineBuffer[LeftOverLineDataPos - LineBufferPosition], &LineBufferPosition);
+				if (LineBufferCount)
+					populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[0],
+							&LineBufferCount);
 				Percentage = (uint8) ((page / (float) ProgressBarTarget) * 100);
 				ProgressBar(Percentage);
 			}
@@ -373,6 +382,7 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psComplete:
+		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 		SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
 		printT((uns_ch*) "Programming Done\n");
 		Close_File(&SDcard);
@@ -384,7 +394,6 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 	case psFailed:
 		printT((uns_ch*) "Programming Failed\n");
 		Close_File(&SDcard);
-		Close_Dir(&SDcard);
 		retryCount++;
 		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 		*State = psInitalisation;
@@ -545,8 +554,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
 		LatchTestInit();
-		LatchingSolenoidDriverTest(Board);
-		if (LatchTestPort != 0xFF) {	//return 0xFF for failure to find if latch test port is active
+		if ( LatchingSolenoidDriverTest(Board)) {
 			LCD_printf((uns_ch*) "   Latch Testing    ", 2, 0);
 			*State = psWaiting;
 		} else
@@ -579,8 +587,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 					SET_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING); //Begin Latch off sampling
 					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 0);
 					communication_array(0x26, &BoardCommsParameters[0], 1);
-				} else if (READ_BIT(LatchTestStatusRegister,
-						LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
+				} else if (READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
 					if (BoardCommsReceiveState != RxWaiting) { //Latch off sampling complete, reset voltage stability check
 						if (BoardCommsReceiveState == RxGOOD) {
 							Response = Data_Buffer[0];
@@ -594,10 +601,9 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 						} else if (BoardCommsReceiveState == RxBAD)
 							*State = psFailed;
 					}
-				} else if (READ_BIT(LatchTestStatusRegister,
-						LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
-					*State = psComplete;
 				}
+				if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE) )
+					*State = psComplete;
 			}
 		} else
 			*State = psComplete;
@@ -609,7 +615,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 		if (READ_REG(Board->LatchTestPort)) {
 			HAL_TIM_Base_Stop(&htim10);
 			//Print Results & Error Messages
-//						TransmitResults();
+			TransmitResults(Board);
 			normaliseLatchResults();
 			PrintLatchResults();
 			LatchErrorCheck(Board);
@@ -815,6 +821,7 @@ void handleSortResults(TboardConfig *Board, TprocessState *State) {
 		*State = psWaiting;
 		break;
 	case psWaiting:
+		sprintf(SDcard.FILEname, "/TEST_RESULTS/%lu/%lu.CSV", Board->SerialNumber, Board->SerialNumber);
 		CompareResults(Board, &CHval[Board->GlobalTestNum][0]);
 		*State = psComplete;
 		break;
@@ -825,6 +832,7 @@ void handleSortResults(TboardConfig *Board, TprocessState *State) {
 			*State = psInitalisation;
 			CurrentState = csConfiguring;
 		} else {
+			WriteVoltages(Board, &SDcard);
 			if (READ_BIT(Board->BSR, BOARD_TEST_PASSED)) {
 				CurrentState = csInitialising;
 				*State = psInitalisation;
@@ -888,8 +896,7 @@ void handleSerialise(TboardConfig *Board, TprocessState *State) {
 	case psComplete:
 		if (READ_BIT(Board->BSR, BOARD_SERIALISED)) {
 			printT((uns_ch*) "=====     Board Serialised     =====\n");
-			sprintf((char*) &debugTransmitBuffer, "Serial number %lu loaded into board\n",
-					(unsigned long) BoardConnected.SerialNumber);
+			sprintf((char*) &debugTransmitBuffer, "Serial number %lu loaded into board\n", BoardConnected.SerialNumber);
 			printT((uns_ch*) &debugTransmitBuffer[0]);
 			CurrentState = csTestBegin;
 			*State = psInitalisation;

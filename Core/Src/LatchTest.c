@@ -11,24 +11,24 @@ uint8 runLatchTest(TboardConfig *Board, uint8 Test_Port) {
 	return Test_Port;
 }
 
-void LatchingSolenoidDriverTest(TboardConfig * Board) {
+_Bool LatchingSolenoidDriverTest(TboardConfig * Board) {
 	if (Board->TestCode[Port_1] == 0x10) {
 		LatchTestPort = runLatchTest(Board, Port_1);
-		return;
+		return true;
 	}
 	if (Board->TestCode[Port_2] == 0x10) {
 		LatchTestPort = runLatchTest(Board, Port_2);
-		return;
+		return true;
 	}
 	if (Board->TestCode[Port_3] == 0x10) {
 		LatchTestPort = runLatchTest(Board, Port_3);
-		return;
+		return true;
 	}
 	if (Board->TestCode[Port_4] == 0x10) {
 		LatchTestPort = runLatchTest(Board, Port_4);
-		return;
+		return true;
 	}
-	LatchTestPort = 0xFF;
+	return false;
 }
 
 uint8 LatchTestParam(uint8 Test_Port, bool OnOff) {

@@ -12,7 +12,7 @@
 #include "Board_Config.h"
 
 uint8 runLatchTest(TboardConfig *, uint8);
-void LatchingSolenoidDriverTest(TboardConfig *);
+_Bool LatchingSolenoidDriverTest(TboardConfig *);
 uint8 LatchTestParam(uint8, bool);
 void LatchTestInit(void);
 

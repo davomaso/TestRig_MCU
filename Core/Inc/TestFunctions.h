@@ -22,6 +22,6 @@ void reset_ALL_MUX(void);
 void ADC_MUXsel(uint8 );
 void PrintLatchResults(void);
 void normaliseLatchResults(void);
-void TransmitResults(void);
+void TransmitResults(TboardConfig*);
 
 #endif /* INC_TESTFUNCTIONS_H_ */

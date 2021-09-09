@@ -29,8 +29,6 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "stdio.h"
-#include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -68,12 +66,12 @@ SPI_HandleTypeDef DAC_SPI;
 #define FIRMWARE_VERSION 1.0
 
 //==============	 CURRENT BOARD VERSIONS 	==============//
-#define BOARD_935x 0x51
-#define BOARD_937x 0x51
-#define BOARD_401x 0x51
-#define BOARD_402x 0x51
-#define BOARD_422x 0x51
-#define BOARD_427x 0x51
+#define BOARD_935x 0x52
+#define BOARD_937x 0x52
+#define BOARD_401x 0x52
+#define BOARD_402x 0x52
+#define BOARD_422x 0x52
+#define BOARD_427x 0x52
 
 //===============	 OUTPUT FUNCTIONALITY 	===============//
 #define TWO_WIRE_LATCHING 0x10	//One Pulse- Top 4 Bits, Two Wire Latching-Bottom 4 bits
@@ -95,7 +93,7 @@ SPI_HandleTypeDef DAC_SPI;
 
 typedef uint8_t uint8;
 typedef uint16_t uint16;
-typedef uint32_t uint32;
+typedef unsigned long uint32;
 typedef unsigned char uns_ch;
 typedef _Bool bool;
 typedef signed char int8;

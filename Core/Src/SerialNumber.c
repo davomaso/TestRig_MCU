@@ -148,7 +148,7 @@ bool ContinueWithCurrentSerial() {
 	LCD_displayString((uns_ch*) &lcdBuffer, strlen((char*) lcdBuffer));
 
 	LCD_ClearLine(3);
-	sprintf((char*) &lcdBuffer[0], "      %lu", (unsigned long) BoardConnected.SerialNumber);
+	sprintf((char*) &lcdBuffer[0], "      %lu", BoardConnected.SerialNumber);
 	printT((uns_ch*) &lcdBuffer[0]);
 	LCD_setCursor(3, 0);
 	LCD_displayString((uns_ch*) &lcdBuffer[0], strlen((char*) lcdBuffer));

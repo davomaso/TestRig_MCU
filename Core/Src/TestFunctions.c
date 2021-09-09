@@ -16,6 +16,7 @@
 #include "DAC_Variables.h"
 #include "Calibration.h"
 #include "Delay.h"
+#include "File_Handling.h"
 #include "UART_Routine.h"
 
 void TestFunction(TboardConfig *Board) {
@@ -130,6 +131,7 @@ float setCurrentTestDAC(uint8 Test_Port) {
 float setVoltageTestDAC(uint8 Test_Port, uint8 TestCode) {
 	float voltage;
 	uint16 Corrected_DACvalue;
+	Corrected_DACvalue = 0;
 	uint16 DAC_Value;
 	switch (TestCode) {
 	case ONE_VOLT:
@@ -386,13 +388,20 @@ void normaliseLatchResults() {
 
 }
 
-void TransmitResults() {
+void TransmitResults(TboardConfig *Board) {
+	sprintf(SDcard.FILEname, "TEST_RESULTS/%lu/%lu_LATCH_%d.CSV", Board->SerialNumber, Board->SerialNumber,
+			Board->GlobalTestNum + 1);
+	Create_File(&SDcard);
 	printT((uns_ch*) "==============   ADC Average Results   ==============");
+	sprintf((char*) &debugTransmitBuffer, "t(ms),PortA,PortB,Vin\n");
+	Write_File(&SDcard, &SDcard.FILEname, &debugTransmitBuffer);
 	for (int i = 0; i < LatchCountTimer; i++) {
-		sprintf((char*) &debugTransmitBuffer[0], "%i,%.2f,%.2f,%.2f\n", i, LatchPortA.avg_Buffer[i],
-				LatchPortB.avg_Buffer[i], Vfuse.avg_Buffer[i]);
-		printT((uns_ch*) &debugTransmitBuffer);
+		sprintf((char*) &debugTransmitBuffer[0], "%.1f,%.3f,%.3f,%.3f\n", i * 0.5, (LatchPortA.avg_Buffer[i]*15.25/4096),
+				(LatchPortB.avg_Buffer[i]*15.25/4096), (Vfuse.avg_Buffer[i]*15.25/4096));
+//		printT((uns_ch*) &debugTransmitBuffer);
+		Write_File(&SDcard, &SDcard.FILEname, &debugTransmitBuffer);
 	}
+	Close_File(&SDcard);
 }
 //	=================================================================================//
 //	=================================================================================//

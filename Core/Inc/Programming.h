@@ -26,7 +26,7 @@ extern SD_HandleTypeDef hsd;
 
 void sortLine(uns_ch *, uns_ch *, uint8 *);
 _Bool populatePageBuffer(uns_ch *, uint16 *, uns_ch *, uint8 *);
-void SetClkAndLck(void);
+void SetClkAndLck(TboardConfig *);
 void ProgrammingInit(void);
 uint8 findVer(char *);
 char Ascii2hex(char *);
@@ -43,12 +43,7 @@ void SetSDclk(_Bool);
 
 #define LOW 0
 #define HIGH 1
-#define STK_OK      0x10
-#define STK_FAILED  0x11
-#define STK_UNKNOWN 0x12
-#define STK_INSYNC  0x14
-#define STK_NOSYNC  0x15
-#define CRC_EOP     0x20
+
 
 #define MAX_LINE_LENGTH 100
 #define MAX_PAGE_LENGTH 256
@@ -63,12 +58,10 @@ uint8 ProgrammingCount;
 //_Bool Programming;
 uint8 Program_CountDown;
 
-
-uint8 LeftOverLineDataPos;
 uns_ch Command;
 uint16 ProgressBarTarget;
 uns_ch LineBuffer[MAX_LINE_LENGTH];
-uint8 LineBufferPosition;
+uint8 LineBufferCount;
 uns_ch PageBuffer[MAX_PAGE_LENGTH];
 uint16 PageBufferPosition;
 uint16 count;

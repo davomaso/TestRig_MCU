@@ -45,32 +45,34 @@ void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	}
 }
 
-_Bool populatePageBuffer(uns_ch *Page, uint16 *PagePos, uns_ch *Line, uint8 *LinePos) {
+_Bool populatePageBuffer(uns_ch *Page, uint16 *PagePos, uns_ch *Line, uint8 *ByteCount) {
 	/*
 	 * Populate the page buffer with a line of data, if the page is populated return true so the page
 	 * can be programmed to the target board.
 	 * Else return false if the whole line is loaded into the buffer so that more data can be loaded into a line
 	 * to be repopulated until the buffer is full.
 	 */
-	if ((*PagePos + *LinePos) <= MAX_PAGE_LENGTH) {
-		memcpy(Page, Line, *LinePos);
-		*PagePos += *LinePos;
-		*LinePos = 0;
+	if ((*PagePos + *ByteCount) <= MAX_PAGE_LENGTH) {
+		memcpy(Page, Line, *ByteCount);
+		*PagePos += *ByteCount;
+		*ByteCount = 0;
 		if (*PagePos == MAX_PAGE_LENGTH)
 			return true;
 		else
 			return false;
-	} else if ((*PagePos + *LinePos) > MAX_PAGE_LENGTH) {
+	} else {
 		uint8 dataLen;
 		dataLen = MAX_PAGE_LENGTH - *PagePos;
 		memcpy(Page, Line, dataLen);
-		*LinePos -= dataLen;
+		*ByteCount -= dataLen;
+		memmove(Line, Line + dataLen, *ByteCount);
+		*PagePos += dataLen;
 		return true;
 	}
 	return false;
 }
 
-void SetClkAndLck() {
+void SetClkAndLck(TboardConfig *Board) {
 	/*
 	 * Following successful programmming, and verification this routine is used to set the clk and lock bytes so the
 	 * target boards can operate with the expected 3-8Mhz external XTAL.
@@ -83,10 +85,10 @@ void SetClkAndLck() {
 	data[0] = 0xAC;
 	data[1] = 0xA0;
 	data[2] = 0x00;
-	data[3] = 0xDD;
+	data[3] = LOW_FUSE_BYTE;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 	response[3] = 0x00;
-	while (response[3] != 0xDD) {
+	while (response[3] != LOW_FUSE_BYTE) {
 		data[0] = 0x50;
 		data[1] = 0x00;
 		data[2] = 0x00;
@@ -100,10 +102,10 @@ void SetClkAndLck() {
 	data[0] = 0xAC;
 	data[1] = 0xA8;
 	data[2] = 0x00;
-	data[3] = 0xD7;
+	data[3] = HIGH_FUSE_BYTE;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 	response[3] = 0x00;
-	while (response[3] != 0xD7) {
+	while (response[3] != HIGH_FUSE_BYTE) {
 		data[0] = 0x58;
 		data[1] = 0x08;		//Fuse Low Byte
 		data[2] = 0x00;
@@ -117,15 +119,21 @@ void SetClkAndLck() {
 	data[0] = 0xAC;
 	data[1] = 0xA4;
 	data[2] = 0x00;
-	data[3] = 0xFD;
+	if ((Board->BoardType == b937x) || (Board->BoardType == b935x))
+		data[3] = EXT_FUSE_BYTE_90;
+	else
+		data[3] = EXT_FUSE_BYTE_40;
 	HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 	HAL_Delay(25);
 	response[3] = 0x00;
-	while (response[3] != 0xFD) {
+	while ((response[3] != EXT_FUSE_BYTE_90) && (response[3] != EXT_FUSE_BYTE_40)) {
 		data[0] = 0x50;
 		data[1] = 0x08;
 		data[2] = 0x00;
-		data[3] = 0x00;
+		if ((Board->BoardType == b937x) || (Board->BoardType == b935x))	// Ensure Brownout is set to 3.3V & 5V levels
+			data[3] = EXT_FUSE_BYTE_90;
+		else
+			data[3] = EXT_FUSE_BYTE_40;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
 		HAL_MAX_DELAY);
 	}
@@ -241,16 +249,16 @@ _Bool ContinueWithCurrentProgram() {
 	 * the current firmware that is currently loaded onto the board.
 	 */
 	LCD_ClearLine(2);
-	sprintf((char*)&lcdBuffer[0], "  Update Program?");
+	sprintf((char*) &lcdBuffer[0], "  Update Program?");
 	printT((uns_ch*) &lcdBuffer[0]);
 	LCD_setCursor(2, 0);
-	LCD_displayString((uns_ch*)&lcdBuffer, strlen((char*)lcdBuffer));
+	LCD_displayString((uns_ch*) &lcdBuffer, strlen((char*) lcdBuffer));
 
 	LCD_ClearLine(3);
-	sprintf((char*)lcdBuffer, "Current Version:  %x", BoardConnected.Version);
+	sprintf((char*) lcdBuffer, "Current Version:  %x", BoardConnected.Version);
 	LCD_setCursor(3, 0);
-	LCD_displayString((uns_ch*)&lcdBuffer, strlen((char*)lcdBuffer));
-	printT((uns_ch*)&lcdBuffer);
+	LCD_displayString((uns_ch*) &lcdBuffer, strlen((char*) lcdBuffer));
+	printT((uns_ch*) &lcdBuffer);
 
 	LCD_ClearLine(4);
 	sprintf((char*) &lcdBuffer[0], "*-Reprogram   #-Keep");

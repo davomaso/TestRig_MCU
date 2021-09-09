@@ -7,6 +7,7 @@
 #include "main.h"
 #include "v1.h"
 #include "Global_Variables.h"
+#include "LCD.h"
 
 void clearTestStatusLED() {
 	HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);
@@ -15,6 +16,7 @@ void clearTestStatusLED() {
 }
 
 void testInputVoltage() {
+	Vin.total = InputVoltageCounter = 0;
 	HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
 	LCD_printf((uns_ch*)"Board Power Test", 2, 0);
 	InputVoltageTimer = 2500;
@@ -22,6 +24,7 @@ void testInputVoltage() {
 }
 
 void testSolarCharger() {
+	Vin.total = SolarChargerCounter = 0;
 	HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_SET);
 	LCD_printf((uns_ch*)"Solar Charger Test", 2, 1);
 	SolarChargerTimer = 2500;
@@ -29,11 +32,11 @@ void testSolarCharger() {
 }
 
 void checkFuseVoltage(TboardConfig *Board) {
-	if (fuseBuffer[0] < 10.8)
+	if (Board->VoltageBuffer[V_12] < 10.8)
 		CLEAR_BIT(Board->BVR, BOARD_FUSE_STABLE);
-	if (fuseBuffer[1] < 2.7)
+	if (Board->VoltageBuffer[V_3] < 2.7)
 		CLEAR_BIT(Board->BVR, BOARD_FUSE_STABLE);
-	if (fuseBuffer[2] > 0.7)
+	if (Board->VoltageBuffer[V_0] > 0.7)
 		CLEAR_BIT(Board->BVR, BOARD_FUSE_STABLE);
 }
 

@@ -16,7 +16,7 @@
 #include "stdio.h"
 
 typedef struct{
-	char FILEname[MAX_FILE_NAME_LENGTH];
+	TCHAR FILEname[128];
 	uint32 freeSpace;
 	FATFS fatfs;
 	DIR directory;
@@ -41,7 +41,7 @@ FRESULT Open_AppendFile(TfileConfig *);
 FRESULT Close_File(TfileConfig *);
 FRESULT Update_File(TfileConfig *, char *, char *);
 FRESULT Create_Dir(TCHAR *);
-void OpenFile(TfileConfig *);
+FRESULT OpenFile(TfileConfig *);
 uint32 Check_SD_Space(TfileConfig *);
 FRESULT CreateResultsFile(TfileConfig *, TboardConfig *);
 _Bool FetchLine(TfileConfig *, char *);

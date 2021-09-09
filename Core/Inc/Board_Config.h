@@ -22,7 +22,6 @@
 	#define MAX_TEST_ARRAY_SIZE 81
 	#define MAX_PORT_CODE_ARRAY_SIZE 64
 	#define MAX_TEST_CODE_ARRAY_SIZE 10
-	#define MAX_FILE_NAME_LENGTH 32
 
 	//============		BOARD STATUS VARIABLES		===========//
 	#define BOARD_TEST_PASSED 	(1 << 0)
@@ -35,6 +34,8 @@
 	//============		BOARD VOLTAGE VARIABLES		===========//
 	#define BOARD_FUSE_STABLE	(1 << 0)
 	#define BOARD_SOLAR_STABLE	(1 << 1)
+	#define V3_SAMPLE_STABLE	(1 << 2)
+	#define V12_SAMPLE_STABLE	(1 << 3)
 
 	//============		TEST PASSED VARIABLES		===========//
 	#define TEST_ONE_PASSED 	(1 << 0)
@@ -55,9 +56,23 @@
 	//============		PROGRAMMING VARIABLES		===========//
 	#define PROG_INITIALISED 	(1 << 0)
 	#define PROG_ENABLED		(1 << 1)
-	#define FILE_FOUND_OPEN 	(1 << 2)
-	#define PAGE_WRITE_READY	(1 << 3)
-	#define FINAL_PAGE_WRITE	(1 << 4)
+	#define CHIP_ERASED			(1 << 2)
+	#define CLOCK_SET			(1 << 3)
+	#define FUSE_VALIDATED		(1 << 4)
+	#define FILE_FOUND_OPEN 	(1 << 5)
+	#define PAGE_WRITE_READY	(1 << 6)
+	#define FINAL_PAGE_WRITE	(1 << 7)
+
+	//============			FUSE BYTES				===========//
+	// Default FUSE Bytes
+	#define EXT_FUSE_BYTE_40	0xFC
+	#define EXT_FUSE_BYTE_90	0xFD
+	#define HIGH_FUSE_BYTE 		0xD7
+	#define LOW_FUSE_BYTE		0xDD
+	//	High CLK FUSE Bytes
+	#define HIGH_CLK_EXT_FUSE	0xFD
+	#define HIGH_CLK_HIGH_FUSE	0xD7
+	#define HIGH_CLK_LOW_FUSE	0xD2
 
 	typedef struct {
 			//=== Port Code ===//
@@ -100,6 +115,7 @@
 			uint16 TPR; //TestPassedRegister;
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
+			float VoltageBuffer[5];
 			uint8 BSR; //Board Status Register
 			uint8 LTR; //Latch Test Register
 			uint8 BPR; //Board Programming Register

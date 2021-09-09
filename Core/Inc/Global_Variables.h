@@ -24,7 +24,6 @@ void communication_command(uns_ch*);
 void SetPara(TboardConfig*, uns_ch);
 void BoardConfig(void);
 void ADC_Init(void);
-void TransmitResults(void);
 void PrintLatchResults(void);
 void LatchErrorCheck(TboardConfig*);
 //void printLatchError(uint8 *);
@@ -119,9 +118,9 @@ uint8 LatchTestPort;
 typedef struct {
 	uint32_t total;
 	float average;
-	float avg_Buffer[ADC_BUF_LEN];
+	int avg_Buffer[ADC_BUF_LEN];
 	uint16 readValue;
-	float currentValue;
+	uint16 currentValue;
 
 	uint8_t HighPulseWidth;
 	_Bool HighPulseMeasure;
@@ -140,8 +139,6 @@ TADCconfig MOSFETvoltageA;
 TADCconfig MOSFETvoltageB;
 TADCconfig Vin;
 TADCconfig Vuser;
-
-float fuseBuffer[3];
 
 typedef struct {
 	// Latch Pulse Widths and Voltages
@@ -185,8 +182,12 @@ typedef struct {
 TkeypadConfig KP[12];
 typedef enum { star = 10, hash = 11 }TkeypadSpecialChars;
 
+//Voltage Test Enum
+typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_SOLAR = 3, V_INPUT = 4}TvoltageTestVariables;
 
-uint8 QuitCount;
+typedef enum {NormalMode = 0 , OldBoardMode = 1, VerboseMode = 2}TtestMode;
+
+TtestMode TestRigMode;
 
 //Serial Number variables
 uint8 SerialNumber[9];
@@ -195,7 +196,6 @@ uint8 BarcodeCount;
 uint8 BarcodeBuffer[9];
 _Bool BarcodeScanned;
 
-_Bool OldBoardMode;
 //	Timeout functionality, Loop action until timeout is met
 bool timeOutEn;
 uint32 timeOutCount;
