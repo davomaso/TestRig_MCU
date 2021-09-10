@@ -15,7 +15,7 @@ void initialiseTargetBoard(TboardConfig *);
 void interrogateTargetBoard(void);
 void configureTargetBoard(TboardConfig *);
 void uploadSamplesTargetBoard(TboardConfig *);
-void TargetBoardParamInit(void);
+void TargetBoardParamInit(_Bool);
 uint32 ReadSerialNumber(uint8 *, uns_ch *, uint16 );
 void setTimeOut(uint16);
 void runLatchTimeOut(uint16);

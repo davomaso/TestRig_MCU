@@ -389,10 +389,11 @@ void normaliseLatchResults() {
 }
 
 void TransmitResults(TboardConfig *Board) {
-	sprintf(SDcard.FILEname, "TEST_RESULTS/%lu/%lu_LATCH_%d.CSV", Board->SerialNumber, Board->SerialNumber,
+	sprintf(SDcard.FILEname, "TEST_RESULTS/%lu_%x/%lu_LATCH_%d.CSV", Board->SerialNumber, Board->BoardType, Board->SerialNumber,
 			Board->GlobalTestNum + 1);
 	Create_File(&SDcard);
-	printT((uns_ch*) "==============   ADC Average Results   ==============");
+	if (TestRigMode == VerboseMode)
+		printT((uns_ch*) "==============   ADC Average Results   ==============");
 	sprintf((char*) &debugTransmitBuffer, "t(ms),PortA,PortB,Vin\n");
 	Write_File(&SDcard, &SDcard.FILEname, &debugTransmitBuffer);
 	for (int i = 0; i < LatchCountTimer; i++) {

@@ -17,47 +17,43 @@ void scanLoom(TboardConfig *Board) {
 		}
 	}	// ###### add loom checking to occur during testing
 	if( LoomState != PrevLoomState) {
-//		if (CurrentState == csIDLE) {
 			LCD_Clear();
 					switch(LoomState){
 					case 0:
+						Board->BoardType = bNone;
+						TargetBoardParamInit(true);
+						LoomState = 0xFF;
 						LCD_printf((uns_ch*)"Connect Loom",2,4);
 						printT((uns_ch*)"Connect Loom...\n");
 						break;
 					case 1:
 						Board->BoardType = b935x;
 						Board->Subclass = 'C';
-						LCD_printf((uns_ch*)"9352 Loom Connected",1,0);
 						printT((uns_ch*)"9352 Connected...\n");
 						break;
 					case 2:
 						Board->BoardType = b937x;
 						Board->Subclass = 'D';
-						LCD_printf((uns_ch*)"9371 Loom Connected",1,0);
 						printT((uns_ch*)"9371 Connected...\n");
 						break;
 					case 3:
 						Board->BoardType = b401x;
 						Board->Subclass = 0;
-						LCD_printf((uns_ch*)"4012 Loom Connected",1,0);
 						printT((uns_ch*)"401x Connected...\n");
 						break;
 					case 4:
 						Board->BoardType = b402x;
 						Board->Subclass = 0;
-						LCD_printf((uns_ch*)"4022 Loom Connected",1,0);
 						printT((uns_ch*)"4022 Connected...\n");
 						break;
 					case 5:
 						Board->BoardType = b427x;
 						Board->Subclass = 0;
-						LCD_printf((uns_ch*)"4271 Loom Connected",1,0);
 						printT((uns_ch*)"4271 Connected...\n");
 						break;
 					case 0x0A: //change to 6 when loom is fixed
 						Board->BoardType = b422x;
 						Board->Subclass = 0;
-						LCD_printf((uns_ch*)"4220 Loom Connected",1,0);
 						printT((uns_ch*)"4220 Connected...\n");
 						break;
 					default:
@@ -66,10 +62,16 @@ void scanLoom(TboardConfig *Board) {
 						LCD_printf((uns_ch*)"Unknown Loom",1,0);
 						printT((uns_ch*)"Unknown Loom...\n");
 					}
-					if ( (LoomState != bNone ) && (LoomState != 0) ) {
-						LCD_printf((uns_ch*)"   1 - Begin Test ",4,0);	// change wording to be dependant on state and loom connected
-						printT((uns_ch*)"Press 1 - Begin Test \n");
+					if (Board->BoardType != bNone) {
+						sprintf(lcdBuffer, "TEST RIG  %x",Board->BoardType);
+						HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+						HAL_Delay(1200);
+					} else {
+						sprintf(lcdBuffer, "TEST RIG");
+						HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 					}
+					LCD_printf((uns_ch*)&lcdBuffer,1,7);
+
 				}
 }
 

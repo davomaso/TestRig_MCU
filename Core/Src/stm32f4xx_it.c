@@ -245,9 +245,9 @@ void TIM1_UP_TIM10_IRQHandler(void)
 //			sprintf(debugTransmitBuffer, "%d", calibrateADCval.average);
 //			printT(&debugTransmitBuffer);
 			if (BoardConnected.BoardType == b401x || BoardConnected.BoardType == b402x) {
-				if (((BoardConnected.BoardType == b401x)) && (calibrateADCval.average >= 3500)) {
+				if (((BoardConnected.BoardType == b401x)) && (calibrateADCval.average >= 3000)) {
 					if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
-						TargetBoardCalibration_Current(&BoardConnected);
+ 						TargetBoardCalibration_Current(&BoardConnected);
 					}
 				} else if ((BoardConnected.BoardType == b402x) && calibrateADCval.average <= 500) {
 					if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
@@ -496,7 +496,10 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 			sampleCount = 0;
 			Vuser.total = 0;
 		} else {
-			ADC_Ch5sel();
+			if (BoardConnected.BoardType == b422x)
+				ADC_Ch3sel();
+			else
+				ADC_Ch5sel();
 			HAL_ADC_Start(&hadc1);
 			HAL_ADC_PollForConversion(&hadc1, 1);
 			Vuser.total += HAL_ADC_GetValue(&hadc1);

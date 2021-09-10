@@ -107,8 +107,10 @@ _Bool Find_File(TfileConfig *FAT, char *path) {
 	if (res == FR_OK) {
 		for (;;) {
 			res = f_readdir(&(FAT->directory), &(FAT->fileInfo)); /* Read a directory item */
-			printT((uns_ch*) &(FAT->fileInfo.fname[0]));
-			printT("\r\n");
+			if (TestRigMode == VerboseMode) {
+				printT((uns_ch*) &(FAT->fileInfo.fname[0]));
+				printT("\r\n");
+			}
 			if (res != FR_OK || FAT->fileInfo.fname[0] == 0)
 				break; /* Break on error or end of dir */
 			if (FAT->fileInfo.fattrib & AM_DIR) { /* Check if it is a directory */
@@ -128,7 +130,6 @@ _Bool Find_File(TfileConfig *FAT, char *path) {
 				if (memcmp(&(FAT->fileInfo.fname), &(FAT->FILEname[0]), 4) == 0) {
 					char *buf = malloc((_MAX_LFN + 1) * sizeof(char));
 					sprintf(buf, "File: %s/%s\n", path, FAT->fileInfo.fname);
-					printT((uns_ch*) buf);
 					free(buf);
 					HAL_Delay(2);
 					res = f_closedir(&FAT->directory);
@@ -194,7 +195,7 @@ FRESULT Read_File(TfileConfig *file, char *name) {
 			sprintf(buf, "ERROR!!! No. %d in closing file *%s*\n\n", res, name);
 			printT((uns_ch*) buf);
 			free(buf);
-		} else {
+		} else if (TestRigMode == VerboseMode) {
 			char *buf = malloc(100 * sizeof(char));
 			sprintf(buf, "File *%s* CLOSED successfully\n", name);
 			printT((uns_ch*) buf);
@@ -217,7 +218,7 @@ FRESULT Create_File(TfileConfig *file) {
 		printT((uns_ch*) buf);
 		free(buf);
 		return res;
-	} else {
+	} else if (TestRigMode == VerboseMode) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "*%s* created successfully\n Now use Write_File to write data\n", &(file->FILEname[0]));
 		printT((uns_ch*) buf);
@@ -252,7 +253,7 @@ FRESULT Close_File(TfileConfig *FAT) {
 		sprintf(buf, "ERROR No. %d in closing file *%s*\n\n", res, (FAT->FILEname));
 		printT((uns_ch*) buf);
 		free(buf);
-	} else {
+	} else if (TestRigMode == VerboseMode) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "File *%s* CLOSED successfully\n\n", (char*) &(FAT->FILEname[0]));
 		printT((uns_ch*) buf);
@@ -270,7 +271,7 @@ FRESULT Update_File(TfileConfig *file, char *name, char *data) {
 		sprintf(buf, "ERROR!!! No. %d in writing file *%s*\n\n", res, name);
 		printT((uns_ch*) buf);
 		free(buf);
-	} else {
+	} else if (TestRigMode == VerboseMode) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "*%s* UPDATED successfully\n", name);
 		printT((uns_ch*) buf);
@@ -287,10 +288,12 @@ FRESULT Create_Dir(TCHAR *name) {
 	FRESULT res;
 	res = f_mkdir(name);
 	if (res == FR_OK) {
-		char *buf = malloc(100 * sizeof(char));
-		sprintf(buf, "*%s* has been created successfully\n", name);
-		printT((uns_ch*) buf);
-		free(buf);
+		if (TestRigMode == VerboseMode) {
+			char *buf = malloc(100 * sizeof(char));
+			sprintf(buf, "*%s* has been created successfully\n", name);
+			printT((uns_ch*) buf);
+			free(buf);
+		}
 	} else {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR No. %d in creating directory *%s*\n\n", res, name);
@@ -313,12 +316,14 @@ FRESULT OpenFile(TfileConfig *FAT) {
 		printT(&debugTransmitBuffer[0]);
 	} else {
 		fileSize = (FAT->file).obj.objsize;
-		sprintf((char*) &debugTransmitBuffer[0], "File Size: ");
-		printT(&debugTransmitBuffer[0]);
-		sprintf((char*) &debugTransmitBuffer[0], "%.03f kB\n", (float) fileSize / 1000);
-		printT(&debugTransmitBuffer[0]);
-		sprintf((char*) &debugTransmitBuffer[0], "***  %s Opened Successfully  ***\n", (char*) &(FAT->FILEname));
-		printT(&debugTransmitBuffer[0]);
+		if (TestRigMode == VerboseMode) {
+			sprintf((char*) &debugTransmitBuffer[0], "File Size: ");
+			printT(&debugTransmitBuffer[0]);
+			sprintf((char*) &debugTransmitBuffer[0], "%.03f kB\n", (float) fileSize / 1000);
+			printT(&debugTransmitBuffer[0]);
+			sprintf((char*) &debugTransmitBuffer[0], "***  %s Opened Successfully  ***\n", (char*) &(FAT->FILEname));
+			printT(&debugTransmitBuffer[0]);
+		}
 	}
 	return res;
 }
@@ -353,29 +358,37 @@ uint32 Check_SD_Space(TfileConfig *file) {
 	return free_space;
 }
 
-FRESULT CreateResultsFile(TfileConfig *file, TboardConfig *Board) {
-	sprintf(&(file->FILEname[0]), "/TEST_RESULTS/%lu/%lu.CSV", Board->SerialNumber, Board->SerialNumber);
+FRESULT CreateResultsFile(TfileConfig *FAT, TboardConfig *Board) {
+
 	FRESULT res;
-	res = Create_File(file);
-	if (res == 0) {
+	sprintf(&(FAT->FILEname[0]), "/TEST_RESULTS/%lu_%x", Board->SerialNumber, Board->BoardType);
+	res = Create_Dir(&(FAT->FILEname));
+	sprintf(&(FAT->FILEname[0]), "/TEST_RESULTS/%lu_%x/%lu.CSV", Board->SerialNumber, Board->BoardType,
+				Board->SerialNumber);
+	res = Create_File(FAT);
+	if (res == FR_OK) {
 		sprintf((char*) &debugTransmitBuffer[0],
 				"Board,Test,Port,TestType,Pass/Fail,Set,Measured, ton, VonH, VonL, MOSonH, MOSonL, toff, VoffH, VoffL, MOSoffHigh, MOSoffLow, VinAVG, VinLow, VfuseAVG, VfuseLow \r\n");
-		res = Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);
+		res = Write_File(FAT, (TCHAR*) &(FAT->FILEname), (char*) &debugTransmitBuffer[0]);
 	}
 	return res;
 }
 
-FRESULT WriteVoltages(TboardConfig* Board, TfileConfig * FAT) {
+FRESULT WriteVoltages(TboardConfig *Board, TfileConfig *FAT) {
 	FRESULT res;
-	sprintf(FAT->FILEname, "/TEST_RESULTS/%lu/%lu.CSV", Board->SerialNumber, Board->SerialNumber);
+	sprintf(FAT->FILEname, "/TEST_RESULTS/%lu_%x/%lu.CSV", Board->SerialNumber, Board->BoardType, Board->SerialNumber);
 	res = Open_AppendFile(FAT);
 	if (res == FR_OK) {
-		if ( (Board->BoardType == b427x) || (Board->BoardType == b422x) )
-			sprintf((char*) &TestResultsBuffer, "Voltages\nSolar, %.3f\n Input, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",Board->VoltageBuffer[V_SOLAR], Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);
+		if ((Board->BoardType == b427x) || (Board->BoardType == b422x))
+			sprintf((char*) &TestResultsBuffer,
+					"Voltages\nSolar, %.3f\n Input, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",
+					Board->VoltageBuffer[V_SOLAR], Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12],
+					Board->VoltageBuffer[V_3]);
 		else
-			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n", Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);
+			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",
+					Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);
 
-		res = Update_File(FAT, (char*)FAT->FILEname[0], &TestResultsBuffer[0]);
+		res = Update_File(FAT, (char*) FAT->FILEname[0], &TestResultsBuffer[0]);
 		if (res == FR_OK)
 			res = Close_File(FAT);
 	}

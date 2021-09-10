@@ -50,6 +50,7 @@ void LatchTestInit() {
 	MOSFETvoltageB.highVoltage = 0.0;
 	MOSFETvoltageA.lowVoltage = 4096.0;
 	MOSFETvoltageB.lowVoltage = 4096.0;
+	MOSFETvoltageA.total = MOSFETvoltageB.total = 0;
 
 		//ADC 1
 	LatchPortA.highVoltage = 0.0;

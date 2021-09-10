@@ -80,7 +80,6 @@ void communication_array(uns_ch Command, uns_ch *Para, uint8_t Paralen) {
 void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data, uint8 arraysize) {
 	switch (*Response) {
 	case 0x11:	//Serialise Command, Used to check the version of the board
-
 		memcpy(&Board->SerialNumber, data, 4);
 		data += 4;
 		if ((Board->SerialNumber != 0) && (~(Board->SerialNumber) != 0))
@@ -88,28 +87,28 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 		data += 2;  //LSB board number coming in
 		Board->Version = *data++; //version currently installed on board
 		Board->Subclass = *data++; //if a 93xx board is connected, what variety is it C, M, X, F...
-		printT((uns_ch*) "====Interogation Complete====\n");
+
 		memcpy(&Board->Network, data, 2);
 		data += 2;
 		memcpy(&Board->Module, data, 2);
-		//Print Board Info //Transmit Info To Terminal
-		printT((uns_ch*) "=====Board Info=====\n");
-		//Board
-		sprintf((char*) &debugTransmitBuffer[0], "Board :		 %x%c \n", Board->BoardType, Board->Subclass);
-		printT(&debugTransmitBuffer[0]);
-//		delay_us(50);
-		//Version
-		sprintf((char*) &debugTransmitBuffer[0], "Version :	 %x \n", Board->Version);
-		printT(&debugTransmitBuffer[0]);
-//		delay_us(50);
-		//Network
-		sprintf((char*) &debugTransmitBuffer[0], "Network :	 %d \n", Board->Network);
-		printT(&debugTransmitBuffer[0]);
-//		delay_us(50);
-		//Module
-		sprintf((char*) &debugTransmitBuffer[0], "Module :	 %d \n", Board->Module);
-		printT(&debugTransmitBuffer[0]);
-//		delay_us(50);
+		if (CurrentState != csIDLE) {
+			printT((uns_ch*) "====Interogation Complete====\n");
+				//Print Board Info //Transmit Info To Terminal
+			printT((uns_ch*) "=====Board Info=====\n");
+				//Board
+			sprintf((char*) &debugTransmitBuffer[0], "Board :		 %x%c \n", Board->BoardType, Board->Subclass);
+			printT(&debugTransmitBuffer[0]);
+				//Version
+			sprintf((char*) &debugTransmitBuffer[0], "Version :	 %x \n", Board->Version);
+			printT(&debugTransmitBuffer[0]);
+				//Network
+			sprintf((char*) &debugTransmitBuffer[0], "Network :	 %d \n", Board->Network);
+			printT(&debugTransmitBuffer[0]);
+				//Module
+			sprintf((char*) &debugTransmitBuffer[0], "Module :	 %d \n", Board->Module);
+			printT(&debugTransmitBuffer[0]);
+
+		}
 		break;
 
 	case 0x1B:
@@ -122,13 +121,17 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 		sampleTime = sampleTime < 200 ? 200 : sampleTime;
 		samplesUploading = true;
 		//Uploading begun
-		sprintf((char*) &debugTransmitBuffer, "Waiting : %.2f seconds....\n", (float) sampleTime / 1000);
-		printT((uns_ch*) &debugTransmitBuffer);
+		if (TestRigMode == VerboseMode) {
+			sprintf((char*) &debugTransmitBuffer, "Waiting : %.2f seconds....\n", (float) sampleTime / 1000);
+			printT((uns_ch*) &debugTransmitBuffer);
+			}
 		break;
 
 	case 0x19:
-		printT((uns_ch*) "=====Sampling Complete=====\n");
-		printT((uns_ch*) "Starting Test Procedure...\n\n");
+		if (TestRigMode == VerboseMode) {
+			printT((uns_ch*) "=====Sampling Complete=====\n");
+			printT((uns_ch*) "Starting Test Procedure...\n\n");
+		}
 		memcpy(&sampleBuffer[0], data, (arraysize));
 		break;
 	case 0x03:	//Board Busy
@@ -138,7 +141,8 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 		sampleTime = 500;
 		break;
 	case 0xCD:	// Initialise board command
-		printT((uns_ch*) "\n=====     Board Initialised     =====\n");
+		if (TestRigMode == VerboseMode)
+			printT((uns_ch*) "\n=====     Board Initialised     =====\n");
 		break;
 
 	}
@@ -173,11 +177,12 @@ void SetPara(TboardConfig *Board, uns_ch Command) {
 			BoardCommsParameters[i] = i;
 			BoardCommsParametersLength = i + 1;
 		}
-		printT((uns_ch*) "Target Board Uploading Samples...\n");
+		if (TestRigMode == VerboseMode)
+			printT((uns_ch*) "Target Board Uploading Samples...\n");
 		break;
 	case 0x56:
-		sprintf((char*) &debugTransmitBuffer, "\nConfiguring Board...\n");
-		printT((uns_ch*) &debugTransmitBuffer);
+		if (TestRigMode == VerboseMode)
+			printT("\nConfiguring Board...\n");
 		SetTestParam(Board, Board->GlobalTestNum, &BoardCommsParameters[0], &BoardCommsParametersLength);
 		if (BoardConnected.GlobalTestNum == 0) {
 			if (Board->Subclass)

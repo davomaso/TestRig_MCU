@@ -59,7 +59,8 @@ void initialiseTargetBoard(TboardConfig *Board) {
 }
 
 void interrogateTargetBoard() {
-	LCD_printf((uns_ch *) "   Interrogating    ", 2, 0);
+	if(CurrentState != csIDLE)
+		LCD_printf((uns_ch *) "   Interrogating    ", 2, 0);
 	uns_ch Command;
 	Command = 0x10;
 	communication_arraySerial(Command, 0, 0);
@@ -81,13 +82,21 @@ void uploadSamplesTargetBoard(TboardConfig *Board) {
 	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
 }
 
-void TargetBoardParamInit() {
-	TloomConnected TempBoardType = BoardConnected.BoardType;
-	uns_ch TempSubClass = BoardConnected.Subclass;
-	memset(&BoardConnected, 0, sizeof(TboardConfig));
-	//Dont Clear BoardType, can only be accessed from scanLoom()
-	BoardConnected.BoardType = TempBoardType;
-	BoardConnected.Subclass = TempSubClass;
+void TargetBoardParamInit(_Bool FullErase) {
+	TloomConnected TempBoardType;
+	uns_ch TempSubClass;
+	uint32 TempSerial;
+	if (!FullErase) {
+		TempBoardType = BoardConnected.BoardType;
+		TempSubClass = BoardConnected.Subclass;
+		TempSerial = BoardConnected.SerialNumber;
+		memset(&BoardConnected, 0, sizeof(TboardConfig));
+		//Dont Clear BoardType, can only be accessed from scanLoom()
+		BoardConnected.BoardType = TempBoardType;
+		BoardConnected.Subclass = TempSubClass;
+		BoardConnected.SerialNumber = TempSerial;
+	} else
+		memset(&BoardConnected, 0, sizeof(TboardConfig));
 	memset(&Vfuse, 0, sizeof(TADCconfig));
 	memset(&Vin, 0, sizeof(TADCconfig));
 }

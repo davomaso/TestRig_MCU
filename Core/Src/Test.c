@@ -244,7 +244,7 @@ void TestConfig427x(TboardConfig * Board){
 			&latchTest, &noTest, &noTest, &noTest, &asyncTest,		//
 			&noTest, &latchTest, &noTest, &noTest, &OnevoltTest,	//
 			&noTest, &noTest, &latchTest, &noTest, &currentTest,	//
-			&noTest, &noTest, &noTest, &latchTest, &asyncTest		//
+			&noTest, &noTest, &noTest, &latchTest, &sdi12Test		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -276,7 +276,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 			uint8 * PCptr = &(Board->PortCodes[0]);
 			 if ( (Board->BoardType == b427x) && (Board->GlobalTestNum == 0) ) {
 					*Para = 0x81; (*Count)++; Para++;
-					*Para = 0x01; (*Count)++; Para++;
+					*Para = 0x02; (*Count)++; Para++;
 					*Para = 0x82; (*Count)++; Para++;
 					*Para = 0x01; (*Count)++; Para++;
 				} else if ( (Board->BoardType == b422x ) && (Board->GlobalTestNum == 0) ) {
@@ -297,6 +297,17 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 					*Para = 0x14; (*Count)++; Para++;
 					*Para = 0x83; (*Count)++; Para++;
 					*Para = 0x1E; (*Count)++; Para++;
+					*Para = 0x84; (*Count)++; Para++;
+					*Para = 0x00; (*Count)++; Para++;
+				}else if ((Board->BoardType == b401x) && (Board->GlobalTestNum == 0) ) {
+					*Para = 0x80; (*Count)++; Para++;
+					*Para = 0x01; (*Count)++; Para++;
+					*Para = 0x81; (*Count)++; Para++;
+					*Para = 0x02; (*Count)++; Para++;
+					*Para = 0x82; (*Count)++; Para++;
+					*Para = 0x14; (*Count)++; Para++;
+					*Para = 0x83; (*Count)++; Para++;
+					*Para = 0x78; (*Count)++; Para++;
 					*Para = 0x84; (*Count)++; Para++;
 					*Para = 0x00; (*Count)++; Para++;
 				}
@@ -379,7 +390,6 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		spacing = (spacing & 1) ? spacing+1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
-		SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		for (uint8 i = 0; i < maxTest; i++) {
 			if ( (Board->TPR & (1 << i) ) == true) {
 				sprintf((char*)&debugTransmitBuffer[0], "X ");
@@ -392,7 +402,7 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		}
 		CheckPowerRegisters(Board);
 
-		if ( (Board->TPR != 0) && READ_BIT(Board->BSR,BOARD_POWER_STABLE) )
+		if ( (READ_REG(Board->TPR) == 0) && (READ_REG(Board->BSR == 0x3E) ) )
 			SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		return false;
 	}

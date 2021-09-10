@@ -123,7 +123,6 @@ uint32 read_serial() {
 	}
 	KP[hash].Pressed = 0;
 	if (!Quit_flag) {
-
 		int i = 0;
 		while (SerialCount != i) {
 			tempSerialNumber = (tempSerialNumber * 10 + (SerialNumber[i++] - 0x30));

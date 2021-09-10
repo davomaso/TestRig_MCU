@@ -4,7 +4,7 @@ x = []
 y = []
 z = []
 t = []
-with open('ADC_Capture.csv','r') as csvfile:
+with open("C:/Users/mason/TestRig_MCU/LATCH PLOT/ADC_Capture.csv","r") as csvfile:
     plots = csv.reader(csvfile, delimiter=',')
     for row in plots:
         t.append(int(row[0]))

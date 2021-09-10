@@ -211,9 +211,6 @@ int main(void) {
 		case csInterogating: //0x09 & 0x35
 			handleInterogating(&BoardConnected, &ProcessState);
 			break;
-		case csTestBegin:
-			handleTestBegin(&BoardConnected, &ProcessState);
-			break;
 		case csLatchTest:
 			handleLatchTest(&BoardConnected, &ProcessState);
 			break;
