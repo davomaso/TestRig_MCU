@@ -274,43 +274,8 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 			*Count = 0;
 			// ======= Load Both Arrays into Para to be sent to Target Board  ======= //
 			uint8 * PCptr = &(Board->PortCodes[0]);
-			 if ( (Board->BoardType == b427x) && (Board->GlobalTestNum == 0) ) {
-					*Para = 0x81; (*Count)++; Para++;
-					*Para = 0x02; (*Count)++; Para++;
-					*Para = 0x82; (*Count)++; Para++;
-					*Para = 0x01; (*Count)++; Para++;
-				} else if ( (Board->BoardType == b422x ) && (Board->GlobalTestNum == 0) ) {
-					*Para = 0x80; (*Count)++; Para++;
-					*Para = 0x64; (*Count)++; Para++;
-					*Para = 0x83; (*Count)++; Para++;
-					*Para = 0x80; (*Count)++; Para++;
-				} else if ((Board->BoardType == b402x) && (Board->GlobalTestNum == 0) ) {
-					*Para = 0x15; (*Count)++; Para++;
-					*Para = 0x6E; (*Count)++; Para++;
-					*Para = 0x16; (*Count)++; Para++;
-					*Para = 0x78; (*Count)++; Para++;
-					*Para = 0x80; (*Count)++; Para++;
-					*Para = 0x01; (*Count)++; Para++;
-					*Para = 0x81; (*Count)++; Para++;
-					*Para = 0x02; (*Count)++; Para++;
-					*Para = 0x82; (*Count)++; Para++;
-					*Para = 0x14; (*Count)++; Para++;
-					*Para = 0x83; (*Count)++; Para++;
-					*Para = 0x1E; (*Count)++; Para++;
-					*Para = 0x84; (*Count)++; Para++;
-					*Para = 0x00; (*Count)++; Para++;
-				}else if ((Board->BoardType == b401x) && (Board->GlobalTestNum == 0) ) {
-					*Para = 0x80; (*Count)++; Para++;
-					*Para = 0x01; (*Count)++; Para++;
-					*Para = 0x81; (*Count)++; Para++;
-					*Para = 0x02; (*Count)++; Para++;
-					*Para = 0x82; (*Count)++; Para++;
-					*Para = 0x14; (*Count)++; Para++;
-					*Para = 0x83; (*Count)++; Para++;
-					*Para = 0x78; (*Count)++; Para++;
-					*Para = 0x84; (*Count)++; Para++;
-					*Para = 0x00; (*Count)++; Para++;
-				}
+			SetVoltageParameters(Board, Para, Count);
+			Para += *Count;
 			for (uint8 PortCount = 0; PortCount < TotalPort; PortCount++) {
 				Set_Test(Board, PortCount, TotalPort);	//Increment This test to the next testarray variable
 				if(Board->ThisTest->Code){
@@ -348,22 +313,6 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 				if (Board->ThisTest->Code == ASYNC_PULSE) {
 					Port[PortCount - (Board->latchPortCount)].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 					}
-			}
-			if( ( (Board->BoardType == b935x) || (Board->BoardType == b937x) ) && (Board->GlobalTestNum < 3)){
-				*Para = 0xA0; (*Count)++; Para++;
-				if (Board->GlobalTestNum == 2)
-					*Para = 0x00;
-				else
-					*Para = 0x02;
-				(*Count)++; Para++;
-				*Para = 0xA1; (*Count)++; Para++;
-				if (Board->GlobalTestNum == 0)
-					*Para = 0x00;
-				else
-					*Para = 0x01;
-				(*Count)++; Para++;
-				*Para = 0xA2; (*Count)++; Para++;
-				*Para = 0x01; (*Count)++; Para++;
 			}
 	}
 
@@ -407,6 +356,77 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 		return false;
 	}
 	return true;
+}
+
+void SetVoltageParameters(TboardConfig * Board, uns_ch * Para, uint8 *Count) {
+	 if (Board->BoardType == b427x) {
+			*Para = 0x81; (*Count)++; Para++;
+			*Para = 0x02; (*Count)++; Para++;
+			*Para = 0x82; (*Count)++; Para++;
+			*Para = 0x01; (*Count)++; Para++;
+		} else if (Board->BoardType == b422x) {
+			*Para = 0x80; (*Count)++; Para++;
+			*Para = 0x64; (*Count)++; Para++;
+			*Para = 0x83; (*Count)++; Para++;
+			*Para = 0x80; (*Count)++; Para++;
+		} else if (Board->BoardType == b402x) {
+			*Para = 0x15; (*Count)++; Para++;
+			*Para = 0x6E; (*Count)++; Para++;
+			*Para = 0x16; (*Count)++; Para++;
+			*Para = 0x78; (*Count)++; Para++;
+			*Para = 0x80; (*Count)++; Para++;
+			*Para = 0x01; (*Count)++; Para++;
+			*Para = 0x81; (*Count)++; Para++;
+			*Para = 0x02; (*Count)++; Para++;
+			*Para = 0x82; (*Count)++; Para++;
+			*Para = 0x14; (*Count)++; Para++;
+			*Para = 0x83; (*Count)++; Para++;
+			*Para = 0x1E; (*Count)++; Para++;
+			*Para = 0x84; (*Count)++; Para++;
+			*Para = 0x00; (*Count)++; Para++;
+		}else if (Board->BoardType == b401x) {
+			*Para = 0x80; (*Count)++; Para++;
+			*Para = 0x02; (*Count)++; Para++;
+			*Para = 0x81; (*Count)++; Para++;
+			*Para = 0x02; (*Count)++; Para++;
+			*Para = 0x82; (*Count)++; Para++;
+			*Para = 0x01; (*Count)++; Para++;
+			*Para = 0x83; (*Count)++; Para++;
+			if (Board->GlobalTestNum == V_12)	// Set Vuser
+				*Para = 0x69;	// 0x69 is 10.5
+			else if (Board->GlobalTestNum == V_3)
+				*Para = 0x1E;
+			(*Count)++; Para++;
+			*Para = 0x84; (*Count)++; Para++; // Set trim to get as close to Vuser
+			if (BoardConnected.GlobalTestNum == V_SOLAR) {
+				uint8 trim = round((10.5 - Board->VoltageBuffer[V_12])*1000) /100;
+				*Para = trim;
+			} else
+				*Para = 0x00;
+			(*Count)++; Para++;
+			} else if( ( (Board->BoardType == b935x) || (Board->BoardType == b937x) )){
+			if (Board->GlobalTestNum < V_12output) {
+				*Para++ = 0xA0; (*Count)++;			// Permanently on command
+				*Para++ = 0x02;	(*Count)++;
+				*Para++ = 0xA1; (*Count)++;			// Voltage Selection Command
+				if (Board->GlobalTestNum == V_12)
+					*Para++ = 0x00;
+				else if (Board->GlobalTestNum == V_3)
+					*Para++ = 0x01;
+				else
+					*Para++ = 0x02;
+				(*Count)++;
+				*Para++ = 0xA2; (*Count)++;
+				*Para++ = 0x01; (*Count)++;
+			} else {
+				*Para++ = 0xA0; (*Count)++;			// Permanently on command
+				*Para++ = 0x00;	(*Count)++;
+				*Para++ = 0xA1; (*Count)++;			// Voltage Selection Command
+				*Para++ = 0x00; (*Count)++;
+				*Para++ = 0xA2; (*Count)++;
+				*Para++ = 0x01; (*Count)++;
+			}
+		}
 }
 //	=================================================================================//
 //	=================================================================================//

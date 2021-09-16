@@ -118,7 +118,6 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 		sampleCount = 0;
 		samplesUploaded = false;
 		sampleTime = sampleTime > 3500 ? 3500 : sampleTime;
-		sampleTime = sampleTime < 200 ? 200 : sampleTime;
 		samplesUploading = true;
 		//Uploading begun
 		if (TestRigMode == VerboseMode) {
@@ -169,14 +168,14 @@ void SetPara(TboardConfig *Board, uns_ch Command) {
 	case 0x18:
 		for (uint8 i = 0; i <= 15; i++) {
 			BoardCommsParameters[i] = i;
-			BoardCommsParametersLength = i + 1;
 		}
+		BoardCommsParametersLength = 16;
 		break;
 	case 0x1A:
 		for (uint8 i = 0; i <= 15; i++) {
 			BoardCommsParameters[i] = i;
-			BoardCommsParametersLength = i + 1;
 		}
+		BoardCommsParametersLength = 16;
 		if (TestRigMode == VerboseMode)
 			printT((uns_ch*) "Target Board Uploading Samples...\n");
 		break;
@@ -239,7 +238,7 @@ void switchCommsProtocol(TboardConfig *Board) {
 		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
 	} else if ((Board->BoardType == b402x) || (Board->BoardType == b427x)) {
-		if (Board->GlobalTestNum > 3) {
+		if (Board->GlobalTestNum > 2) {
 			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_RESET);
 		} else {

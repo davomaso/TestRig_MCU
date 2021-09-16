@@ -46,6 +46,7 @@ _Bool CheckLoom;
 _Bool LoomChecking;
 uint8 LoomCheckCount;
 uint8 LoomState;
+_Bool MonitorInput;
 
 //0x1A and 0x1B Command and Response
 uint16 sampleTime;
@@ -183,7 +184,7 @@ TkeypadConfig KP[12];
 typedef enum { star = 10, hash = 11 }TkeypadSpecialChars;
 
 //Voltage Test Enum
-typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_SOLAR = 3, V_INPUT = 4}TvoltageTestVariables;
+typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_12output = 3, V_SOLAR = 4, V_INPUT = 5}TvoltageTestVariables;
 
 typedef enum {NormalMode = 0 , OldBoardMode = 1, VerboseMode = 2, SerialiseMode = 3}TtestMode;
 

@@ -59,8 +59,12 @@ void initialiseTargetBoard(TboardConfig *Board) {
 }
 
 void interrogateTargetBoard() {
-	if(CurrentState != csIDLE)
-		LCD_printf((uns_ch *) "   Interrogating    ", 2, 0);
+	if(CurrentState != csIDLE){
+		if (CurrentState == csSerialise)
+			LCD_printf((uns_ch *) "    Serialising    ", 2, 0);
+		else
+			LCD_printf((uns_ch *) "   Interrogating    ", 2, 0);
+	}
 	uns_ch Command;
 	Command = 0x10;
 	communication_arraySerial(Command, 0, 0);

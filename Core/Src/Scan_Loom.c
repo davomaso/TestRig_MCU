@@ -23,7 +23,6 @@ void scanLoom(TboardConfig *Board) {
 						Board->BoardType = bNone;
 						TargetBoardParamInit(true);
 						LoomState = 0xFF;
-						LCD_printf((uns_ch*)"Connect Loom",2,4);
 						printT((uns_ch*)"Connect Loom...\n");
 						break;
 					case 1:
@@ -65,10 +64,8 @@ void scanLoom(TboardConfig *Board) {
 					if (Board->BoardType != bNone) {
 						sprintf(lcdBuffer, "TEST RIG  %x",Board->BoardType);
 						HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-						HAL_Delay(1200);
 					} else {
 						sprintf(lcdBuffer, "TEST RIG");
-						HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 					}
 					LCD_printf((uns_ch*)&lcdBuffer,1,7);
 

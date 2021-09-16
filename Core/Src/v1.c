@@ -19,25 +19,25 @@ void testInputVoltage() {
 	Vin.total = InputVoltageCounter = 0;
 	HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
 	LCD_printf((uns_ch*) "Board Power Test", 2, 0);
-	InputVoltageTimer = 1500;
+	InputVoltageTimer = 2500;
 	InputVoltageSampling = true;
 }
 
 void testSolarCharger() {
 	Vin.total = SolarChargerCounter = 0;
-	HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_SET);
 	LCD_printf((uns_ch*) "Solar Charger Test", 2, 1);
-	SolarChargerTimer = 1500;
+	SolarChargerTimer = 1250;
 	SolarChargerSampling = true;
+	HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_SET);
 }
 
 void CheckPowerRegisters(TboardConfig *Board) {
 	PrintVoltages(Board);
 	if (Board->VoltageBuffer[V_12] > 11.6)
 		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
-	if ((Board->VoltageBuffer[V_3] > 2.95) || (Board->BoardType == b427x))
+	if (( Board->VoltageBuffer[V_3] > 2.95 ) || (Board->BoardType == b427x))
 		SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
-	if (READ_REG(Board->BVR) != 0x0F)
+	if ( READ_REG(Board->BVR) != 0x0F )
 		CLEAR_BIT(Board->BSR, BOARD_POWER_STABLE);
 	else
 		SET_BIT(Board->BSR, BOARD_POWER_STABLE);
@@ -67,7 +67,7 @@ void PrintHomeScreen(TboardConfig *Board) {
 		LCD_printf((uns_ch*) "1 - Test Only", 3, 0);
 		LCD_printf((uns_ch*) "3 - New SN  Prog - #", 4, 0);
 	} else {
-		sprintf(lcdBuffer, "SN: N/a", Board->SerialNumber, Board->Version);
+		sprintf(lcdBuffer, "SN: N/a");
 		LCD_ClearLine(3);
 		LCD_printf((uns_ch*) &lcdBuffer, 2, 5);
 		LCD_printf((uns_ch*) "Test - #", 4, 12);
@@ -87,6 +87,11 @@ void PrintVoltages(TboardConfig *Board) {
 		sprintf((uns_ch*)&debugTransmitBuffer[0], "3V Sample Voltage:      %.3f\n", Board->VoltageBuffer[V_3]);
 		printT(&debugTransmitBuffer);
 	}
-	sprintf((uns_ch*)&debugTransmitBuffer[0], "12V Sample Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
+	if (Board->BoardType != b422x) {
+		sprintf((uns_ch*)&debugTransmitBuffer[0], "12V Sample Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
+		printT(&debugTransmitBuffer);
+	}
+	sprintf((uns_ch*)&debugTransmitBuffer[0], "12V Output:            %.3f\n", Board->VoltageBuffer[V_12output]);
 	printT(&debugTransmitBuffer);
 }
+

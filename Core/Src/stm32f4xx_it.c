@@ -361,17 +361,17 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					if (LatchPortA.currentValue > 2400) {
 						LatchPortA.HighPulseWidth++;
 						LatchPortA.highVoltage += LatchPortA.currentValue;
-						if (LatchPortA.HighPulseWidth > 5 && LatchPortA.HighPulseWidth < 90) {
+						if (LatchPortA.HighPulseWidth > 20 && LatchPortA.HighPulseWidth < 80) {
 							MOSFETvoltageA.currentValue = Vfuse.currentValue - LatchPortA.currentValue;
 							MOSFETvoltageA.total += MOSFETvoltageA.currentValue;
 						}
 						PulseCountDown =
 								(LatchPortA.HighPulseWidth > 90 || LatchPortB.LowPulseWidth > 90) ? 10 : PulseCountDown;
 					}
-					if (LatchPortB.currentValue < 500) {
+					if (LatchPortB.currentValue < 200) {
 						LatchPortB.LowPulseWidth++;
 						LatchPortB.lowVoltage += LatchPortB.currentValue;
-						if (LatchPortB.LowPulseWidth > 5 && LatchPortB.LowPulseWidth < 90) {
+						if (LatchPortB.LowPulseWidth > 20 && LatchPortB.LowPulseWidth < 80) {
 							MOSFETvoltageB.currentValue = LatchPortB.currentValue;
 							MOSFETvoltageB.total += MOSFETvoltageB.currentValue;
 						}
@@ -380,10 +380,10 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				if (READ_BIT(LatchTestStatusRegister,
 						LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
 					//Latch Off Test
-					if (LatchPortA.currentValue < 500) {
+					if (LatchPortA.currentValue < 200) {
 						LatchPortA.LowPulseWidth++;
 						LatchPortA.lowVoltage += LatchPortA.currentValue;
-						if (LatchPortA.LowPulseWidth > 5 && LatchPortA.LowPulseWidth < 90) {
+						if (LatchPortA.LowPulseWidth > 20 && LatchPortA.LowPulseWidth < 80) {
 							MOSFETvoltageA.currentValue = LatchPortA.currentValue;
 							MOSFETvoltageA.total += MOSFETvoltageA.currentValue;
 						}
@@ -391,7 +391,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					if (LatchPortB.currentValue > 2400) {
 						LatchPortB.HighPulseWidth++;
 						LatchPortB.highVoltage += LatchPortB.currentValue;
-						if (LatchPortB.HighPulseWidth > 5 && LatchPortB.HighPulseWidth < 90) {
+						if (LatchPortB.HighPulseWidth > 20 && LatchPortB.HighPulseWidth < 80) {
 							MOSFETvoltageB.currentValue = Vfuse.currentValue - LatchPortB.currentValue;
 							MOSFETvoltageB.total += MOSFETvoltageB.currentValue;
 						}
@@ -447,10 +447,10 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		ADC_Ch2sel();
 		HAL_ADC_Start(&hadc1);
 		HAL_ADC_PollForConversion(&hadc1, 10);
-		Vin.average = HAL_ADC_GetValue(&hadc1);
+		Vin.currentValue = HAL_ADC_GetValue(&hadc1);
 		HAL_ADC_Stop(&hadc1);
-		if (Vin.average >= 3500) {
-			Vin.total += Vin.average;
+		if (Vin.currentValue >= 3500) {
+			Vin.total += Vin.currentValue;
 			SolarChargerCounter++;
 			if (SolarChargerCounter > 1000) {
 				SolarChargerStable = true;
@@ -466,19 +466,20 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		ADC_Ch2sel();
 		HAL_ADC_Start(&hadc1);
 		HAL_ADC_PollForConversion(&hadc1, 10);
-		Vin.average = HAL_ADC_GetValue(&hadc1);
+		Vin.currentValue = HAL_ADC_GetValue(&hadc1);
 		HAL_ADC_Stop(&hadc1);
-		if (Vin.average >= 3200) {
-			Vin.total += Vin.average;
+		if (Vin.currentValue >= 3100) {
+			Vin.total += Vin.currentValue;
 			InputVoltageCounter++;
-			if (InputVoltageCounter > 1000) {
-				InputVoltageStable = true;
-				float tempVal = Vin.total / InputVoltageCounter;
-				BoardConnected.VoltageBuffer[V_INPUT] =  tempVal * (15.25 / 4096);
-				Vin.total = InputVoltageCounter = 0;
-			}
 		}
 		InputVoltageTimer--;
+		if ((InputVoltageCounter > 1000) || InputVoltageTimer == 0) {
+			if (InputVoltageCounter > 1000)
+				InputVoltageStable = true;
+			float tempVal = Vin.total / (float)InputVoltageCounter;
+			BoardConnected.VoltageBuffer[V_INPUT] =  tempVal * (15.25 / 4096);
+			Vin.total = InputVoltageCounter = 0;
+		}
 	}
 	if (samplesUploading) {
 		/*
@@ -489,21 +490,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		if (sampleCount >= sampleTime) {
 			samplesUploading = false;
 			samplesUploaded = true;
-			Vuser.average = Vuser.total / sampleCount;
-			Vuser.average *= (15.25 / 4096);
-			if (BoardConnected.GlobalTestNum < V_SOLAR)
-				BoardConnected.VoltageBuffer[BoardConnected.GlobalTestNum] = Vuser.average;
-			sampleCount = 0;
-			Vuser.total = 0;
 		} else {
-			if (BoardConnected.BoardType == b422x)
-				ADC_Ch3sel();
-			else
-				ADC_Ch5sel();
-			HAL_ADC_Start(&hadc1);
-			HAL_ADC_PollForConversion(&hadc1, 1);
-			Vuser.total += HAL_ADC_GetValue(&hadc1);
-			HAL_ADC_Stop(&hadc1);
 			sampleCount++;
 		}
 	}
@@ -527,6 +514,9 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 			LatchTimeOut = false;
 		}
 	}
+
+
+
   /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 0 */
   HAL_TIM_IRQHandler(&htim1);
   HAL_TIM_IRQHandler(&htim11);
@@ -616,7 +606,7 @@ void USART2_IRQHandler(void)
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
 			BoardCommsReceiveState = RxWaiting;
-			if (CurrentState == csCalibrating)
+			if ( CurrentState == csCalibrating )
 				setTimeOut(4000);
 			else
 				setTimeOut(1500);
@@ -793,8 +783,8 @@ void TIM7_IRQHandler(void)
 		else
 			(KP[currentScan].debounceCount)++;
 
-		if ((KP[currentScan].debounceCount >= 100)) {
-			KP[currentScan].debounceCount = 100;
+		if ((KP[currentScan].debounceCount >= 50)) {
+			KP[currentScan].debounceCount = 50;
 			KP[currentScan].State = true;
 		} else if ((KP[currentScan].debounceCount <= 5)) {
 			KP[currentScan].debounceCount = 5;
@@ -816,7 +806,6 @@ void OTG_FS_IRQHandler(void)
   /* USER CODE END OTG_FS_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
   /* USER CODE BEGIN OTG_FS_IRQn 1 */
-
   /* USER CODE END OTG_FS_IRQn 1 */
 }
 

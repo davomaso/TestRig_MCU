@@ -37,11 +37,11 @@ void LatchErrorCheck(TboardConfig *Board) {
 	if (Vfuse.average < 0.95 * Vin.average || Vfuse.lowVoltage < 0.9 * Vin.lowVoltage)
 		SET_BIT(Board->LTR, FUSE_VOLTAGE_ERROR);
 	//Vmos Check
-	if (MOSFETvoltageA.highVoltage < 0.01 || MOSFETvoltageA.highVoltage > 1.8 || MOSFETvoltageA.lowVoltage > 1.8
-			|| MOSFETvoltageA.lowVoltage < 0.01)
+	if (MOSFETvoltageA.highVoltage < 0.001 || MOSFETvoltageA.highVoltage > 1.8 || MOSFETvoltageA.lowVoltage > 1.8
+			|| MOSFETvoltageA.lowVoltage < 0.001)
 		SET_BIT(Board->LTR, PORT_A_MOSFET_ERROR);
-	if (MOSFETvoltageB.highVoltage < 0.01 || MOSFETvoltageB.highVoltage > 1.8 || MOSFETvoltageB.lowVoltage > 1.8
-			|| MOSFETvoltageB.lowVoltage < 0.01)
+	if (MOSFETvoltageB.highVoltage < 0.001 || MOSFETvoltageB.highVoltage > 1.8 || MOSFETvoltageB.lowVoltage > 1.8
+			|| MOSFETvoltageB.lowVoltage < 0.001)
 		SET_BIT(Board->LTR, PORT_B_MOSFET_ERROR);
 }
 void printLatchError(TboardConfig *Board) {
