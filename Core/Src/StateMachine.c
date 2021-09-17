@@ -200,6 +200,8 @@ void handleInitialising(TboardConfig *Board, TprocessState *State) {
 			CurrentState = csIDLE;
 			*State = psInitalisation;
 		} else {
+			if (Board->BoardType == b935x)
+				HAL_Delay(500);	//Allow board to reset, Required for electronic fuse
 			CurrentState = csCalibrating;
 			*State = psInitalisation;
 		}
@@ -366,7 +368,9 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 		printT((uns_ch*) "Programming Done\n");
 		Close_File(&SDcard);
 		SetSDclk(0);
-		HAL_Delay(250);
+		HAL_Delay(1200);	//Allow for board to power up
+		LCD_ClearLine(3);
+		LCD_ClearLine(4);
 		CurrentState = csSerialise;
 		*State = psInitalisation;
 		break;
@@ -420,11 +424,10 @@ void handleCalibrating(TboardConfig *Board, TprocessState *State) {
 		break;
 	case psFailed:
 		retryCount++;
-		if (retryCount < 5) {
+		if (retryCount < 10) {
 			printT((uns_ch*) "Calibration Failed Recalibrating Device\n");
 			CLEAR_REG(CalibrationStatusRegister);
-			TargetBoardCalibration_Voltage(Board);
-			ProcessState = psWaiting;
+			ProcessState = psInitalisation;
 			BoardCommsReceiveState = RxWaiting;
 		} else {
 			*State = psInitalisation;
@@ -717,12 +720,6 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 			VuserSamples++;
 			HAL_ADC_Stop(&hadc1);
 		}
-		if (sampleTime >= 1000) {
-			if(sampleCount == 0)
-				LCD_ClearLine(3);
-			Percentage = (uint8) ((sampleCount / (float)sampleTime) * 100);
-			ProgressBar(Percentage);
-		}
 
 		if (BoardCommsReceiveState == RxGOOD) {
 			Response = Data_Buffer[0];
@@ -733,16 +730,21 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 			*State = psFailed;
 			BoardCommsReceiveState = RxWaiting;
 		}
-
+		if (samplesUploading && (sampleTime >= 1000) ) {
+			if(sampleCount == 0)
+				LCD_ClearLine(3);
+			Percentage = (uint8) ((sampleCount / (float)sampleTime) * 100);
+			ProgressBar(Percentage);
+		}
 
 		if (samplesUploaded) {
 			if (VuserSamples > 0) {
 				Vuser.average = Vuser.total / VuserSamples;
 				Vuser.average *= (15.25 / 4096);
-				if (BoardConnected.GlobalTestNum < V_SOLAR)
-					BoardConnected.VoltageBuffer[BoardConnected.GlobalTestNum] = Vuser.average;
-				else if (BoardConnected.GlobalTestNum == V_SOLAR)
-					BoardConnected.VoltageBuffer[V_12] = Vuser.average;
+				if (Board->GlobalTestNum < V_SOLAR)
+					Board->VoltageBuffer[Board->GlobalTestNum] = Vuser.average;
+				else if (Board->GlobalTestNum == V_SOLAR)
+					Board->VoltageBuffer[V_105] = Vuser.average;
 				sampleCount = 0;
 				Vuser.total = 0;
 			}

@@ -115,7 +115,7 @@
 			uint16 TPR; //TestPassedRegister;
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
-			float VoltageBuffer[6];
+			float VoltageBuffer[7];
 			uint8 BSR; //Board Status Register
 			uint8 LTR; //Latch Test Register
 			uint8 BPR; //Board Programming Register

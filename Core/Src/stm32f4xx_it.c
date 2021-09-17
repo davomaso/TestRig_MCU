@@ -255,7 +255,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					}
 				} else
 					CalibrationCountdown = 50;
-			} else if ((calibrateADCval.average <= 150)) {
+			} else if ((calibrateADCval.average <= 500)) {
 				if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
 					TargetBoardCalibration_Current(&BoardConnected);
 				}
@@ -606,9 +606,9 @@ void USART2_IRQHandler(void)
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
 			BoardCommsReceiveState = RxWaiting;
-			if ( CurrentState == csCalibrating )
-				setTimeOut(4000);
-			else
+//			if ( CurrentState == csCalibrating )
+//				setTimeOut(4000);
+//			else
 				setTimeOut(1500);
 
 		} else {

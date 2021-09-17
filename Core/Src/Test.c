@@ -81,13 +81,13 @@ void ConfigInit() {
 //=====================================================  SINGLE & DUAL BOARDS  =====================================================//
 void TestConfig935x(TboardConfig * Board) {
 		// Port Test Array
-	uint32 *tempTestARR[30] = {	//
-			(uint32*)&latchTest, (uint32*)&TwovoltTest, (uint32*)&OnevoltTest, (uint32*)&asyncTest, (uint32*)&asyncDigitalTest, 				//
-			(uint32*)&noTest, (uint32*)&sdi12Test, (uint32*)&currentTest, (uint32*)&asyncDigitalTest, (uint32*)&asyncTest,				//
-			(uint32*)&noTest, (uint32*)&asyncDigitalTest, (uint32*)&sdi12Test, (uint32*)&asyncDigitalTest, (uint32*)&asyncDigitalTest, 		//
-			(uint32*)&noTest, (uint32*)&asyncTest, (uint32*)&currentTest, (uint32*)&asyncTest, (uint32*)&asyncDigitalTest, 				//
-			(uint32*)&noTest, (uint32*)&currentTest, (uint32*)&TwovoltTest, (uint32*)&asyncDigitalTest, (uint32*)&asyncTest, 				//
-			(uint32*)&noTest, (uint32*)&currentTest, (uint32*)&asyncTest, (uint32*)&asyncDigitalTest, (uint32*)&asyncDigitalTest		 		//
+	TportConfig *tempTestARR[30] = {	//
+			&latchTest, &TwovoltTest, &OnevoltTest, &asyncTest, &asyncTest, 				//
+			&noTest, &sdi12Test, &currentTest, &asyncTest, &asyncTest,				//
+			&noTest, &asyncDigitalTest, &sdi12Test, &asyncTest, &asyncTest, 		//
+			&noTest, &asyncTest, &currentTest, &asyncTest, &asyncTest, 				//
+			&noTest, &currentTest, &TwovoltTest, &asyncTest, &asyncTest, 				//
+			&noTest, &currentTest, &asyncTest, &asyncTest, &asyncTest		 		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR) );
 	Board->ArrayPtr = 0;
@@ -311,7 +311,10 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 				if (Board->ThisTest->Code == AQUASPY)
 					RS485enabled = true;
 				if (Board->ThisTest->Code == ASYNC_PULSE) {
-					Port[PortCount - (Board->latchPortCount)].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
+					if ( (Board->BoardType == b935x) && (PortCount > 2) )
+						Port[PortCount+3].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
+					else
+						Port[PortCount - (Board->latchPortCount)].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 					}
 			}
 	}
@@ -392,14 +395,14 @@ void SetVoltageParameters(TboardConfig * Board, uns_ch * Para, uint8 *Count) {
 			*Para = 0x82; (*Count)++; Para++;
 			*Para = 0x01; (*Count)++; Para++;
 			*Para = 0x83; (*Count)++; Para++;
-			if (Board->GlobalTestNum == V_12)	// Set Vuser
+			if ( (Board->GlobalTestNum == V_12) || (Board->GlobalTestNum == V_SOLAR))	// Set Vuser
 				*Para = 0x69;	// 0x69 is 10.5
 			else if (Board->GlobalTestNum == V_3)
 				*Para = 0x1E;
 			(*Count)++; Para++;
 			*Para = 0x84; (*Count)++; Para++; // Set trim to get as close to Vuser
 			if (BoardConnected.GlobalTestNum == V_SOLAR) {
-				uint8 trim = round((10.5 - Board->VoltageBuffer[V_12])*1000) /100;
+				uint8 trim = round( (10.5 - Board->VoltageBuffer[V_12])*333.333);
 				*Para = trim;
 			} else
 				*Para = 0x00;

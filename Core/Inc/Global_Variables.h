@@ -184,7 +184,7 @@ TkeypadConfig KP[12];
 typedef enum { star = 10, hash = 11 }TkeypadSpecialChars;
 
 //Voltage Test Enum
-typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_12output = 3, V_SOLAR = 4, V_INPUT = 5}TvoltageTestVariables;
+typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_12output = 3, V_SOLAR = 4, V_INPUT = 5, V_105 = 6}TvoltageTestVariables;
 
 typedef enum {NormalMode = 0 , OldBoardMode = 1, VerboseMode = 2, SerialiseMode = 3}TtestMode;
 

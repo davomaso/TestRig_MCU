@@ -384,6 +384,9 @@ FRESULT WriteVoltages(TboardConfig *Board, TfileConfig *FAT) {
 					"Voltages\nSolar, %.3f\n Input, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",
 					Board->VoltageBuffer[V_SOLAR], Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12],
 					Board->VoltageBuffer[V_3]);
+		else if (Board->BoardType == b401x)
+			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n10.5 Sample, %.3f\n, Adjusted 10.5V, %.3f\n3V Sample, %.3f\n",
+								Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_105], Board->VoltageBuffer[V_3]);
 		else
 			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",
 					Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);

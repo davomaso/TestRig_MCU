@@ -33,7 +33,9 @@ void testSolarCharger() {
 
 void CheckPowerRegisters(TboardConfig *Board) {
 	PrintVoltages(Board);
-	if (Board->VoltageBuffer[V_12] > 11.6)
+	if ((Board->BoardType != b401x) && (Board->VoltageBuffer[V_12] > 11.6) )
+		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
+	else if ( (Board->BoardType == b401x) && (Board->VoltageBuffer[V_12] > 10.46) && (Board->VoltageBuffer[V_105] > 10.48))
 		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
 	if (( Board->VoltageBuffer[V_3] > 2.95 ) || (Board->BoardType == b427x))
 		SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
@@ -87,11 +89,17 @@ void PrintVoltages(TboardConfig *Board) {
 		sprintf((uns_ch*)&debugTransmitBuffer[0], "3V Sample Voltage:      %.3f\n", Board->VoltageBuffer[V_3]);
 		printT(&debugTransmitBuffer);
 	}
-	if (Board->BoardType != b422x) {
+	if ( (Board->BoardType != b422x) && (Board->BoardType != b401x) ){
 		sprintf((uns_ch*)&debugTransmitBuffer[0], "12V Sample Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
+		printT(&debugTransmitBuffer);
+	} else if(Board->BoardType == b401x) {
+		sprintf((uns_ch*)&debugTransmitBuffer[0], "10.5V User Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
+		printT(&debugTransmitBuffer);
+		sprintf((uns_ch*)&debugTransmitBuffer[0], "10.5V Adjusted:    %.3f\n", Board->VoltageBuffer[V_105]);
 		printT(&debugTransmitBuffer);
 	}
 	sprintf((uns_ch*)&debugTransmitBuffer[0], "12V Output:            %.3f\n", Board->VoltageBuffer[V_12output]);
 	printT(&debugTransmitBuffer);
 }
 
+}
