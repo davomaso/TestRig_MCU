@@ -31,15 +31,31 @@ void testSolarCharger() {
 	HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_SET);
 }
 
+void GetBatteryLevel(TboardConfig *Board) {
+	for (uint8 i = 0; i < Board->GlobalTestNum; i++) {
+		Board->BatteryLevel += (float)Board->rawBatteryLevel[i] / 10.0;
+	}
+	Board->BatteryLevel /= Board->GlobalTestNum;
+	if (Board->BatteryLevel > 11.5)
+		SET_BIT(Board->BVR, BATT_LVL_STABLE);
+	else
+		CLEAR_BIT(Board->BVR, BATT_LVL_STABLE);
+}
+
 void CheckPowerRegisters(TboardConfig *Board) {
 	PrintVoltages(Board);
-	if ((Board->BoardType != b401x) && (Board->VoltageBuffer[V_12] > 11.6) )
-		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
-	else if ( (Board->BoardType == b401x) && (Board->VoltageBuffer[V_12] > 10.46) && (Board->VoltageBuffer[V_105] > 10.48))
-		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
-	if (( Board->VoltageBuffer[V_3] > 2.95 ) || (Board->BoardType == b427x))
+	if (Board->BoardType == b422x) {
 		SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
-	if ( READ_REG(Board->BVR) != 0x0F )
+		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
+	} else {
+		if ((Board->BoardType != b401x) && (Board->BoardType != b402x) && (Board->VoltageBuffer[V_12] > 11))
+			SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
+		else if ( ( (Board->BoardType == b401x) || (Board->BoardType == b402x) ) && (Board->VoltageBuffer[V_trim] > 10.46) )
+			SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
+		if (( (Board->VoltageBuffer[V_3] > 2.90) && (Board->VoltageBuffer[V_3] < 3.5) ) || (Board->BoardType == b427x) || (Board->BoardType == b401x))
+			SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
+	}
+	if ( READ_REG(Board->BVR) != 0x1F)
 		CLEAR_BIT(Board->BSR, BOARD_POWER_STABLE);
 	else
 		SET_BIT(Board->BSR, BOARD_POWER_STABLE);
@@ -60,46 +76,46 @@ void TestComplete(TboardConfig *Board) {
 		sprintf((char*) &previousTestBuffer[0], "Previous Test Failed");
 	}
 	timeOutEn = false;
-	LCD_printf(&previousTestBuffer[0], 2, 0);
+	LCD_printf(&previousTestBuffer[0], 1, 0);
 }
 void PrintHomeScreen(TboardConfig *Board) {
-	if (Board->SerialNumber) {
-		sprintf(lcdBuffer, "SN:%lu  v%x", Board->SerialNumber, Board->Version);
-		LCD_printf((uns_ch*) &lcdBuffer, 2, 5);
-		LCD_printf((uns_ch*) "1 - Test Only", 3, 0);
-		LCD_printf((uns_ch*) "3 - New SN  Prog - #", 4, 0);
-	} else {
-		sprintf(lcdBuffer, "SN: N/a");
-		LCD_ClearLine(3);
-		LCD_printf((uns_ch*) &lcdBuffer, 2, 5);
-		LCD_printf((uns_ch*) "Test - #", 4, 12);
-	}
-
+		if (Board->SerialNumber) {
+			sprintf(lcdBuffer, "SN:%lu      v%x", Board->SerialNumber, Board->Version);
+			LCD_printf((uns_ch*) &lcdBuffer, 2, 1);
+			LCD_printf((uns_ch*) "1 - Test Only", 3, 0);
+			LCD_printf((uns_ch*) "3 - New SN  Prog - #", 4, 0);
+		} else if (TestRigMode != NormalMode){
+			clearTestStatusLED();
+			LCD_Clear();
+			LCD_printf((uns_ch*) "Test Rig", 1, 0);
+			sprintf(lcdBuffer, "SN: N/a");
+			LCD_ClearLine(3);
+			LCD_printf((uns_ch*) &lcdBuffer, 2, 7);
+			LCD_printf((uns_ch*) "Test - #", 4, 13);
+		}
 }
 
 void PrintVoltages(TboardConfig *Board) {
 	printT("\n==========     Target Board Voltages     ==========\n");
-	if ( (Board->BoardType == b402x) || (Board->BoardType == b427x) ) {
-		sprintf((uns_ch*)&debugTransmitBuffer[0], "Solar Voltage:         %.3f\n", Board->VoltageBuffer[V_SOLAR]);
+	if ((Board->BoardType == b402x) || (Board->BoardType == b427x)) {
+		sprintf((uns_ch*) &debugTransmitBuffer[0], "Solar Voltage:         %.3f\n", Board->VoltageBuffer[V_SOLAR]);
 		printT(&debugTransmitBuffer);
 	}
-	sprintf((uns_ch*)&debugTransmitBuffer[0], "Input Voltage:         %.3f\n", Board->VoltageBuffer[V_INPUT]);
+	sprintf((uns_ch*) &debugTransmitBuffer[0], "Input Voltage:         %.3f\n", Board->VoltageBuffer[V_INPUT]);
 	printT(&debugTransmitBuffer);
 	if (Board->BoardType != b427x && Board->BoardType != b422x) {
-		sprintf((uns_ch*)&debugTransmitBuffer[0], "3V Sample Voltage:      %.3f\n", Board->VoltageBuffer[V_3]);
+		sprintf((uns_ch*) &debugTransmitBuffer[0], "3V Sample Voltage:      %.3f\n", Board->VoltageBuffer[V_3]);
 		printT(&debugTransmitBuffer);
 	}
-	if ( (Board->BoardType != b422x) && (Board->BoardType != b401x) ){
-		sprintf((uns_ch*)&debugTransmitBuffer[0], "12V Sample Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
+	if ((Board->BoardType != b422x) && (Board->BoardType != b401x) && (Board->BoardType != b402x)) {
+		sprintf((uns_ch*) &debugTransmitBuffer[0], "12V Sample Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
 		printT(&debugTransmitBuffer);
-	} else if(Board->BoardType == b401x) {
-		sprintf((uns_ch*)&debugTransmitBuffer[0], "10.5V User Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
+	} else if (Board->BoardType == b401x || Board->BoardType == b402x) {
+		sprintf((uns_ch*) &debugTransmitBuffer[0], "10.5V User Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
 		printT(&debugTransmitBuffer);
-		sprintf((uns_ch*)&debugTransmitBuffer[0], "10.5V Adjusted:    %.3f\n", Board->VoltageBuffer[V_105]);
+		sprintf((uns_ch*) &debugTransmitBuffer[0], "10.5V Adjusted:        %.3f\n", Board->VoltageBuffer[V_trim]);
 		printT(&debugTransmitBuffer);
 	}
-	sprintf((uns_ch*)&debugTransmitBuffer[0], "12V Output:            %.3f\n", Board->VoltageBuffer[V_12output]);
+	sprintf((uns_ch*) &debugTransmitBuffer[0], "12V Output:            %.3f\n", Board->VoltageBuffer[V_12output]);
 	printT(&debugTransmitBuffer);
-}
-
 }

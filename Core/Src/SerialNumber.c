@@ -7,67 +7,26 @@
 
 uint32 read_serial() {
 	USART3->CR1 |= (USART_CR1_RXNEIE);
-	LCD_printf((uns_ch*) "Enter Serial Number ", 2, 0);
+	LCD_printf((uns_ch*) "Enter Serial Number", 2, 0);
 	LCD_printf((uns_ch*) " * - Esc    # - Ent ", 4, 0);
+	memset(&SerialNumber,0,9);
 	LCD_ClearLine(3);
 	LCD_setCursor(3, 0);
 	LCD_CursorOn_Off(true);
 	SerialCount = 0;
-	uint8 tempdata;
+	uint8 tempdata = 0;
 	uint32 tempSerialNumber = 0;
-	_Bool keyPressed;
+	_Bool keyPressed = false;
 	_Bool Quit_flag;
 	while (!KP[hash].Pressed) {
-		if (KP[1].Pressed && SerialCount < 9) {
-			KP[1].Pressed = 0;
-			tempdata = 0x31;
-			keyPressed = true;
+		for (uint8 i = 0; i <= 9; i++) {
+			if (KP[i].Pressed && SerialCount < 9) {
+				KP[i].Pressed = 0;
+				tempdata = 0x30 + i;
+				keyPressed = true;
+			}
 		}
-		if (KP[2].Pressed && SerialCount < 9) {
-			KP[2].Pressed = 0;
-			tempdata = 0x32;
-			keyPressed = true;
-		}
-		if (KP[3].Pressed && SerialCount < 9) {
-			KP[3].Pressed = 0;
-			tempdata = 0x33;
-			keyPressed = true;
-		}
-		if (KP[4].Pressed && SerialCount < 9) {
-			KP[4].Pressed = 0;
-			tempdata = 0x34;
-			keyPressed = true;
-		}
-		if (KP[5].Pressed && SerialCount < 9) {
-			KP[5].Pressed = 0;
-			tempdata = 0x35;
-			keyPressed = true;
-		}
-		if (KP[6].Pressed && SerialCount < 9) {
-			KP[6].Pressed = 0;
-			tempdata = 0x36;
-			keyPressed = true;
-		}
-		if (KP[7].Pressed && SerialCount < 9) {
-			KP[7].Pressed = 0;
-			tempdata = 0x37;
-			keyPressed = true;
-		}
-		if (KP[8].Pressed && SerialCount < 9) {
-			KP[8].Pressed = 0;
-			tempdata = 0x38;
-			keyPressed = true;
-		}
-		if (KP[9].Pressed && SerialCount < 9) {
-			KP[9].Pressed = false;
-			tempdata = 0x39;
-			keyPressed = true;
-		}
-		if (KP[0].Pressed && SerialCount < 9) {
-			KP[0].Pressed = false;
-			tempdata = 0x30;
-			keyPressed = true;
-		}
+
 		if (keyPressed) {
 			SerialNumber[SerialCount++] = tempdata;
 			if (SerialCount >= 9) {
@@ -119,6 +78,7 @@ uint32 read_serial() {
 			SerialCount = BarcodeCount;
 			BarcodeCount = 0;
 			USART3->CR1 |= (USART_CR1_RXNEIE);
+			break;
 		}
 	}
 	KP[hash].Pressed = 0;

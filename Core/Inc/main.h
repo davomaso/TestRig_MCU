@@ -116,10 +116,11 @@ typedef enum {	csIDLE 			= 0, 		//
 				csUploading 	= 7, 		//
 				csSortResults 	= 8, 		//
 				csSerialise 	= 9, 		//
-				csLatchTest 	= 10, 		//
-				csAsyncTest 	= 11,		//
-				csSolarCharger  = 12,		//
-				csInputVoltage 	= 13,		//
+				csOutputTest	= 10,		//
+				csLatchTest 	= 11, 		//
+				csAsyncTest 	= 12,		//
+				csSolarCharger  = 13,		//
+				csInputVoltage 	= 14,		//
 }TcurrentState;
 TcurrentState CurrentState;
 

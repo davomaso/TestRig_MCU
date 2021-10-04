@@ -32,10 +32,11 @@
 	#define BOARD_POWER_STABLE	(1 << 5)
 
 	//============		BOARD VOLTAGE VARIABLES		===========//
-	#define BOARD_FUSE_STABLE	(1 << 0)
+	#define FUSE_V_STABLE		(1 << 0)
 	#define BOARD_SOLAR_STABLE	(1 << 1)
 	#define V3_SAMPLE_STABLE	(1 << 2)
 	#define V12_SAMPLE_STABLE	(1 << 3)
+	#define BATT_LVL_STABLE		(1 << 4)
 
 	//============		TEST PASSED VARIABLES		===========//
 	#define TEST_ONE_PASSED 	(1 << 0)
@@ -115,7 +116,9 @@
 			uint16 TPR; //TestPassedRegister;
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
-			float VoltageBuffer[7];
+			float VoltageBuffer[8];
+			uint8 rawBatteryLevel[7];
+			float BatteryLevel;
 			uint8 BSR; //Board Status Register
 			uint8 LTR; //Latch Test Register
 			uint8 BPR; //Board Programming Register

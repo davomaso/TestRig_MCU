@@ -48,13 +48,13 @@ void ConfigInit() {
 
 	//Async Test Assignment
 	asyncTest.Code = ASYNC_PULSE;
-	asyncTest.Channels = 2;
+	asyncTest.Channels = 1;
 	asyncTest.Options = 0xA0;
 	asyncTest.GateTime = 0;
 
 	//Async Test for Digital Only Ports
 	asyncDigitalTest.Code = ASYNC_PULSE;
-	asyncDigitalTest.Channels = 2;
+	asyncDigitalTest.Channels = 1;
 	asyncDigitalTest.Options = 0x80;
 	asyncDigitalTest.GateTime = 0;
 
@@ -82,12 +82,12 @@ void ConfigInit() {
 void TestConfig935x(TboardConfig * Board) {
 		// Port Test Array
 	TportConfig *tempTestARR[30] = {	//
-			&latchTest, &TwovoltTest, &OnevoltTest, &asyncTest, &asyncTest, 				//
-			&noTest, &sdi12Test, &currentTest, &asyncTest, &asyncTest,				//
-			&noTest, &asyncDigitalTest, &sdi12Test, &asyncTest, &asyncTest, 		//
-			&noTest, &asyncTest, &currentTest, &asyncTest, &asyncTest, 				//
-			&noTest, &currentTest, &TwovoltTest, &asyncTest, &asyncTest, 				//
-			&noTest, &currentTest, &asyncTest, &asyncTest, &asyncTest		 		//
+			&latchTest, &asyncDigitalTest, &TwovoltTest, &asyncTest, &asyncTest, 				//
+			&noTest, &sdi12Test, &asyncDigitalTest, &asyncTest, &asyncTest,				//
+			&noTest, &asyncTest, &sdi12Test, &asyncTest, &asyncTest, 		//
+			&noTest, &TwovoltTest, &asyncTest, &asyncTest, &asyncTest, 				//
+			&noTest, &currentTest, &currentTest, &asyncTest, &asyncTest, 				//
+			&noTest, &currentTest, &currentTest, &asyncTest, &asyncTest		 		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR) );
 	Board->ArrayPtr = 0;
@@ -145,13 +145,13 @@ void TestConfig937x(TboardConfig * Board) {
 //====================================================  INPUT EXPANSION BOARDS  ====================================================//
 void TestConfig401x(TboardConfig * Board){
 		// Port Test Array
-	TportConfig *tempTestARR[24] = {
+	TportConfig *tempTestARR[25] = {
 			&(asyncDigitalTest), &(OnevoltTest), &(currentTest), &(asyncTest),		//
 			&asyncTest,   &sdi12Test, &OnevoltTest, &currentTest,				//
 			&currentTest, &asyncTest, &sdi12Test, &OnevoltTest,				//
 			&OnevoltTest, &currentTest, &asyncTest, &sdi12Test,				//
 			&TwovoltTest, &currentTest, &TwovoltTest, &currentTest,			//
-			&currentTest, &TwovoltTest, &currentTest, &TwovoltTest,			//
+			&currentTest, &TwovoltTest, &currentTest, &TwovoltTest,	&rs485Test		//
 	};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -175,39 +175,37 @@ void TestConfig401x(TboardConfig * Board){
 
 void TestConfig402x(TboardConfig * Board){
 		//Port Test Array
-	TportConfig *tempTestARR[70] = {
-			&OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &asyncTest, &asyncTest, &asyncTest, &outputTest,				//
-			&currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &currentTest, &OnevoltTest, &asyncDigitalTest, &asyncTest, &asyncTest, &outputTest,				//
-			&currentTest, &TwovoltTest, &sdi12Test, &currentTest, &OnevoltTest, &currentTest, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest,					//
-			&OnevoltTest, &currentTest, &currentTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &asyncTest, &asyncTest, &asyncDigitalTest, &noTest,					//
-			&TwovoltTest, &currentTest, &currentTest, &currentTest, &sdi12Test, &asyncDigitalTest, &asyncDigitalTest, &asyncTest, &asyncTest, &noTest,				//
-			&asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &sdi12Test, &asyncTest, &asyncDigitalTest, &asyncTest, &noTest,				//
-			&asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &asyncTest, &asyncDigitalTest, &noTest,	//
-	};
+	TportConfig *tempTestARR[63] = {
+			&sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &asyncTest, &asyncDigitalTest, &asyncTest,			//
+			&currentTest, &sdi12Test, &currentTest, &currentTest, &currentTest, &currentTest, &asyncTest, &asyncTest, &asyncDigitalTest,			//
+			&TwovoltTest, &TwovoltTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &TwovoltTest, &asyncDigitalTest, &asyncTest, &asyncTest,			//
+			&currentTest, &currentTest, &currentTest, &sdi12Test, &currentTest, &currentTest, &asyncTest, &asyncTest, &asyncTest, 					//
+			&OnevoltTest, &currentTest, &TwovoltTest, &currentTest, &sdi12Test, &OnevoltTest, &asyncTest, &asyncTest, &asyncTest,					//
+			&TwovoltTest, &OnevoltTest, &OnevoltTest, &TwovoltTest, &OnevoltTest, &sdi12Test, &asyncTest, &asyncTest, &asyncTest,				//
+		};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 		//Port Code Array	//Watch PARAMcount on 4021 boards as config on iConfigure had 5 parameters but 0x00 in the 5th config param, may not be required but check results
-	uint8 tempPcARR[40] = {
+	uint8 tempPcARR[36] = {
 			0xA0, 0xA2, 0xA1, 0xA3,	//
 			0xA8, 0xAA, 0xA9, 0xAB,	//
 			0xB0, 0xB2, 0xB1, 0xB3,	//
 			0xB8, 0xBA, 0xB9, 0xBB,	//
 			0xC0, 0xC2, 0xC1, 0xC3,	//
 			0xC8, 0xCA, 0xC9, 0xCB,	//
-			0xD0, 0xDA, 0xD1, 0xD3,	//
+			0xD0, 0xD2, 0xD1, 0xD3,	//
 			0xD8, 0xDA, 0xD9, 0xDB,	//
 			0xE0, 0xE2, 0xE1, 0xE3,	//
-			0xE8, 0x00, 0x00, 0x00,	//
 	};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 		//Board Type
 	Board->BoardType = b402x;
 	Board->Subclass = 0;
 		//Quantity of each port type and tests
-	Board->latchPortCount = 1;
+	Board->latchPortCount = 0;
 	Board->analogInputCount = 6;
 	Board->digitalInputCout = 3;
-	Board->testNum = 7;
+	Board->testNum = 6;
 }
 //==================================================================================================================================//
 
@@ -291,17 +289,20 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 						(*Count)++; Para++;
 					} else PCptr++;
 
-					if ( (Board->ThisTest->Options) && *PCptr) {
+					if (Board->ThisTest->Options) {
 						*Para = *PCptr++;
 						(*Count)++; Para++;
 						*Para = Board->ThisTest->Options;
 						(*Count)++; Para++;
 					} else PCptr++;
 
-					if ( (Board->ThisTest->GateTime) && *PCptr ) {
+					if (Board->ThisTest->GateTime) {
 						*Para = *PCptr++;
 						(*Count)++; Para++;
-						*Para = Board->ThisTest->GateTime;
+						if ( (Board->BoardType == b402x) && (Board->ThisTest->Code == ASYNC_PULSE) )
+							*Para = 0x01;
+						else
+							*Para = Board->ThisTest->GateTime;
 						(*Count)++; Para++;
 					} else PCptr++;
 				} else PCptr += 4;
@@ -311,11 +312,20 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch * Para, uint8 * C
 				if (Board->ThisTest->Code == AQUASPY)
 					RS485enabled = true;
 				if (Board->ThisTest->Code == ASYNC_PULSE) {
+//					Port[PortCount - (Board->latchPortCount)].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 					if ( (Board->BoardType == b935x) && (PortCount > 2) )
 						Port[PortCount+3].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 					else
 						Port[PortCount - (Board->latchPortCount)].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 					}
+			}
+			if (Board->BoardType == b402x) {
+				*Para++ == 0xE8;
+				*Para++ == 0x01;
+				if (Board->GlobalTestNum == 5)
+					RelayPort_Enabled = true;
+
+				*Count += 2;
 			}
 	}
 
@@ -352,6 +362,7 @@ _Bool CheckTestNumber(TboardConfig * Board) {
 				LCD_displayString((uns_ch*)&debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
 			}
 		}
+		GetBatteryLevel(Board);
 		CheckPowerRegisters(Board);
 
 		if ( (READ_REG(Board->TPR) == 0) && (READ_REG(Board->BSR == 0x3E) ) )
@@ -372,22 +383,33 @@ void SetVoltageParameters(TboardConfig * Board, uns_ch * Para, uint8 *Count) {
 			*Para = 0x64; (*Count)++; Para++;
 			*Para = 0x83; (*Count)++; Para++;
 			*Para = 0x80; (*Count)++; Para++;
-		} else if (Board->BoardType == b402x) {
+		} else if (Board->BoardType == b402x) {	// 4020 Sample Voltage
 			*Para = 0x15; (*Count)++; Para++;
 			*Para = 0x6E; (*Count)++; Para++;
 			*Para = 0x16; (*Count)++; Para++;
 			*Para = 0x78; (*Count)++; Para++;
 			*Para = 0x80; (*Count)++; Para++;
-			*Para = 0x01; (*Count)++; Para++;
+			*Para = 0x02; (*Count)++; Para++;
 			*Para = 0x81; (*Count)++; Para++;
 			*Para = 0x02; (*Count)++; Para++;
 			*Para = 0x82; (*Count)++; Para++;
 			*Para = 0x14; (*Count)++; Para++;
 			*Para = 0x83; (*Count)++; Para++;
-			*Para = 0x1E; (*Count)++; Para++;
-			*Para = 0x84; (*Count)++; Para++;
-			*Para = 0x00; (*Count)++; Para++;
-		}else if (Board->BoardType == b401x) {
+			if (Board->GlobalTestNum == V_12 || BoardConnected.GlobalTestNum == V_trim)
+				*Para = 0x69;	// 0x69 is 10.5
+			else if (Board->GlobalTestNum == V_3)
+				*Para = 0x1E;
+			else
+				*Para = 0x00;
+			(*Count)++; Para++;
+			*Para = 0x84; (*Count)++; Para++; // Set trim to get as close to Vuser
+			if (BoardConnected.GlobalTestNum == V_trim) {
+				uint8 trim = round( (10.5 - Board->VoltageBuffer[V_12])*333.333);
+				*Para = trim;
+			} else
+				*Para = 0x00;
+			(*Count)++; Para++;
+		}else if (Board->BoardType == b401x) {	// 4011 Sample Voltage
 			*Para = 0x80; (*Count)++; Para++;
 			*Para = 0x02; (*Count)++; Para++;
 			*Para = 0x81; (*Count)++; Para++;
@@ -395,13 +417,13 @@ void SetVoltageParameters(TboardConfig * Board, uns_ch * Para, uint8 *Count) {
 			*Para = 0x82; (*Count)++; Para++;
 			*Para = 0x01; (*Count)++; Para++;
 			*Para = 0x83; (*Count)++; Para++;
-			if ( (Board->GlobalTestNum == V_12) || (Board->GlobalTestNum == V_SOLAR))	// Set Vuser
+			if ( (Board->GlobalTestNum == V_12) || (Board->GlobalTestNum == V_trim))	// Set Vuser
 				*Para = 0x69;	// 0x69 is 10.5
 			else if (Board->GlobalTestNum == V_3)
 				*Para = 0x1E;
 			(*Count)++; Para++;
 			*Para = 0x84; (*Count)++; Para++; // Set trim to get as close to Vuser
-			if (BoardConnected.GlobalTestNum == V_SOLAR) {
+			if (BoardConnected.GlobalTestNum == V_trim) {
 				uint8 trim = round( (10.5 - Board->VoltageBuffer[V_12])*333.333);
 				*Para = trim;
 			} else

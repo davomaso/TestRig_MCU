@@ -74,7 +74,7 @@ void configureTargetBoard(TboardConfig *Board) {
 	uns_ch Command;
 	Command = 0x56;
 	SetPara(Board, Command);
-	if (Board->BoardType != b422x)
+	if (Board->BoardType != b422x)	// No need to reconfigure as board is configured with the initialisation
 		communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
 	OutputsSet = false;
 }

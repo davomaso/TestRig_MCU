@@ -178,11 +178,13 @@ float setAsyncPulseCount(TboardConfig *Board, uint8 Test_Port) {
 		Port[Test_Port].Async.PulseCount = 15;
 		break;
 	}
-	HAL_Delay(10);
+//	HAL_Delay(10);
 	Port[Test_Port].Async.fcount = 5;
 	Port[Test_Port].Async.PulseState = true;
-	return (float) Port[Test_Port].Async.FilterEnabled ?
-			Port[Test_Port].Async.PulseCount : (11 * Port[Test_Port].Async.PulseCount);
+	if (Port[Test_Port].Async.FilterEnabled)
+		return Port[Test_Port].Async.PulseCount;
+	else
+		return Port[Test_Port].Async.PulseCount * 11;
 }
 //	===================================================================================	//
 
@@ -303,42 +305,42 @@ void ADC_MUXsel(uint8 ADCport) {
 void PrintLatchResults() {
 	float LatchCurrent1;
 	float LatchCurrent2;
-	printT((uns_ch*) "\n\n =======================  Latch Test  =======================\n\n");
-	sprintf((char*) &debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d Low: %d   ==============\n",
+	printT((uns_ch*) "\n\n=======================             Latch Test             =======================\n\n");
+	sprintf((char*) &debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d        Low: %d       ==============\n",
 			LatchPortA.HighPulseWidth, LatchPortA.LowPulseWidth);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port A Voltage:   High: %.3f Low: %.3f   ==============\n", LatchPortA.highVoltage,
+			"\n==============   Port A Voltage:      High: %.3f    Low: %.3f    ==============\n", LatchPortA.highVoltage,
 			LatchPortA.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	//Port B Latch Time
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port B Latch time:   High: %d  Low: %d   ==============\n", LatchPortB.HighPulseWidth,
+			"\n==============   Port B Latch time:   High: %d        Low: %d       ==============\n", LatchPortB.HighPulseWidth,
 			LatchPortB.LowPulseWidth);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port B Voltage:   High: %.3f Low: %.3f   ==============\n\n", LatchPortB.highVoltage,
+			"\n==============   Port B Voltage:      High: %.3f    Low: %.3f    ==============\n\n", LatchPortB.highVoltage,
 			LatchPortB.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf((char*) &debugTransmitBuffer, "\n==============   Vin Voltage:   AVG: %.3f Min: %.3f   ==============\n",
+	sprintf((char*) &debugTransmitBuffer, "\n==============   Vin Voltage:         AVG: %.3f     Min: %.3f   ==============\n",
 			Vin.average, Vin.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf((char*) &debugTransmitBuffer, "\n==============   Fuse Voltage:   AVG: %.3f Min: %.3f   ==============\n",
+	sprintf((char*) &debugTransmitBuffer, "\n==============   Fuse Voltage:        AVG: %.3f     Min: %.3f   ==============\n",
 			Vfuse.average, Vfuse.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   MOSFET 1 Voltage:   High: %.3f Low: %.3f   ==============\n",
+			"\n==============   MOSFET 1 Voltage:    High: %.3f     Low: %.3f    ==============\n",
 			MOSFETvoltageA.highVoltage, MOSFETvoltageA.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   MOSFET 2 Voltage:   High: %.3f Low: %.3f   ==============\n",
+			"\n==============   MOSFET 2 Voltage:    High: %.3f     Low: %.3f    ==============\n",
 			MOSFETvoltageB.highVoltage, MOSFETvoltageB.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
@@ -348,7 +350,7 @@ void PrintLatchResults() {
 	LatchCurrent2 /= ADC_Rcurrent;
 
 	sprintf((char*) &debugTransmitBuffer[0],
-			"\n==============   Lactch Current:   Pulse 1: %f Pulse 2: %f   ==============\n", LatchCurrent1,
+			"\n==============   Lactch Current:      P1: %.3f       P2: %.3f     ==============\n", LatchCurrent1,
 			LatchCurrent2);
 	printT((uns_ch*) &debugTransmitBuffer);
 }

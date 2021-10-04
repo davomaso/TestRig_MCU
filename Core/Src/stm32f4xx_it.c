@@ -449,7 +449,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		HAL_ADC_PollForConversion(&hadc1, 10);
 		Vin.currentValue = HAL_ADC_GetValue(&hadc1);
 		HAL_ADC_Stop(&hadc1);
-		if (Vin.currentValue >= 3500) {
+		if (Vin.currentValue >= 3200) {
 			Vin.total += Vin.currentValue;
 			SolarChargerCounter++;
 			if (SolarChargerCounter > 1000) {
@@ -468,13 +468,13 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		HAL_ADC_PollForConversion(&hadc1, 10);
 		Vin.currentValue = HAL_ADC_GetValue(&hadc1);
 		HAL_ADC_Stop(&hadc1);
-		if (Vin.currentValue >= 3100) {
+		if (Vin.currentValue >= 3000) {
 			Vin.total += Vin.currentValue;
 			InputVoltageCounter++;
 		}
 		InputVoltageTimer--;
-		if ((InputVoltageCounter > 1000) || InputVoltageTimer == 0) {
-			if (InputVoltageCounter > 1000)
+		if ((InputVoltageCounter > 500) || InputVoltageTimer == 0) {
+			if (InputVoltageCounter > 500)
 				InputVoltageStable = true;
 			float tempVal = Vin.total / (float)InputVoltageCounter;
 			BoardConnected.VoltageBuffer[V_INPUT] =  tempVal * (15.25 / 4096);
@@ -515,7 +515,18 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		}
 	}
 
+	if (RelayPort_Enabled) {
+		ADC_Ch3sel();
+		HAL_ADC_Start(&hadc1);
+		HAL_ADC_PollForConversion(&hadc1, 10);
+		Vfuse.currentValue = HAL_ADC_GetValue(&hadc1);
+		HAL_ADC_Stop(&hadc1);
 
+		if (Vfuse.currentValue < 300)
+			RelayCount++;
+		else
+			RelayCount--;
+	}
 
   /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 0 */
   HAL_TIM_IRQHandler(&htim1);
@@ -606,9 +617,9 @@ void USART2_IRQHandler(void)
 			USART2->CR1 &= ~(USART_CR1_TXEIE);
 			UART2_TXcount = UART2_TXpos = 0;
 			BoardCommsReceiveState = RxWaiting;
-//			if ( CurrentState == csCalibrating )
-//				setTimeOut(4000);
-//			else
+			if ( CurrentState == csCalibrating )
+				setTimeOut(4000);
+			else
 				setTimeOut(1500);
 
 		} else {

@@ -70,7 +70,6 @@ void communication_array(uns_ch Command, uns_ch *Para, uint8_t Paralen) {
 
 	//Switch Comms to Radio or RS485 depending on Board Connected
 	switchCommsProtocol(&BoardConnected);
-
 	//Transmit the Communication array
 	UART2_transmit((uns_ch*) &Com_buffer[0], Comlen);
 	// UART2 Receive Interrupt Enable.
@@ -110,14 +109,16 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 
 		}
 		break;
-
 	case 0x1B:
-		sampleTime = *data++;
-		sampleTime |= (*data++ << 8);
-		sampleTime *= 100;
+		if (SDIenabled) {
+			sampleTime = *data++;
+			sampleTime |= (*data++ << 8);
+			sampleTime *= 100;
+			sampleTime = (sampleTime > 1200) ? 1200 : sampleTime;
+		} else
+			sampleTime = Board->analogInputCount * 150;
 		sampleCount = 0;
 		samplesUploaded = false;
-		sampleTime = sampleTime > 3500 ? 3500 : sampleTime;
 		samplesUploading = true;
 		//Uploading begun
 		if (TestRigMode == VerboseMode) {
@@ -133,11 +134,9 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 		}
 		memcpy(&sampleBuffer[0], data, (arraysize));
 		break;
+
 	case 0x03:	//Board Busy
-		samplesUploading = true;
-		samplesUploaded = false;
-		sampleCount = 0;
-		sampleTime = 500;
+		setTimeOut(1000);
 		break;
 	case 0xCD:	// Initialise board command
 		if (TestRigMode == VerboseMode)

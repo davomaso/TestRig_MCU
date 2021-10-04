@@ -13,7 +13,7 @@ void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	Channel_value = 0;
 	uint8 Compression_type;
 	uint8 length = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;
-	while (CH_count <= length) {
+	while (CH_count <= length+1) {
 		Compression_type = 0;
 		Compression_type = (*data & 0xE0);
 		Compression_type >>= 5;
@@ -41,7 +41,10 @@ void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 			break;
 		case 0x03:
 			data++;
-			Channel_value = *data++;
+			if (CH_count == length)
+				Board->rawBatteryLevel[Board->GlobalTestNum] = *data++;
+			else
+				Channel_value = *data++;
 			break;
 		case 0x04:		//Always Zero
 			Channel_value = 0x0;
@@ -50,14 +53,14 @@ void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 		case 0x05:
 			data++;
 			Channel_value = 1; //Always 1
-			break;
-		case 0x07:		//Battery Level
+		default:
 			data++;
-			Channel_value = *data++;
 			break;
-		}
+
+ 		}
 		/* if a latch result is detected do not copy the result into the result buffer, else if channel count
 		 * is greater than the number of latch ports copy the result across regardless */
+
 		if ( (( (CH_count+1) < Board->latchPortCount) && (Board->TestResults[Board->GlobalTestNum][CH_count] == 0)) || ( (CH_count+1) > Board->latchPortCount) )
 			Board->TestResults[Board->GlobalTestNum][CH_count] = Channel_value;
 		CH_count++;

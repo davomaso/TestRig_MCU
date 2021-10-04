@@ -34,7 +34,7 @@ void LatchErrorCheck(TboardConfig *Board) {
 	if (Vin.average < 10.8)
 		SET_BIT(Board->LTR, INPUT_VOLTAGE_ERROR);
 	//Vfuse Check
-	if (Vfuse.average < 0.95 * Vin.average || Vfuse.lowVoltage < 0.9 * Vin.lowVoltage)
+	if (Vfuse.average < 0.95 * Vin.average || Vfuse.lowVoltage < 0.85  * Vin.lowVoltage)
 		SET_BIT(Board->LTR, FUSE_VOLTAGE_ERROR);
 	//Vmos Check
 	if (MOSFETvoltageA.highVoltage < 0.001 || MOSFETvoltageA.highVoltage > 1.8 || MOSFETvoltageA.lowVoltage > 1.8

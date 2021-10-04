@@ -167,7 +167,7 @@ void TargetBoardCalibration_Voltage(TboardConfig *Board) {
 	uint16 DACval;
 	uns_ch Command;
 	_Bool MuxState = HAL_GPIO_ReadPin(MUX_A0_GPIO_Port, MUX_A0_Pin);
-	for (uint8 i = Port_1; i < Port_6; i++) {
+	for (uint8 i = Port_1; i <= Port_6; i++) {
 		DACval = DAC_1volt + Port[i].CalibrationFactor[V_1];
 		DACval += (i & 0x01) ? 0xB000 : 0x3000;
 		DAC_set(i, DACval);

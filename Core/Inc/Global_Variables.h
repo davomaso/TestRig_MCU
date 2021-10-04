@@ -184,9 +184,9 @@ TkeypadConfig KP[12];
 typedef enum { star = 10, hash = 11 }TkeypadSpecialChars;
 
 //Voltage Test Enum
-typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_12output = 3, V_SOLAR = 4, V_INPUT = 5, V_105 = 6}TvoltageTestVariables;
+typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_12output = 3,  V_trim = 4, V_INPUT = 5, V_105 = 6, V_SOLAR = 7}TvoltageTestVariables;
 
-typedef enum {NormalMode = 0 , OldBoardMode = 1, VerboseMode = 2, SerialiseMode = 3}TtestMode;
+typedef enum {HomeMode = 0, NormalMode = 1 , OldBoardMode = 2, VerboseMode = 3, SerialiseMode = 4}TtestMode;
 
 TtestMode TestRigMode;
 
@@ -218,6 +218,9 @@ uint16 SolarChargerTimer;
 _Bool SolarChargerSampling;
 
 _Bool OutputsSet;
+
+_Bool RelayPort_Enabled;
+uint8 RelayCount;
 
 uint16 LEDcounter;
 bool LED1active;
