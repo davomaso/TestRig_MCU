@@ -41,8 +41,7 @@ FRESULT Scan_SD(char *pat) {
 	 * Routine to scan through the SD card searching for the file passed to the routine.
 	 * Similary to the previous routines this will return an FRESULT to determine correct operation
 	 */
-	UINT i;
-	i = 0;
+	uint8 i = 0;
 	SDcard.fresult = f_opendir(&SDcard.directory, pat);
 	if (SDcard.fresult == FR_OK) {
 		for (;;) {
@@ -62,7 +61,7 @@ FRESULT Scan_SD(char *pat) {
 				SDcard.fresult = Scan_SD(pat); /* Enter the directory */
 				if (SDcard.fresult != FR_OK)
 					break;
-//                pat[i] = 0;
+				pat[i] = 0;
 			} else { /* It is a file. */
 				char *buf = malloc(255 * sizeof(char));
 				sprintf(buf, "File: %s/%s\n", pat, SDcard.fileInfo.fname);
@@ -76,15 +75,15 @@ FRESULT Scan_SD(char *pat) {
 	return SDcard.fresult;
 }
 
-FRESULT Open_Dir(TfileConfig *file, char *path) {	//TODO: Change this
+FRESULT Open_Dir(TfileConfig *FAT, char *path) {
 	FRESULT res;
-	res = f_opendir(&(file->directory), path);
+	res = f_opendir(&(FAT->directory), path);
 	return res;
 }
 
-FRESULT Close_Dir(TfileConfig *file) {
+FRESULT Close_Dir(TfileConfig *FAT) {
 	FRESULT res;
-	res = f_closedir(&(file->directory));
+	res = f_closedir(&(FAT->directory));
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR!!! No. %d in closing directory *\n\n", res);
@@ -262,10 +261,10 @@ FRESULT Close_File(TfileConfig *FAT) {
 	return res;
 }
 
-FRESULT Update_File(TfileConfig *file, char *name, char *data) {
+FRESULT Update_File(TfileConfig *FAT, char *name, char *data) {
 	/**** check whether the file exists or not ****/
 	FRESULT res;
-	res = f_write(&(file->file), data, strlen(data), &(file->bw));
+	res = f_write(&(FAT->file), data, strlen(data), &(FAT->bw));
 	if (res != FR_OK) {
 		char *buf = malloc(100 * sizeof(char));
 		sprintf(buf, "ERROR!!! No. %d in writing file *%s*\n\n", res, name);
@@ -364,7 +363,7 @@ FRESULT CreateResultsFile(TfileConfig *FAT, TboardConfig *Board) {
 	sprintf(&(FAT->FILEname[0]), "/TEST_RESULTS/%lu_%x", Board->SerialNumber, Board->BoardType);
 	res = Create_Dir(&(FAT->FILEname));
 	sprintf(&(FAT->FILEname[0]), "/TEST_RESULTS/%lu_%x/%lu.CSV", Board->SerialNumber, Board->BoardType,
-				Board->SerialNumber);
+			Board->SerialNumber);
 	res = Create_File(FAT);
 	if (res == FR_OK) {
 		sprintf((char*) &debugTransmitBuffer[0],
@@ -385,13 +384,15 @@ FRESULT WriteVoltages(TboardConfig *Board, TfileConfig *FAT) {
 					Board->VoltageBuffer[V_SOLAR], Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12],
 					Board->VoltageBuffer[V_3]);
 		else if (Board->BoardType == b401x)
-			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n10.5 Sample, %.3f\n, Adjusted 10.5V, %.3f\n3V Sample, %.3f\n",
-								Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_105], Board->VoltageBuffer[V_3]);
+			sprintf((char*) &TestResultsBuffer,
+					"Voltages\nInput, %.3f\n10.5 Sample, %.3f\n, Adjusted 10.5V, %.3f\n3V Sample, %.3f\n",
+					Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_105],
+					Board->VoltageBuffer[V_3]);
 		else
 			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",
 					Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);
 
-		res = Update_File(FAT, (char*) FAT->FILEname[0], &TestResultsBuffer[0]);
+		res = Update_File((TfileConfig*) FAT, (char*) FAT->FILEname[0], (char*) &TestResultsBuffer[0]);
 		if (res == FR_OK)
 			res = Close_File(FAT);
 	}

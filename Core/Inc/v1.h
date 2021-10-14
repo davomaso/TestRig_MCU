@@ -23,5 +23,7 @@ void testSolarCharger(void);
 void checkFuseVoltage(TboardConfig *);
 void CheckPowerRegisters(TboardConfig *);
 void TestComplete(TboardConfig *);
+void GetBatteryLevel(TboardConfig *);
+void PrintVoltages(TboardConfig *);
 
 #endif /* INC_V1_H_ */

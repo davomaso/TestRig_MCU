@@ -17,7 +17,6 @@ void scanLoom(TboardConfig *Board) {
 		}
 	}	// ###### add loom checking to occur during testing
 	if( LoomState != PrevLoomState) {
-			LCD_Clear();
 					switch(LoomState){
 					case 0:
 						Board->BoardType = bNone;
@@ -61,14 +60,6 @@ void scanLoom(TboardConfig *Board) {
 						LCD_printf((uns_ch*)"Unknown Loom",1,0);
 						printT((uns_ch*)"Unknown Loom...\n");
 					}
-					if (Board->BoardType != bNone) {
-						sprintf(lcdBuffer, "TEST RIG        %x",Board->BoardType);
-						HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-					} else {
-						sprintf(lcdBuffer, "TEST RIG");
-					}
-					LCD_printf((uns_ch*)&lcdBuffer,1,1);
-
 				}
 }
 

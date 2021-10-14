@@ -21,15 +21,17 @@
 #include "TestFunctions.h"
 
 void handleIdle(TboardConfig *Board, TprocessState *State) {
+	uint32 PreviousSerialNumber;
 	switch (*State) {
 	case psInitalisation:
-		HAL_Delay(500);
+		PrintHomeScreen(Board);
 		*State = psWaiting;
 		break;
 	case psWaiting:
 		if (CheckLoom) {
 			scanLoom(&BoardConnected); //Scan loom to determine which board is connected
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+			PreviousSerialNumber = Board->SerialNumber;
 			interrogateTargetBoard();
 			while ((BoardCommsReceiveState != RxGOOD) && (*State == psWaiting)) {
 				if (BoardCommsReceiveState == RxBAD)
@@ -39,7 +41,8 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			}
 			if (BoardCommsReceiveState == RxGOOD)
 				communication_response(Board, &Data_Buffer[4], &Data_Buffer[5], strlen(Data_Buffer) - 5);
-			PrintHomeScreen(Board);
+			if (PreviousSerialNumber != Board->SerialNumber)
+				PrintHomeScreen(Board);
 		}
 
 		if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed) {
@@ -97,10 +100,16 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 		if ((TestRigMode == NormalMode) && (retryCount > 2)) {
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			*State = psComplete;
+		} else if (retryCount > 2) {
+			if (Board->SerialNumber) {
+				TargetBoardParamInit(0);
+				Board->SerialNumber = 0x0;
+				PrintHomeScreen(Board);
+			}
+			*State = psWaiting;
 		} else
 			*State = psWaiting;
-		TargetBoardParamInit(0);
-		Board->SerialNumber = 0;
+
 		break;
 	}
 }
@@ -568,14 +577,16 @@ void handleOutputTest(TboardConfig *Board, TprocessState *State) {
 	uns_ch Response;
 	switch (*State) {
 	case psInitalisation:
-		if (RelayPort_Enabled) {
-			RelayCount = 50;
-			BoardCommsParameters[0] = 0x09;
-			BoardCommsParameters[1] = 0xE8;
-			BoardCommsParameters[2] = 0x03;
+		if (RelayPort_Enabled) {  // Output test for the 402x Boards, tests port 10 pulls low
+			BoardCommsParameters[0] = 0x89;
+			BoardCommsParameters[1] = 0x05;
+			BoardCommsParameters[2] = 0x00;
 			BoardCommsParameters[3] = 0x00;
 			BoardCommsParameters[4] = 0x00;
+			BoardCommsParameters[5] = 0x05;
+			BoardCommsParameters[6] = 0x00;
 			communication_array(0x26, &BoardCommsParameters[0], 5);
+			RelayCount = 125;
 			*State = psWaiting;
 		} else
 			*State = psComplete;
@@ -584,12 +595,14 @@ void handleOutputTest(TboardConfig *Board, TprocessState *State) {
 		if (BoardCommsReceiveState == RxGOOD) {
 			Response = Data_Buffer[0];
 			if (Response == 0x27) {
-				if (RelayCount > 100) {
-					BoardCommsParameters[0] = 0x09;
-					communication_array(0x26, &BoardCommsParameters[0], 7);
+				if (RelayCount > 250) {
 					*State = psComplete;
+				} else if (RelayCount == 0) {
+					*State = psFailed;
 				}
 			}
+		} else if (BoardCommsReceiveState == RxBAD){
+			*State = psFailed;
 		}
 		break;
 	case psComplete:
@@ -598,6 +611,8 @@ void handleOutputTest(TboardConfig *Board, TprocessState *State) {
 		*State = psInitalisation;
 		break;
 	case psFailed:
+		SET_BIT(Board->TPR, (1 << Board->GlobalTestNum));
+		*State = psComplete;
 		break;
 	}
 }
@@ -674,15 +689,14 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 			normaliseLatchResults();
 			PrintLatchResults();
 			LatchErrorCheck(Board);
-			if (!(Board->LTR)) {
-				printT(
-						(uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
+			if (Board->LTR == 0) {
+				printT( (uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
 				Board->TestResults[Board->GlobalTestNum][LatchTestPort] = true;
 			} else {
 				printLatchError(Board);
 				printT(
 						(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
-				Board->TestResults[Board->GlobalTestNum][LatchTestPort] = false;
+				Board->TestResults[Board->GlobalTestNum][LatchTestPort] = 0;
 				if (Board->BoardType == b422x) { //TODO: Check if this needs to be here with code changes
 					switch (LatchTestPort) {
 					case Port_1:
@@ -703,8 +717,8 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 			CLEAR_REG(Board->LatchTestPort);
 		}
 		if (SDIenabled) {	// Disable and Reenable UART prior to changing mask and polarity
-//					SET_BIT(huart6.Instance->CR1, USART_CR1_M);
-//					SET_BIT(huart6.Instance->CR1, USART_CR1_PCE);
+//			SET_BIT(huart6.Instance->CR1, USART_CR1_M);
+//			SET_BIT(huart6.Instance->CR1, USART_CR1_PCE);
 			USART6->CR1 |= (USART_CR1_RXNEIE);
 		}
 		if (RS485enabled) {
@@ -772,6 +786,7 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 	uint8 Percentage;
 	switch (*State) {
 	case psInitalisation:
+//		HAL_Delay(50); //Wait for sample voltage to stablise
 		LCD_printf((uns_ch*) "      Sampling      ", 2, 0);
 		Command = 0x1A;
 		SetPara(Board, Command);
@@ -780,20 +795,7 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		*State = psWaiting;
 		break;
 	case psWaiting:
-		if (VuserSamples < 100) {
-			if (Board->GlobalTestNum == V_12output) {
-				if ( (Board->BoardType == b401x) || (Board->BoardType == b402x) )
-					ADC_Ch4sel();
-				else
-					ADC_Ch3sel();
-			} else
-				ADC_Ch5sel();
-			HAL_ADC_Start(&hadc1);
-			HAL_ADC_PollForConversion(&hadc1, 100);
-			Vuser.total += HAL_ADC_GetValue(&hadc1);
-			VuserSamples++;
-			HAL_ADC_Stop(&hadc1);
-		}
+
 
 		if (BoardCommsReceiveState == RxGOOD) {
 			Response = Data_Buffer[0];
@@ -804,7 +806,7 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 			*State = psFailed;
 			BoardCommsReceiveState = RxWaiting;
 		}
-		if (samplesUploading && (sampleTime >= 1000)) {
+		if (samplesUploading && (sampleTime >= 1000)) {	// Print percentage bar to LCD if the sample wait time is greater than 1000
 			if (sampleCount == 0)
 				LCD_ClearLine(3);
 			Percentage = (uint8) ((sampleCount / (float) sampleTime) * 100);
@@ -812,16 +814,6 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		}
 
 		if (samplesUploaded) {
-			if (VuserSamples > 0) {
-				Vuser.average = Vuser.total / VuserSamples;
-				Vuser.average *= (15.25 / 4096);
-				if (Board->GlobalTestNum < V_trim)
-					Board->VoltageBuffer[Board->GlobalTestNum] = Vuser.average;
-				else if (Board->GlobalTestNum == V_trim)
-					Board->VoltageBuffer[V_trim] = Vuser.average;
-				sampleCount = 0;
-				Vuser.total = 0;
-			}
 			samplesUploading = false;
 			samplesUploaded = false;
 			*State = psComplete;
@@ -829,12 +821,37 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psComplete:
+		if (VuserSamples < 100) {
+			if (Board->GlobalTestNum == V_12output) {
+				if ( (Board->BoardType == b401x) || (Board->BoardType == b402x) )
+					ADC_Ch4sel();
+				else
+					ADC_Ch3sel();
+			} else
+				ADC_Ch5sel();
+			HAL_ADC_Start(&hadc1);
+			HAL_ADC_PollForConversion(&hadc1, 100);
+			Vuser.avg_Buffer[VuserSamples] = HAL_ADC_GetValue(&hadc1);
+			Vuser.total += Vuser.avg_Buffer[VuserSamples];
+			VuserSamples++;
+			HAL_ADC_Stop(&hadc1);
+		}
+
 		if (TestRigMode == VerboseMode) {
 			printT((uns_ch*) "Samples Uploaded\n\n");
 			printT((uns_ch*) "Requesting Results\n\n");
 		}
-		*State = psInitalisation;
-		CurrentState = csUploading;
+
+		if (VuserSamples >= 100) {
+			Vuser.total /=  VuserSamples;
+			Vuser.average = Vuser.total * (15.25 / 4096);
+			if (Board->GlobalTestNum <= V_trim)
+				Board->VoltageBuffer[Board->GlobalTestNum] = Vuser.average;
+			sampleCount = 0;
+			Vuser.total = 0;
+			*State = psInitalisation;
+			CurrentState = csUploading;
+		}
 		break;
 	case psFailed:
 		if (retryCount > 2) {

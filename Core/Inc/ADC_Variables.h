@@ -57,14 +57,14 @@ Latch Port Input________|________/\/\/\______________OPAMP
 
 
 	//Latch Test Registers
-#define PORT_A_PULSEWIDTH_ERROR 1
-#define PORT_A_VOLTAGE_ERROR 	2
-#define PORT_B_PULSEWIDTH_ERROR	4
-#define PORT_B_VOLTAGE_ERROR	8
-#define INPUT_VOLTAGE_ERROR		16
-#define FUSE_VOLTAGE_ERROR		32
-#define PORT_A_MOSFET_ERROR		64
-#define PORT_B_MOSFET_ERROR		128
+#define PORT_A_PULSEWIDTH_ERROR 	(1 << 0)
+#define PORT_A_VOLTAGE_ERROR 		(1 << 1)
+#define PORT_B_PULSEWIDTH_ERROR		(1 << 2)
+#define PORT_B_VOLTAGE_ERROR		(1 << 3)
+#define INPUT_VOLTAGE_ERROR			(1 << 4)
+#define FUSE_VOLTAGE_ERROR			(1 << 5)
+#define PORT_A_MOSFET_ERROR			(1 << 6)
+#define PORT_B_MOSFET_ERROR			(1 << 7)
 
 uint8 LatchTestErrorRegister;
 

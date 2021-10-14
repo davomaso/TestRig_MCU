@@ -45,5 +45,5 @@ void printT(uns_ch * Text) {
 	// Routine to take string and print it on the debug terminal
 //	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
 	CDC_Transmit_FS(Text, strlen((char*)Text));
-	HAL_Delay(1);
+//	HAL_Delay(1);
 }

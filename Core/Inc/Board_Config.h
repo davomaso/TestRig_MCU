@@ -34,9 +34,10 @@
 	//============		BOARD VOLTAGE VARIABLES		===========//
 	#define FUSE_V_STABLE		(1 << 0)
 	#define BOARD_SOLAR_STABLE	(1 << 1)
-	#define V3_SAMPLE_STABLE	(1 << 2)
-	#define V12_SAMPLE_STABLE	(1 << 3)
-	#define BATT_LVL_STABLE		(1 << 4)
+	#define V12_OUTPUT_STABLE	(1 << 2)
+	#define V3_SAMPLE_STABLE	(1 << 3)
+	#define V12_SAMPLE_STABLE	(1 << 4)
+	#define BATT_LVL_STABLE		(1 << 5)
 
 	//============		TEST PASSED VARIABLES		===========//
 	#define TEST_ONE_PASSED 	(1 << 0)
@@ -89,8 +90,8 @@
 	TportConfig currentTest;
 	TportConfig OnevoltTest;
 	TportConfig TwovoltTest;
-	TportConfig asyncTest;
-	TportConfig asyncDigitalTest;
+	TportConfig asyncFilteredTest;
+	TportConfig asyncUnfilteredTest;
 	TportConfig sdi12Test;
 	TportConfig rs485Test;
 	TportConfig noTest;

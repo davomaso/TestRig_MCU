@@ -221,3 +221,18 @@ void keypadInit() {
 	KP[star].RowPin = KP[0].RowPin = KP[hash].RowPin = KP_R4_Pin;
 }
 
+void DebounceArrayInit() {
+	for (uint8 i = Port_1; i <= Port_9;i++) {
+		Port[i].Async.scount = 0;
+		Port[i].Async.fcount = 0;
+	}
+	uint8 TempAsyncBuffer[5][16] = {
+			{ 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 },
+			{ 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1 },
+			{ 1, 1, 2, 8, 3, 1, 1, 2, 3, 4, 2, 2, 1, 1, 3, 2 },
+			{ 1, 1, 2, 2, 3, 3, 4, 4, 2, 3, 3, 2, 1, 4, 4, 1 },
+			{ 2, 1, 2, 1, 3, 4, 3, 4, 1, 1, 2, 2, 3, 3, 4, 4 }
+	};
+	memcpy(&AsyncDebounceBuffer, &TempAsyncBuffer, sizeof(TempAsyncBuffer));
+}
+

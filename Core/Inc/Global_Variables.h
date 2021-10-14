@@ -55,6 +55,7 @@ _Bool samplesUploading;
 _Bool samplesUploaded;
 unsigned char sampleBuffer[256];
 
+uint8 AsyncDebounceBuffer[5][16];
 //Async Variables
 typedef struct {
 	_Bool Active;
@@ -63,6 +64,9 @@ typedef struct {
 	uint16 scount;
 	_Bool PulseState;
 	_Bool FilterEnabled;
+	uint8 UnfilteredClkDiv;
+	uint8 FilteredCount;
+
 	uint16_t Pin;
 	GPIO_TypeDef *Port;
 } TasyncConfig;

@@ -299,10 +299,13 @@ _Bool EnableProgramming() {
 	//Poll Ready
 	data[0] = 0xF0;
 	data[1] = 0x00;
-	while (ProcessState) {		//TODO: Add timeout functionality here if no response is received
+	setTimeOut(1500);
+	while (ProcessState) {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
-		if (((response[3] & 0x01) == 0))
+		if (((response[3] & 0x01) == 0)) {
+			timeOutEn = false;
 			return true;
+		}
 	}
 	return false;
 }

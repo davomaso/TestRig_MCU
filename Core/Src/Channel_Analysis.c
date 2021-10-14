@@ -13,6 +13,8 @@ void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	Channel_value = 0;
 	uint8 Compression_type;
 	uint8 length = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;
+	if (Board->BoardType == b402x)	// Increase length by 1 on 4020 to ensure battery level is read
+		length += 1;		//accounting for the output port
 	while (CH_count <= length+1) {
 		Compression_type = 0;
 		Compression_type = (*data & 0xE0);
