@@ -252,7 +252,6 @@ int main(void)
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 			LoomChecking = true;
 			LoomState = 0xFF;
-			TestRigMode = HomeMode;
 			CurrentState = csIDLE;
 			ProcessState = psInitalisation;
 		}

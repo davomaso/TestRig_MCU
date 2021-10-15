@@ -53,7 +53,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			if (KP[1].Pressed)
 				TestRigMode = OldBoardMode;	// Test only, no serialise, no program
 			else if (KP[hash].Pressed)
-				TestRigMode = NormalMode;	// Program immediately
+				TestRigMode = BatchMode;	// Program immediately
 			else if (KP[6].Pressed)
 				TestRigMode = VerboseMode;
 			else if (KP[3].Pressed)
@@ -61,7 +61,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 
 			KP[1].Pressed = KP[3].Pressed = KP[6].Pressed = KP[hash].Pressed = false;
 			LCD_Clear();
-			if (TestRigMode != NormalMode || TestRigMode != HomeMode)
+			if (TestRigMode != BatchMode)
 				*State = psComplete;
 		}
 		//Calibration Routine
@@ -80,7 +80,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			SET_BIT(Board->BSR, BOARD_PROGRAMMED);
 		}
 
-		if (!READ_BIT(Board->BSR, BOARD_SERIALISED) || (TestRigMode == NormalMode)) {
+		if (!READ_BIT(Board->BSR, BOARD_SERIALISED) || (TestRigMode == BatchMode)) {
 			TestRig_Init();
 			TargetBoardParamInit(0);
 			clearTestStatusLED();
@@ -97,7 +97,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 		break;
 	case psFailed:
 		retryCount++;
-		if ((TestRigMode == NormalMode) && (retryCount > 2)) {
+		if ((TestRigMode == BatchMode) && (retryCount > 2)) {
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			*State = psComplete;
 		} else if (retryCount > 2) {
@@ -105,6 +105,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 				TargetBoardParamInit(0);
 				Board->SerialNumber = 0x0;
 				PrintHomeScreen(Board);
+				TestRigMode = BatchMode;
 			}
 			*State = psWaiting;
 		} else
@@ -716,11 +717,6 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 			}
 			CLEAR_REG(Board->LatchTestPort);
 		}
-		if (SDIenabled) {	// Disable and Reenable UART prior to changing mask and polarity
-//			SET_BIT(huart6.Instance->CR1, USART_CR1_M);
-//			SET_BIT(huart6.Instance->CR1, USART_CR1_PCE);
-			USART6->CR1 |= (USART_CR1_RXNEIE);
-		}
 		if (RS485enabled) {
 			CLEAR_BIT(huart6.Instance->CR1, USART_CR1_M);
 			CLEAR_BIT(huart6.Instance->CR1, USART_CR1_PCE);
@@ -786,7 +782,6 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 	uint8 Percentage;
 	switch (*State) {
 	case psInitalisation:
-//		HAL_Delay(50); //Wait for sample voltage to stablise
 		LCD_printf((uns_ch*) "      Sampling      ", 2, 0);
 		Command = 0x1A;
 		SetPara(Board, Command);
@@ -795,8 +790,6 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		*State = psWaiting;
 		break;
 	case psWaiting:
-
-
 		if (BoardCommsReceiveState == RxGOOD) {
 			Response = Data_Buffer[0];
 			if (Response == 0x1B || Response == 0x03)	//TODO: change this to wait until samples uploaded!

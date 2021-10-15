@@ -190,7 +190,7 @@ typedef enum { star = 10, hash = 11 }TkeypadSpecialChars;
 //Voltage Test Enum
 typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_12output = 3,  V_trim = 4, V_INPUT = 5, V_105 = 6, V_SOLAR = 7}TvoltageTestVariables;
 
-typedef enum {HomeMode = 0, NormalMode = 1 , OldBoardMode = 2, VerboseMode = 3, SerialiseMode = 4}TtestMode;
+typedef enum {BatchMode = 0 , OldBoardMode = 1, VerboseMode = 2, SerialiseMode = 3}TtestMode;
 
 TtestMode TestRigMode;
 

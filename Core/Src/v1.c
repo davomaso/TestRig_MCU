@@ -97,7 +97,7 @@ void PrintHomeScreen(TboardConfig *Board) {
 		LCD_printf((uns_ch*) &lcdBuffer, 2, 1);
 		LCD_printf((uns_ch*) "1 - Test Only", 3, 0);
 		LCD_printf((uns_ch*) "3 - New SN  Prog - #", 4, 0);
-	} else if (TestRigMode != NormalMode) {
+	} else if (TestRigMode != BatchMode) {
 		clearTestStatusLED();
 		LCD_printf((uns_ch*) "Test Rig", 1, 0);
 		sprintf((char*) &lcdBuffer, "SN: N/a");

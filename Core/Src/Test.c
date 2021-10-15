@@ -322,15 +322,15 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 
 		if (Board->ThisTest->Code == SDI_TWELVE) {
 			SDIenabled = true;
+			USART6->CR1 |= (USART_CR1_RXNEIE);
+			huart6.Init.Parity = UART_PARITY_EVEN;
 //			CLEAR_BIT(USART6->CR1, USART_CR1_UE);
 //			SET_BIT(USART6->CR1, USART_CR1_PCE);
 //			SET_BIT(USART6->CR1, USART_CR1_UE);
 		}
 		if (Board->ThisTest->Code == AQUASPY) {
 			RS485enabled = true;
-			CLEAR_BIT(USART6->CR1, USART_CR1_UE);
-			CLEAR_BIT(USART6->CR1, USART_CR1_PCE);
-			SET_BIT(USART6->CR1, USART_CR1_UE);
+			huart6.Init.Parity = UART_PARITY_NONE;
 		}
 		if (Board->ThisTest->Code == ASYNC_PULSE) {
 			if ((Board->BoardType == b935x) && (PortCount > 2))
@@ -372,7 +372,7 @@ _Bool CheckTestNumber(TboardConfig *Board) {
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
 		for (uint8 i = 0; i < maxTest; i++) {
-			if (Board->TPR && (1 << i) == true) {
+			if (Board->TPR & (1 << i)) {
 				sprintf((char*) &debugTransmitBuffer[0], "X ");
 				LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 				CLEAR_BIT(Board->BSR, BOARD_TEST_PASSED);
