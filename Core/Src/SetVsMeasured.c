@@ -84,6 +84,10 @@ void CompareResults(TboardConfig *Board, float *SetVal) {
 			printT((uns_ch*) "Testing SDI-12\n");
 			PortTypes[currResult] = TTSDI;
 			break;
+		case AQUASPY:
+			printT((uns_ch*) "Testing RS485\n");
+			PortTypes[currResult] = TTRS485;
+			break;
 		case NOTEST:
 			fMeasured = (float) 0;
 			PortTypes[currResult] = TTNoTest;

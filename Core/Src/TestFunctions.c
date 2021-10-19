@@ -179,12 +179,14 @@ float setAsyncPulseCount(TboardConfig *Board, uint8 Test_Port) {
 		break;
 	}
 //	HAL_Delay(10);
-	Port[Test_Port].Async.fcount = 5;
 	Port[Test_Port].Async.PulseState = true;
-	if (Port[Test_Port].Async.FilterEnabled)
+	if (Port[Test_Port].Async.FilterEnabled) {
+		Port[Test_Port].Async.fcount = AsyncDebounceBuffer[(Port[Test_Port].Async.PulseCount + Test_Port) % 5][0];
 		return Port[Test_Port].Async.PulseCount;
-	else
+	} else {
+		Port[Test_Port].Async.fcount = 5;
 		return Port[Test_Port].Async.PulseCount * 11;
+	}
 }
 //	===================================================================================	//
 

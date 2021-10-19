@@ -87,7 +87,6 @@ void TestComplete(TboardConfig *Board) {
 void PrintHomeScreen(TboardConfig *Board) {
 	if (Board->BoardType != bNone) {
 		sprintf(lcdBuffer, "TEST RIG        %x",Board->BoardType);
-		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
 	} else {
 		sprintf(lcdBuffer, "TEST RIG");
 	}

@@ -127,7 +127,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-   HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -163,19 +164,19 @@ int main(void)
 //	HAL_Delay(2000); //I2C delay
 	HAL_I2C_Init(&hi2c1);
 	LCD_init();
-	ChangeCharacterSet('A');	//Character set A for Progress Bar
+	ChangeCharacterSet('A');				// Character set A for Progress Bar
 
 	TestRig_Init();
-	DebounceArrayInit();
+	DebounceArrayInit();					// Initialize the async debounce functionality array
 	ProcessState = psInitalisation;
 	CurrentState = csIDLE;
 	LoomChecking = true;
-	LoomState = 0xFF; // Ensure that checkloom() initialises LCD first iteration\
+	LoomState = 0xFF; 						// Ensure that checkloom() initialises LCD first iteration
 
-	ConfigInit();
-	read_correctionFactors();
-	HAL_Delay(1000);
-	SDcard.fresult = SDInit(&SDcard, "");
+	ConfigInit();							// Initialize test codes
+	read_correctionFactors();				// Read the calibration correction factors
+	HAL_Delay(1000);						//
+	SDcard.fresult = SDInit(&SDcard, "");	// Initialize SDcard
 
   /* USER CODE END 2 */
 
@@ -243,16 +244,16 @@ int main(void)
 
 		//=========================================================================================================//
 		// Quit
-		if (KP[star].Pressed) {
+		if (KP[star].Pressed) {								// Check if the back/exit button is pressed
 			KP[star].Pressed = false;
 			LCD_Clear();
-			TestRig_Init();
+			TestRig_Init();									// Clear LCD screen and return system to home defaults
 			TestRig_MainMenu();
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-			LoomChecking = true;
+			LoomChecking = true;							// Ensure loom checking is enabled
 			LoomState = 0xFF;
-			CurrentState = csIDLE;
+			CurrentState = csIDLE;							// Return to default case
 			ProcessState = psInitalisation;
 		}
 //=========================================================================================================//
@@ -692,7 +693,7 @@ static void MX_TIM14_Init(void)
 
   /* USER CODE END TIM14_Init 1 */
   htim14.Instance = TIM14;
-  htim14.Init.Prescaler = 119;
+  htim14.Init.Prescaler = 239;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim14.Init.Period = 99;
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -937,12 +938,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MUX_WRodd2_Pin MUX_WReven2_Pin ASYNC3_Pin ASYNC4_Pin
-                           ASYNC5_Pin ASYNC6_Pin ASYNC7_Pin ASYNC8_Pin
-                           ASYNC9_Pin */
-  GPIO_InitStruct.Pin = MUX_WRodd2_Pin|MUX_WReven2_Pin|ASYNC3_Pin|ASYNC4_Pin
-                          |ASYNC5_Pin|ASYNC6_Pin|ASYNC7_Pin|ASYNC8_Pin
-                          |ASYNC9_Pin;
+  /*Configure GPIO pins : MUX_WRodd2_Pin MUX_WReven2_Pin ASYNC5_Pin ASYNC6_Pin
+                           ASYNC7_Pin ASYNC8_Pin ASYNC9_Pin */
+  GPIO_InitStruct.Pin = MUX_WRodd2_Pin|MUX_WReven2_Pin|ASYNC5_Pin|ASYNC6_Pin
+                          |ASYNC7_Pin|ASYNC8_Pin|ASYNC9_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -957,14 +956,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin TB_Reset_Pin Radio_EN_Pin
-                           RS485_EN_Pin */
-  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin|TB_Reset_Pin|Radio_EN_Pin
-                          |RS485_EN_Pin;
+  /*Configure GPIO pins : ASYNC1_Pin ASYNC2_Pin */
+  GPIO_InitStruct.Pin = ASYNC1_Pin|ASYNC2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : ASYNC3_Pin ASYNC4_Pin */
+  GPIO_InitStruct.Pin = ASYNC3_Pin|ASYNC4_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
   /*Configure GPIO pin : RS485_4011EN_Pin */
   GPIO_InitStruct.Pin = RS485_4011EN_Pin;
@@ -972,6 +976,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RS485_4011EN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : TB_Reset_Pin Radio_EN_Pin RS485_EN_Pin */
+  GPIO_InitStruct.Pin = TB_Reset_Pin|Radio_EN_Pin|RS485_EN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : Loom_Sel_Pin */
   GPIO_InitStruct.Pin = Loom_Sel_Pin;

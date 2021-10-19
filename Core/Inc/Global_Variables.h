@@ -46,7 +46,6 @@ _Bool CheckLoom;
 _Bool LoomChecking;
 uint8 LoomCheckCount;
 uint8 LoomState;
-_Bool MonitorInput;
 
 //0x1A and 0x1B Command and Response
 uint16 sampleTime;
@@ -102,9 +101,9 @@ TaportConfig Port[9];
 #define RS_SENSOR_4 1.528
 #define RS_SENSOR_5 4.927
 #define RS_SENSOR_6 9.016
-#define RS_SENSOR_7 42.401
-#define RS_SENSOR_8 12.619
-#define RS_SENSOR_9 19.960
+#define RS_SENSOR_7 2.401
+#define RS_SENSOR_8 7.619
+#define RS_SENSOR_9 9.960
 
 typedef enum {
 	RSundef, RSquery, RS9pending, RS9, RSMpending, RSM, RSdPending, RSd

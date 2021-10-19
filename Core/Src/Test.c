@@ -59,14 +59,14 @@ void ConfigInit() {
 	asyncUnfilteredTest.GateTime = 0;
 
 	//SDI12 Test
-	sdi12Test.Code = SDI_TWELVE;
+	sdi12Test.Code = SDI_TWELVE;	// 1200, 7, 1 , Even
 	sdi12Test.Channels = 1;
 	sdi12Test.Options = 0;
 	sdi12Test.GateTime = 0;
 
 	//RS485 Test
-	rs485Test.Code = AQUASPY;	// 1200, 8, 1 , None
-	rs485Test.Channels = 1;
+	rs485Test.Code = AQUASPY;		// 1200, 8, 1 , None
+	rs485Test.Channels = 9;
 	rs485Test.Options = 0x00;
 	rs485Test.GateTime = 0;
 	//No Test
@@ -142,17 +142,19 @@ void TestConfig937x(TboardConfig *Board) {
 //====================================================  INPUT EXPANSION BOARDS  ====================================================//
 void TestConfig401x(TboardConfig *Board) {
 	// Port Test Array
-	TportConfig *tempTestARR[30] = { &sdi12Test, &OnevoltTest, &currentTest, &asyncFilteredTest, &noTest,	//
-			&asyncFilteredTest, &sdi12Test, &OnevoltTest, &currentTest, &noTest,				//
-			&currentTest, &asyncFilteredTest, &sdi12Test, &OnevoltTest, &noTest,				//
-			&OnevoltTest, &currentTest, &asyncFilteredTest, &sdi12Test, &noTest,				//
-			&TwovoltTest, &currentTest, &TwovoltTest, &currentTest, &noTest,			//
-			&currentTest, &TwovoltTest, &currentTest, &TwovoltTest, &rs485Test			//
+	TportConfig *tempTestARR[30] = {
+				&sdi12Test, &OnevoltTest, &currentTest, &asyncFilteredTest, &noTest,				//
+				&asyncFilteredTest, &sdi12Test, &OnevoltTest, &currentTest, &noTest,				//
+				&currentTest, &asyncFilteredTest, &sdi12Test, &OnevoltTest, &noTest,				//
+				&OnevoltTest, &currentTest, &asyncFilteredTest, &sdi12Test, &noTest,				//
+				&TwovoltTest, &currentTest, &TwovoltTest, &currentTest, &noTest,					//
+				&currentTest, &TwovoltTest, &currentTest, &TwovoltTest, &rs485Test					//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 	//Port Code Array
-	uint8 tempPcARR[20] = { 0xC0, 0xC2, 0xC1, 0xC3,		//Transmit Control bits first, then channel number
+	uint8 tempPcARR[20] = {
+			0xC0, 0xC2, 0xC1, 0xC3,		//Transmit Control bits first, then channel number
 			0xD0, 0xD2, 0xD1, 0xD3,		//
 			0xE0, 0xE2, 0xE1, 0xE3,		//
 			0xF0, 0xF2, 0xF1, 0xF3,		//
@@ -295,7 +297,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 			} else
 				PCptr++;
 
-			if (Board->ThisTest->Options && *PCptr) {	//Ensure Options byte and the port code exist
+			if (*PCptr) {	//Ensure Options byte and the port code exist
 				*Para = *PCptr++;
 				(*Count)++;
 				Para++;
@@ -305,7 +307,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 			} else
 				PCptr++;
 
-			if (Board->ThisTest->GateTime && *PCptr) { //Ensure Gatetime byte and the port code exist
+			if (*PCptr) { //Ensure Gatetime byte and the port code exist
 				*Para = *PCptr++;
 				(*Count)++;
 				Para++;
@@ -322,15 +324,19 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 
 		if (Board->ThisTest->Code == SDI_TWELVE) {
 			SDIenabled = true;
-			USART6->CR1 |= (USART_CR1_RXNEIE);
-			huart6.Init.Parity = UART_PARITY_EVEN;
-//			CLEAR_BIT(USART6->CR1, USART_CR1_UE);
-//			SET_BIT(USART6->CR1, USART_CR1_PCE);
-//			SET_BIT(USART6->CR1, USART_CR1_UE);
+			USART6->CR1 &= ~(USART_CR1_UE);
+			USART6->CR1 |= (USART_CR1_RXNEIE);			// Enable receivable data on UART6
+			USART6->CR1 &= ~UART_PARITY_ODD;
+			USART6->CR1 |= UART_PARITY_EVEN;	// Set Parity to even
+			USART6->CR1 |= (USART_CR1_UE);
 		}
 		if (Board->ThisTest->Code == AQUASPY) {
-			RS485enabled = true;
-			huart6.Init.Parity = UART_PARITY_NONE;
+			RS485enabled = true;						// Enable RS485
+			USART6->CR1 &= ~(USART_CR1_UE);
+			USART6->CR1 |= (USART_CR1_RXNEIE);			// Enable receivable data on UART6
+			USART6->CR1 &= ~UART_PARITY_ODD;
+			USART6->CR1 |= UART_PARITY_NONE;	// Set Parity to none
+			USART6->CR1 |= (USART_CR1_UE);
 		}
 		if (Board->ThisTest->Code == ASYNC_PULSE) {
 			if ((Board->BoardType == b935x) && (PortCount > 2))
@@ -358,6 +364,8 @@ void Set_Test(TboardConfig *Board, uint8 Port, uint8 TotalPort) {
 _Bool CheckTestNumber(TboardConfig *Board) {
 	uint8 Test = Board->GlobalTestNum;
 	uint8 maxTest = Board->testNum;
+	SDIenabled = false;
+	RS485enabled = false;
 	if (Test == maxTest) {
 		sprintf((char*) &debugTransmitBuffer, "\n ========== Maximum Test Number Reached: %d ==========\n", Test);
 		printT((uns_ch*) &debugTransmitBuffer);

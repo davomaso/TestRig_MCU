@@ -36,6 +36,7 @@ void TestRig_Init() {
 	reset_ALL_DAC();	//Set DAC to zero
 	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_GPIO_Port, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(MUX_EN_GPIO_Port, MUX_EN_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 	reset_ALL_MUX();
 
 	HAL_TIM_Base_Start_IT(&htim6); 	// LED blink, Scan Loom timer
@@ -229,7 +230,7 @@ void DebounceArrayInit() {
 	uint8 TempAsyncBuffer[5][16] = {
 			{ 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 },
 			{ 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1 },
-			{ 1, 1, 2, 8, 3, 1, 1, 2, 3, 4, 2, 2, 1, 1, 3, 2 },
+			{ 1, 1, 2, 4, 3, 1, 1, 2, 3, 4, 2, 2, 1, 1, 3, 2 },
 			{ 1, 1, 2, 2, 3, 3, 4, 4, 2, 3, 3, 2, 1, 4, 4, 1 },
 			{ 2, 1, 2, 1, 3, 4, 3, 4, 1, 1, 2, 2, 3, 3, 4, 4 }
 	};
