@@ -107,19 +107,20 @@
 			uint8 analogInputCount;
 			uint8 digitalInputCout;
 			uint8 testNum;
+			uint8 ChCount;
 			uint8 ArrayPtr;
 			TportConfig * TestArray[MAX_TEST_ARRAY_SIZE];	//Pointer to TportConfig
 			TportConfig * ThisTest;
 			uint8 PortCodes[MAX_PORT_CODE_ARRAY_SIZE];
 			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
-			uint32 TestResults[8][16];
+			uint32 TestResults[8][17];
 			uint8 LatchTestPort;
-			uint16 TPR; //TestPassedRegister;
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;
 			float VoltageBuffer[8];
 			uint8 rawBatteryLevel[7];
 			float BatteryLevel;
+			uint16 TPR; //TestPassedRegister;
 			uint8 BSR; //Board Status Register
 			uint8 LTR; //Latch Test Register
 			uint8 BPR; //Board Programming Register

@@ -956,6 +956,7 @@ void USART6_IRQHandler(void)
 					RS_SENSOR_8, RS_SENSOR_9);
 			HAL_UART_Transmit(&SDI_UART, (uint8_t*) &RS485buffer[0], strlen((char*) &RS485buffer[0]), HAL_MAX_DELAY);
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
+			RSstate = RSundef;
 		}
 	}
 

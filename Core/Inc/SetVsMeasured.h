@@ -9,10 +9,14 @@
 #define INC_SETVSMEASURED_H_
 
 #include "Board_Config.h"
-void CompareResults(TboardConfig *, float *);
+
+typedef enum {TRpassed = 'p', TRfailed = 'f'}Tresult;
+
+void HandleResults(TboardConfig *, float *);
+Tresult CompareSetMeasured(float *, float, float);
 
 typedef enum {TTLatch = 'L', TTVoltage = 'V', TTCurrent = 'I', TTAsync = 'A', TTSDI = 'S', TTRS485 = 'R',TTNoTest = '0'}TtestType;
 TtestType PortTypes[10];
-typedef enum {TRpassed = 'p', TRfailed = 'f'}Tresult;
+
 
 #endif /* INC_SETVSMEASURED_H_ */

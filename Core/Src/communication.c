@@ -110,7 +110,7 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 		}
 		break;
 	case 0x1B:
-		if (SDIenabled) {
+		if (SDIenabled || RS485enabled) {
 			sampleTime = *data++;
 			sampleTime |= (*data++ << 8);
 			sampleTime *= 100;

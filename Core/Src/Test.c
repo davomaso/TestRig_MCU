@@ -13,11 +13,6 @@
 
 // ==================	Global Assignment of Port Configs	================== //
 void ConfigInit() {
-	//Sample Time Adjustment
-	SampleTime.Code = 0x00;	// 12V or 2V no sample voltage required
-	SampleTime.Channels = 0x00;	//Set voltage to always off
-	SampleTime.GateTime = 0x02; //0.2s Sample Time
-
 	//Output Test Assignment
 	outputTest.Code = 0x01;
 	outputTest.Channels = 0x00;
@@ -101,7 +96,7 @@ void TestConfig935x(TboardConfig *Board) {
 
 	Board->BoardType = b935x;
 	Board->Subclass = 'C';
-	// Quantity of each Port type & tests
+		// Quantity of each Port type & tests
 	Board->latchPortCount = 1;
 	Board->analogInputCount = 2;
 	Board->digitalInputCout = 2;
@@ -143,12 +138,12 @@ void TestConfig937x(TboardConfig *Board) {
 void TestConfig401x(TboardConfig *Board) {
 	// Port Test Array
 	TportConfig *tempTestARR[30] = {
-				&sdi12Test, &OnevoltTest, &currentTest, &asyncFilteredTest, &noTest,				//
-				&asyncFilteredTest, &sdi12Test, &OnevoltTest, &currentTest, &noTest,				//
-				&currentTest, &asyncFilteredTest, &sdi12Test, &OnevoltTest, &noTest,				//
-				&OnevoltTest, &currentTest, &asyncFilteredTest, &sdi12Test, &noTest,				//
-				&TwovoltTest, &currentTest, &TwovoltTest, &currentTest, &noTest,					//
-				&currentTest, &TwovoltTest, &currentTest, &TwovoltTest, &rs485Test					//
+				&sdi12Test, &OnevoltTest, &currentTest, &asyncFilteredTest, &noTest,			//
+				&asyncFilteredTest, &sdi12Test, &OnevoltTest, &currentTest, &noTest,			//
+				&currentTest, &asyncFilteredTest, &sdi12Test, &OnevoltTest, &noTest,			//
+				&OnevoltTest, &currentTest, &asyncFilteredTest, &sdi12Test, &noTest,			//
+				&TwovoltTest, &currentTest, &TwovoltTest, &currentTest, &noTest,				//
+				&currentTest, &TwovoltTest, &currentTest, &TwovoltTest, &rs485Test				//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -277,9 +272,10 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 	uint8 *PCptr = &(Board->PortCodes[0]);
 	SetVoltageParameters(Board, Para, Count);
 	Para += *Count;
+	Board->ChCount = 0; //Acount for battery voltage
 	for (uint8 PortCount = 0; PortCount <= TotalPort; PortCount++) {
 		Set_Test(Board, PortCount, TotalPort);	//Increment This test to the next testarray variable
-		if (Board->ThisTest->Code && *PCptr) {
+		if ((Board->ThisTest->Code) && *PCptr) {	//
 			*Para = *PCptr++;
 			(*Count)++;
 			Para++;
@@ -292,6 +288,10 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 				(*Count)++;
 				Para++;
 				*Para = Board->ThisTest->Channels;
+				if (Board->ThisTest->Code == TWO_WIRE_LATCHING)
+					Board->ChCount+=2;
+				else
+					Board->ChCount += Board->ThisTest->Channels;
 				(*Count)++;
 				Para++;
 			} else
@@ -321,6 +321,9 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 				PCptr++;
 		} else
 			PCptr += 4;
+
+		if ( (Board->ThisTest->Code == NOTEST) && (PortCount < Board->latchPortCount))
+			Board->ChCount+=2;
 
 		if (Board->ThisTest->Code == SDI_TWELVE) {
 			SDIenabled = true;

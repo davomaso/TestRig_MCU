@@ -23,46 +23,53 @@ void TestFunction(TboardConfig *Board) {
 	//	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_Pin, GPIO_PIN_SET);
 	uint8 totalPortCount = 0;
 	uint8 currPort;
+	uint8 DataChannel = 0;
 	//====================== Analog Test Count ======================//
 	for (currPort = 0; currPort < Board->latchPortCount; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
-		case TWO_WIRE_LATCHING:
-			CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(Board, currPort, 1);
-			break;
-		case NOTEST:
-			CHval[Board->GlobalTestNum][totalPortCount++] = twoWireLatching(Board, currPort, 0);
-			break;
+			case TWO_WIRE_LATCHING:
+				CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 1);
+				break;
+			case NOTEST:
+				CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 0);
+				break;
 		}
+		DataChannel+=2;
+		totalPortCount++;
 	}
 	//====================== Analog Test Count ======================//
 	for (currPort = 0; currPort < Board->analogInputCount; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case TWENTY_AMP:
-			CHval[Board->GlobalTestNum][totalPortCount++] = setCurrentTestDAC(currPort);
+			CHval[Board->GlobalTestNum][DataChannel++] = setCurrentTestDAC(currPort);
 			break;
 		case THREE_VOLT:
-			CHval[Board->GlobalTestNum][totalPortCount++] = setVoltageTestDAC(currPort, THREE_VOLT);
+			CHval[Board->GlobalTestNum][DataChannel++] = setVoltageTestDAC(currPort, THREE_VOLT);
 			break;
 		case TWOFIVE_VOLT:
-			CHval[Board->GlobalTestNum][totalPortCount++] = setVoltageTestDAC(currPort, TWOFIVE_VOLT);
+			CHval[Board->GlobalTestNum][DataChannel++] = setVoltageTestDAC(currPort, TWOFIVE_VOLT);
 			break;
 		case ONE_VOLT:
-			CHval[Board->GlobalTestNum][totalPortCount++] = setVoltageTestDAC(currPort, ONE_VOLT);
+			CHval[Board->GlobalTestNum][DataChannel++] = setVoltageTestDAC(currPort, ONE_VOLT);
 			break;
 		case ASYNC_PULSE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = setAsyncPulseCount(Board, currPort);
+			CHval[Board->GlobalTestNum][DataChannel++] = setAsyncPulseCount(Board, currPort);
 			break;
 		case SDI_TWELVE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = setSDItwelveValue(currPort);
+			CHval[Board->GlobalTestNum][DataChannel++] = setSDItwelveValue(currPort);
+			break;
+		case AQUASPY:
+			setRS485values(&CHval[Board->GlobalTestNum][DataChannel]);
+			DataChannel += 9;
 			break;
 		}
+		totalPortCount++;
 	}
 	//====================== Digital Test Count ======================//
 	for (currPort = 6; currPort < Board->digitalInputCout + 6; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
 		case ASYNC_PULSE:
-			CHval[Board->GlobalTestNum][totalPortCount++] = setAsyncPulseCount(Board, currPort);
-			MUX_Sel(currPort, Board->TestCode[totalPortCount]);
+			CHval[Board->GlobalTestNum][DataChannel++] = setAsyncPulseCount(Board, currPort);
 			break;
 		}
 	}
@@ -199,6 +206,22 @@ float setSDItwelveValue(uint8 Test_Port) {
 	return Port[Test_Port].Sdi.setValue;
 }
 //	===================================================================================	//
+
+
+void setRS485values(float * RS485buffer) {
+	float tempBuffer[9] = {
+			RS_SENSOR_1,	//
+			RS_SENSOR_2,	//
+			RS_SENSOR_3,	//
+			RS_SENSOR_4,	//
+			RS_SENSOR_5,	//
+			RS_SENSOR_6,	//
+			RS_SENSOR_7,	//
+			RS_SENSOR_8,	//
+			RS_SENSOR_9,	//
+	};
+	memcpy(RS485buffer, &tempBuffer[0], sizeof(float)*9);
+}
 
 //	===================================    MUX    ===================================	//
 void MUX_Sel(uint8 Test_Port, uint8 Test) {

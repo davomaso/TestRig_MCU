@@ -693,12 +693,12 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 			LatchErrorCheck(Board);
 			if (Board->LTR == 0) {
 				printT( (uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
-				Board->TestResults[Board->GlobalTestNum][LatchTestPort] = true;
+				Board->TestResults[Board->GlobalTestNum][LatchTestPort*2] = 1000; 	// Base 1000 for easier sorting results															// Multiply by two to acount for 2ch of data
 			} else {
 				printLatchError(Board);
 				printT(
 						(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
-				Board->TestResults[Board->GlobalTestNum][LatchTestPort] = 0;
+				Board->TestResults[Board->GlobalTestNum][LatchTestPort*2] = 0;
 				if (Board->BoardType == b422x) { //TODO: Check if this needs to be here with code changes
 					switch (LatchTestPort) {
 					case Port_1:
@@ -870,7 +870,7 @@ void handleUploading(TboardConfig *Board, TprocessState *State) {
 	case psWaiting:
 		if (BoardCommsReceiveState == RxGOOD) {
 			Response = Data_Buffer[0];
-			if (Response == 0x19)	//TODO: change this to wait until samples uploaded!
+			if (Response == 0x19)
 				*State = psComplete;
 			if (Response == 0x03)
 				communication_response(Board, &Response, (uns_ch*) &Data_Buffer[0], Datalen);
@@ -909,7 +909,7 @@ void handleSortResults(TboardConfig *Board, TprocessState *State) {
 	case psWaiting:
 		sprintf(SDcard.FILEname, "/TEST_RESULTS/%lu_%x/%lu.CSV", Board->SerialNumber, Board->BoardType,
 				Board->SerialNumber);
-		CompareResults(Board, &CHval[Board->GlobalTestNum][0]);
+		HandleResults(Board, &CHval[Board->GlobalTestNum][0]);
 		*State = psComplete;
 		break;
 	case psComplete:
