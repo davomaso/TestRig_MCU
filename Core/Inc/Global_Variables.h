@@ -95,21 +95,13 @@ typedef struct {
 
 TaportConfig Port[9];
 
-#define RS_SENSOR_1 7.444
-#define RS_SENSOR_2 3.145
-#define RS_SENSOR_3 6.724
-#define RS_SENSOR_4 1.528
-#define RS_SENSOR_5 4.927
-#define RS_SENSOR_6 9.016
-#define RS_SENSOR_7 2.401
-#define RS_SENSOR_8 7.619
-#define RS_SENSOR_9 9.960
-
 typedef enum {
 	RSundef, RSquery, RS9pending, RS9, RSMpending, RSM, RSdPending, RSd
 } TrsState;
 TrsState RSstate;
 uns_ch RS485buffer[128];
+float RS485sensorBuffer[9];
+
 
 //Latch Variables
 uint16_t LatchCountTimer;

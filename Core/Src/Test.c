@@ -79,7 +79,7 @@ void TestConfig935x(TboardConfig *Board) {
 					&latchTest, &asyncFilteredTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 				//
 					&noTest, &sdi12Test, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest,							//
 					&noTest, &asyncFilteredTest, &sdi12Test, &asyncFilteredTest, &asyncFilteredTest, 							//
-					&noTest, &TwovoltTest, &asyncFilteredTest, &asyncFilteredTest, &asyncFilteredTest, 							//
+					&noTest, &TwovoltTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 							//
 					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest, 								//
 					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest		 							//
 			};

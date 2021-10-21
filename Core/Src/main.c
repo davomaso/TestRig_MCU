@@ -64,6 +64,8 @@ ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c1;
 
+RNG_HandleTypeDef hrng;
+
 SD_HandleTypeDef hsd;
 
 SPI_HandleTypeDef hspi3;
@@ -103,6 +105,7 @@ static void MX_TIM10_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_RNG_Init(void);
 /* USER CODE BEGIN PFP */
 uint32 read_serial(void);
 void read_correctionFactors(void);
@@ -127,6 +130,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+
 	HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -159,6 +163,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM11_Init();
   MX_TIM1_Init();
+  MX_RNG_Init();
   /* USER CODE BEGIN 2 */
 //	HAL_Delay(2000); //I2C delay
 	HAL_I2C_Init(&hi2c1);
@@ -397,6 +402,32 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief RNG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RNG_Init(void)
+{
+
+  /* USER CODE BEGIN RNG_Init 0 */
+
+  /* USER CODE END RNG_Init 0 */
+
+  /* USER CODE BEGIN RNG_Init 1 */
+
+  /* USER CODE END RNG_Init 1 */
+  hrng.Instance = RNG;
+  if (HAL_RNG_Init(&hrng) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RNG_Init 2 */
+
+  /* USER CODE END RNG_Init 2 */
 
 }
 
@@ -692,9 +723,9 @@ static void MX_TIM14_Init(void)
 
   /* USER CODE END TIM14_Init 1 */
   htim14.Instance = TIM14;
-  htim14.Init.Prescaler = 239;
+  htim14.Init.Prescaler = 119;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim14.Init.Period = 99;
+  htim14.Init.Period = 100;
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim14) != HAL_OK)

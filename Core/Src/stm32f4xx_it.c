@@ -719,7 +719,7 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 						Port[i].Async.PulseState ^= 1;
 					}
 				}
-			}  else if (++Port[i].Async.UnfilteredClkDiv == 8) {
+			}  else if (++Port[i].Async.UnfilteredClkDiv == 16) {
 				if (Port[i].Async.fcount > 0) {
 					if (HAL_GPIO_ReadPin(Port[i].Async.Port, Port[i].Async.Pin)) {
 						if (!(--Port[i].Async.fcount)) {
@@ -952,8 +952,8 @@ void USART6_IRQHandler(void)
 			//Put the RS485 data in here
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_SET);
 			sprintf((char*) &RS485buffer[0], "1,1,%.3f,2,%.3f,3,%.3f,4,%.3f,5,%.3f,6,%.3f,7,%.3f,8,%.3f,9,%.3f\r\n", //
-					RS_SENSOR_1, RS_SENSOR_2, RS_SENSOR_3, RS_SENSOR_4, RS_SENSOR_5, RS_SENSOR_6, RS_SENSOR_7,
-					RS_SENSOR_8, RS_SENSOR_9);
+					RS485sensorBuffer[0], RS485sensorBuffer[1], RS485sensorBuffer[2], RS485sensorBuffer[3], RS485sensorBuffer[4], RS485sensorBuffer[5], RS485sensorBuffer[6],
+					RS485sensorBuffer[7], RS485sensorBuffer[8]);
 			HAL_UART_Transmit(&SDI_UART, (uint8_t*) &RS485buffer[0], strlen((char*) &RS485buffer[0]), HAL_MAX_DELAY);
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 			RSstate = RSundef;

@@ -163,12 +163,12 @@ uint8 getCurrentVersion(TloomConnected Board) {
 
 void SDIinit() {
 	HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);	// SDI-12 Buffer enable, Tristate the BUS
-	Port[Port_1].Sdi.setValue = 7.064;
-	Port[Port_2].Sdi.setValue = 9.544;
-	Port[Port_3].Sdi.setValue = 4.408;
-	Port[Port_4].Sdi.setValue = 6.515;
-	Port[Port_5].Sdi.setValue = 5.892;
-	Port[Port_6].Sdi.setValue = 6.922;
+//	Port[Port_1].Sdi.setValue = 7.064;
+//	Port[Port_2].Sdi.setValue = 9.544;
+//	Port[Port_3].Sdi.setValue = 4.408;
+//	Port[Port_4].Sdi.setValue = 6.515;
+//	Port[Port_5].Sdi.setValue = 5.892;
+//	Port[Port_6].Sdi.setValue = 6.922;
 }
 
 void ASYNCinit() {

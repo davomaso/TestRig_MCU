@@ -203,24 +203,19 @@ float setSDItwelveValue(uint8 Test_Port) {
 	SDSstate = SDSundef;
 	Port[Test_Port].Sdi.Enabled = true;
 	Port[Test_Port].Sdi.Address = Test_Port;
-	return Port[Test_Port].Sdi.setValue;
+	Port[Test_Port].Sdi.setValue = HAL_RNG_GetRandomNumber(&hrng) % 10000;		// Set the SDI-12 to random 4 sig figure
+	Port[Test_Port].Sdi.setValue /= 1000;										// 3 decimal places result
+	return Port[Test_Port].Sdi.setValue;										// return the results to CHval
 }
 //	===================================================================================	//
 
 
 void setRS485values(float * RS485buffer) {
-	float tempBuffer[9] = {
-			RS_SENSOR_1,	//
-			RS_SENSOR_2,	//
-			RS_SENSOR_3,	//
-			RS_SENSOR_4,	//
-			RS_SENSOR_5,	//
-			RS_SENSOR_6,	//
-			RS_SENSOR_7,	//
-			RS_SENSOR_8,	//
-			RS_SENSOR_9,	//
-	};
-	memcpy(RS485buffer, &tempBuffer[0], sizeof(float)*9);
+	for (uint i = 0; i < 9; i++) {
+		RS485sensorBuffer[i] = HAL_RNG_GetRandomNumber(&hrng) % 10000;		// Get true random number with 4 sig figures of data
+		RS485sensorBuffer[i] /= 1000;										// Get the data in floating point form with 3 decimal places
+	}
+	memcpy(RS485buffer, &RS485sensorBuffer[0], sizeof(float)*9);			// Copy the array into ChVal
 }
 
 //	===================================    MUX    ===================================	//

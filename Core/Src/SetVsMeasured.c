@@ -43,10 +43,9 @@ void HandleResults(TboardConfig *Board, float *SetVal) {
 	LCD_setCursor(3, spacing);
 	for (currentPort = 0; currentPort < TotalPort; currentPort++) {
 		TresultStatus = TRpassed;
-		printT((uns_ch*) "\n");
 		switch (Board->TestCode[currentPort]) {
 		case TWO_WIRE_LATCHING:
-			printT((uns_ch*) "Testing Latch\n");
+			printT((uns_ch*) "\nTesting Latch\n");
 			PortTypes[currentPort] = TTLatch;
 			tolerance = 0;
 			ChCount = 2; 								// Single channel of results, twovolttest.channels is the pulse width of the two wire latch test variable
@@ -60,32 +59,32 @@ void HandleResults(TboardConfig *Board, float *SetVal) {
 				tolerance = (2.5 * 0.01) + (0.005 * *SetVal);
 			else if (Board->TestCode[currentPort] == THREE_VOLT)
 				tolerance = (3 * 0.01) + (0.005 * *SetVal);
-			printT((uns_ch*) "Testing Voltage\n");
+			printT((uns_ch*) "\nTesting Voltage\n");
 			PortTypes[currentPort] = TTVoltage;
 			ChCount = OnevoltTest.Channels;
 			break;
 
 		case TWENTY_AMP:
 			tolerance = (20 * 0.005) + (0.005 * *SetVal);
-			printT((uns_ch*) "Testing Currrent\n");
+			printT((uns_ch*) "\nTesting Currrent\n");
 			PortTypes[currentPort] = TTCurrent;
 			ChCount = currentTest.Channels;
 			break;
 		case ASYNC_PULSE:
 			tolerance = 0; //Once this works decrease the multiplication factor to improve testing accuracy
-			printT((uns_ch*) "Testing Async\n");
+			printT((uns_ch*) "\nTesting Async\n");
 			PortTypes[currentPort] = TTAsync;
 			ChCount = asyncFilteredTest.Channels;
 			break;
 		case SDI_TWELVE:
 			tolerance = 0;
-			printT((uns_ch*) "Testing SDI-12\n");
+			printT((uns_ch*) "\nTesting SDI-12\n");
 			PortTypes[currentPort] = TTSDI;
 			ChCount = sdi12Test.Channels;
 			break;
 		case AQUASPY:
 			tolerance = 0;
-			printT((uns_ch*) "Testing RS485\n");
+			printT((uns_ch*) "\nTesting RS485\n");
 			PortTypes[currentPort] = TTRS485;
 			ChCount = rs485Test.Channels;
 			break;

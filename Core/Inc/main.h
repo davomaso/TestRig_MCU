@@ -36,6 +36,7 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 I2C_HandleTypeDef hi2c1;
+RNG_HandleTypeDef hrng;
 
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
