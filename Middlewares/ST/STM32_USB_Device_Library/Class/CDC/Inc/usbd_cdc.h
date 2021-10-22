@@ -122,7 +122,7 @@ typedef struct
   __IO uint32_t RxState;
 } USBD_CDC_HandleTypeDef;
 
-
+USBD_CDC_HandleTypeDef hcdc;
 
 /** @defgroup USBD_CORE_Exported_Macros
   * @{

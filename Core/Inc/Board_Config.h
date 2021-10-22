@@ -113,7 +113,7 @@
 			TportConfig * ThisTest;
 			uint8 PortCodes[MAX_PORT_CODE_ARRAY_SIZE];
 			uint8 TestCode[MAX_TEST_CODE_ARRAY_SIZE];
-			uint32 TestResults[8][17];
+			int32 TestResults[8][17];
 			uint8 LatchTestPort;
 			uint32 SerialNumber;
 			uint8 GlobalTestNum;

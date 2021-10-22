@@ -96,15 +96,18 @@ void HandleResults(TboardConfig *Board, float *SetVal) {
 			break;
 		}
 		if (PortTypes[currentPort] != TTNoTest) {
-			sprintf((char*) &debugTransmitBuffer[0], "****   Port %d   ****\nMeasured Value:		Set Value:\n", currentPort + 1);
+			sprintf((char*) &debugTransmitBuffer[0], "****   Port %d   ****\nSet Value:		Measured Value:\n", currentPort + 1);
 			printT((uns_ch*) &debugTransmitBuffer);
 			// Sort through the results
 			for (uint8 currCh = 0; currCh < ChCount; currCh++) {
 				fMeasured = (float) Board->TestResults[Board->GlobalTestNum][totalChannel++] / 1000;
-				if (CompareSetMeasured(SetVal, fMeasured, tolerance) == 'f')
+				if (CompareSetMeasured(SetVal, fMeasured, tolerance) == 'f') {
 					TresultStatus = TRfailed;
-				sprintf((char*) &debugTransmitBuffer[0], "     %.03f                 %.03f \n", fMeasured, *SetVal); //(float)
+					sprintf((char*) &debugTransmitBuffer[0], "     %.03f                 %.03f 				X\n", *SetVal, fMeasured); //(float)
+				} else
+					sprintf((char*) &debugTransmitBuffer[0], "     %.03f                 %.03f \n", *SetVal, fMeasured); //(float)
 				printT((uns_ch*) &debugTransmitBuffer);
+
 				SetVal++;
 				if (PortTypes[currentPort] == TTLatch) {
 					totalChannel++;

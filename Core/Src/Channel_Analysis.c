@@ -9,7 +9,7 @@
 
 void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	uint8 CH_count = 0;
-	uint32 Channel_value;
+	int32 Channel_value;
 	uint8 Channel;
 	Channel_value = 0;
 	uint8 Compression_type;
@@ -20,39 +20,33 @@ void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 		Compression_type = 0;
 		Compression_type = (*data & 0xE0);
 		Compression_type >>= 5;
-		Channel = *data & 0x1F;
+		Channel = *data++ & 0x1F;
+		Channel_value = 0;
 
  		switch (Compression_type) {
 		case 0x00:
-			Channel_value = 0;
-			for (int i = 0; i < 4; i++) {
-					Channel_value |= (*data++ << 8 * i);
-				}
+			memcpy(&Channel_value, data, 4);
+			data += 4;
 			break;
 		case 0x01:						// 3 Bytes of data
-			data++;
-			Channel_value = 0;
-			for (int i = 0; i < 3; i++)
-				Channel_value |= (*data++ << 8 * i);
+			memcpy(&Channel_value, data, 3);
+			data += 3;
+			if ( Channel_value >= 0x800000)
+				Channel_value += (0xFF << 24);
 			break;
 		case 0x02: 						//Two bytes of data when a 0x4x is returned
-			data++;
-			Channel_value = 0;
-			for (int i = 0; i < 2; i++) {
-				Channel_value |= (*data++ <<  8*i);
-			}
+			memcpy(&Channel_value, data, 2);
+			data += 2;
 			break;
 		case 0x03:						// 1 byte of data
-			data++;
 			Channel_value = *data++;
 			break;
 		case 0x04:						//Always Zero
 			Channel_value = 0x0;
-			data++;
 			break;
 		case 0x05:						//Always 1
-			data++;
 			Channel_value = 1;
+			break;
 		default:						// default case
 			data++;
 			break;

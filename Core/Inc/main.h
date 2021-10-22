@@ -38,12 +38,14 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 I2C_HandleTypeDef hi2c1;
 RNG_HandleTypeDef hrng;
 
+
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
+
 
 //Peripheral Defines
 #define D_UART huart1	//Debug UART
@@ -64,7 +66,7 @@ SPI_HandleTypeDef DAC_SPI;
 #define EEPROM_R_ADDRESS 0x51 //EEPROM I2C Read Address
 #define LCD_ADR 0x3C	//LCD I2C Address
 
-#define FIRMWARE_VERSION 1.0
+#define FIRMWARE_VERSION 1.22
 
 //==============	 CURRENT BOARD VERSIONS 	==============//
 #define BOARD_935x 0x52
@@ -95,6 +97,7 @@ SPI_HandleTypeDef DAC_SPI;
 typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef unsigned long uint32;
+typedef long int32;
 typedef unsigned char uns_ch;
 typedef _Bool bool;
 typedef signed char int8;

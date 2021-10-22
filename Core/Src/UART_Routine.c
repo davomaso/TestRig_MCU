@@ -1,5 +1,6 @@
 #include "main.h"
 #include "stm32f4xx_it.h"
+#include "usbd_cdc.h"
 #include "usbd_cdc_if.h"
 #include "UART_Routine.h"
 #include "Delay.h"
@@ -44,6 +45,9 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 void printT(uns_ch * Text) {
 	// Routine to take string and print it on the debug terminal
 //	HAL_UART_Transmit(&D_UART, Text, strlen(Text), HAL_MAX_DELAY);
-	CDC_Transmit_FS(Text, strlen((char*)Text));
-	HAL_Delay(2);
+	while (CDC_Transmit_FS(Text, strlen((char*)Text)) != 0) {
+
+	}
+
+
 }

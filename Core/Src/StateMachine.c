@@ -433,18 +433,13 @@ void handleCalibrating(TboardConfig *Board, TprocessState *State) {
 			Response = Data_Buffer[0];
 			if (Response == 0xC1) {
 				uint8 FailedCalibrationCount = 0;
-				for (uint8 i = 0; i < (Board->analogInputCount * 40); i++) {
-					if (Data_Buffer[i++] == 0x00) {
-						if (Data_Buffer[i++] == 0x00) {
-							if (Data_Buffer[i++] == 0x80) {
-								if (Data_Buffer[i++] == 0x3F) {
-									FailedCalibrationCount++;
-								}
-							}
-						}
-					}
+				float CalibrationValue;
+				for (uint8 i = 2; i < (Board->analogInputCount * sizeof(float) * 5); i+=4) {		// 5 different forms of calibration on each port
+					memcpy(&CalibrationValue,&Data_Buffer[i], sizeof(float));				// IEEE 4 byte floating point values returned, check for 1.000 for uncalibrated ports
+					if (CalibrationValue == 1.000)
+						FailedCalibrationCount++;
 				}
-				if (FailedCalibrationCount > 5)
+				if (FailedCalibrationCount > 2)												// If more than 2 ports are uncalibrated fail the calibration
 					*State = psFailed;
 				else
 					*State = psComplete;
