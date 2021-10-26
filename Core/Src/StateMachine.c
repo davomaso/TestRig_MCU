@@ -39,16 +39,18 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 				if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed)	// button pressed start procedure associated with that button
 					break;
 			}
-			if (BoardCommsReceiveState == RxGOOD)							// Comms good, update homescreen
+			if (BoardCommsReceiveState == RxGOOD)							// Comms good, update home screen
 				communication_response(Board, &Data_Buffer[4], &Data_Buffer[5], strlen(Data_Buffer) - 5);
-			if (PreviousSerialNumber != Board->SerialNumber)
-				PrintHomeScreen(Board);
+			if ((PreviousSerialNumber != Board->SerialNumber ))
+				PrintHomeScreen(Board);		// When previous serial number doesnt match current re print home screen
+			if ( (Board->SerialNumber == 0) && (TestRigMode == BatchMode) )
+				*State = psComplete;
 		}
 
 		if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed) {
 			TestRig_Init();
 			TargetBoardParamInit(0);										// Reinitialise variables
-			clearTestStatusLED();											// Clear status LEDs
+			clearTestStatusLED();
 			if (KP[1].Pressed)
 				TestRigMode = OldBoardMode;									// Test only, no serialise, no program
 			else if (KP[hash].Pressed)
@@ -63,7 +65,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			*State = psComplete;											// Progress with the testing process
 		}
 		//Calibration Routine
-		if ((KP[7].Pressed && KP[9].Pressed)) {
+		if ((KP[7].Pressed && KP[9].Pressed)) {								// Calibrate Test Rig
 			KP[7].Pressed = KP[9].Pressed = false;
 			Calibration();
 			LCD_Clear();
@@ -80,9 +82,8 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 
 		if (!READ_BIT(Board->BSR, BOARD_SERIALISED) || (TestRigMode == BatchMode)) {
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-			HAL_Delay(50);
-			PrintHomeScreen(Board);
 			TestRig_Init();
+			PrintHomeScreen(Board);
 			TargetBoardParamInit(0);										// Initialize targetboard variables, clear the board struct
 			clearTestStatusLED();											// Clear previously set LEDs on the front panel
 			Board->SerialNumber = read_serial();							// Read serial number in to be programmed into the board
@@ -628,20 +629,19 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 	case psWaiting:
 		if (LatchCountTimer < latchCountTo) {
 			if (READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {	//If input voltage is stable
-				if (!READ_BIT(LatchTestStatusRegister,
-						LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
+				if (!READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
 					SET_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING); //Begin Latch on sampling
 					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 1);
+					Data_Buffer[0] = 0;
 					communication_array(0x26, &BoardCommsParameters[0], 1);
-				} else if (READ_BIT(LatchTestStatusRegister,
-						LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
+				} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
 					if (BoardCommsReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
 						if (BoardCommsReceiveState == RxGOOD) {
 							Response = Data_Buffer[0];
 							if (Response == 0x27) {
 								CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
 								CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
-								stableVoltageCount = 25;
+								stableVoltageCount = 50;
 							}
 							BoardCommsReceiveState = RxWaiting;
 						} else if (BoardCommsReceiveState == RxBAD)
@@ -651,6 +651,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 						LATCH_ON_COMPLETE) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
 					SET_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING); //Begin Latch off sampling
 					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 0);
+					Data_Buffer[0] = 0;
 					communication_array(0x26, &BoardCommsParameters[0], 1);
 				} else if (READ_BIT(LatchTestStatusRegister,
 						LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
@@ -660,7 +661,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 							if (Response == 0x27) {
 								CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
 								CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
-								stableVoltageCount = 25;
+								stableVoltageCount = 50;
 								runLatchTimeOut(2000);
 							}
 							BoardCommsReceiveState = RxWaiting;
@@ -695,6 +696,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 						(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
 				Board->TestResults[Board->GlobalTestNum][LatchTestPort*2] = 0;
 				if (Board->BoardType == b422x) { //TODO: Check if this needs to be here with code changes
+					HAL_Delay(250);
 					switch (LatchTestPort) {
 					case Port_1:
 						CLEAR_BIT(Board->TPR, TEST_ONE_PASSED);

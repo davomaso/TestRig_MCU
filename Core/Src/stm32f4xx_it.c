@@ -363,13 +363,14 @@ void TIM1_UP_TIM10_IRQHandler(void)
 						LatchPortA.HighPulseWidth++;
 						LatchPortA.highVoltage += LatchPortA.currentValue;
 						if (LatchPortA.HighPulseWidth >= 20 && LatchPortA.HighPulseWidth <= 80) {
-							MOSFETvoltageA.total += Vfuse.currentValue - LatchPortA.currentValue;
+							if (Vfuse.currentValue > LatchPortA.currentValue)
+								MOSFETvoltageA.total += Vfuse.currentValue - LatchPortA.currentValue;
 							MOSFETvoltageA.HighPulseWidth++;
 						}
 						PulseCountDown =
 								(LatchPortA.HighPulseWidth > 90 || LatchPortB.LowPulseWidth > 90) ? 10 : PulseCountDown;
 					}
-					if (LatchPortB.currentValue < 200) {
+					if (LatchPortB.currentValue < 300) {
 						LatchPortB.LowPulseWidth++;
 						LatchPortB.lowVoltage += LatchPortB.currentValue;
 						if (LatchPortB.LowPulseWidth > 20 && LatchPortB.LowPulseWidth < 80) {
@@ -381,7 +382,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				if (READ_BIT(LatchTestStatusRegister,
 						LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
 					//Latch Off Test
-					if (LatchPortA.currentValue < 200) {
+					if (LatchPortA.currentValue < 300) {
 						LatchPortA.LowPulseWidth++;
 						LatchPortA.lowVoltage += LatchPortA.currentValue;
 						if (LatchPortA.LowPulseWidth >= 20 && LatchPortA.LowPulseWidth <= 80) {
@@ -411,7 +412,6 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					LatchPortB.lowVoltage /= 2;
 					LatchPortA.HighPulseWidth /= 2;
 					LatchPortB.LowPulseWidth /= 2;
-
 					MOSFETvoltageA.total = MOSFETvoltageB.total = MOSFETvoltageA.HighPulseWidth  = MOSFETvoltageB.LowPulseWidth =  0;
 				}
 				if (!PulseCountDown && ((LatchPortB.HighPulseWidth > 94) || (LatchPortA.LowPulseWidth > 94))) {

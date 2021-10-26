@@ -132,7 +132,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -180,7 +180,6 @@ int main(void)
 
 	ConfigInit();							// Initialize test codes
 	read_correctionFactors();				// Read the calibration correction factors
-	HAL_Delay(1000);						//
 	SDcard.fresult = SDInit(&SDcard, "");	// Initialize SDcard
 
   /* USER CODE END 2 */

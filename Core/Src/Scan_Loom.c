@@ -15,52 +15,52 @@ void scanLoom(TboardConfig *Board) {
 		if(!HAL_GPIO_ReadPin(Loom_Sel_GPIO_Port, Loom_Sel_Pin)){
 			LoomState |= (1 << (i));
 		}
-	}	// ###### add loom checking to occur during testing
+	}
 	if( LoomState != PrevLoomState) {
-					switch(LoomState){
-					case 0:
-						Board->BoardType = bNone;
-						TargetBoardParamInit(true);
-						printT((uns_ch*)"Connect Loom...\n");
-						LCD_printf((uns_ch*)"Connect Loom...\n", 2, 1);
-						break;
-					case 1:
-						Board->BoardType = b935x;
-						Board->Subclass = 'C';
-						printT((uns_ch*)"9352 Connected...\n");
-						break;
-					case 2:
-						Board->BoardType = b937x;
-						Board->Subclass = 'D';
-						printT((uns_ch*)"9371 Connected...\n");
-						break;
-					case 3:
-						Board->BoardType = b401x;
-						Board->Subclass = 0;
-						printT((uns_ch*)"401x Connected...\n");
-						break;
-					case 4:
-						Board->BoardType = b402x;
-						Board->Subclass = 0;
-						printT((uns_ch*)"4022 Connected...\n");
-						break;
-					case 5:
-						Board->BoardType = b427x;
-						Board->Subclass = 0;
-						printT((uns_ch*)"4271 Connected...\n");
-						break;
-					case 0x0A: //change to 6 when loom is fixed
-						Board->BoardType = b422x;
-						Board->Subclass = 0;
-						printT((uns_ch*)"4220 Connected...\n");
-						break;
-					default:
-						Board->BoardType = bNone;
-						Board->Subclass = 0;
-						LCD_printf((uns_ch*)"Unknown Loom",1,0);
-						printT((uns_ch*)"Unknown Loom...\n");
-					}
-				}
+			switch(LoomState){
+			case 0:
+				Board->BoardType = bNone;
+				TargetBoardParamInit(true);
+				printT((uns_ch*)"Connect Loom...\n");
+				LCD_printf((uns_ch*)"Connect Loom...\n", 2, 1);
+				break;
+			case 1:
+				Board->BoardType = b935x;
+				Board->Subclass = 'C';
+				printT((uns_ch*)"9352 Connected...\n");
+				break;
+			case 2:
+				Board->BoardType = b937x;
+				Board->Subclass = 'D';
+				printT((uns_ch*)"9371 Connected...\n");
+				break;
+			case 3:
+				Board->BoardType = b401x;
+				Board->Subclass = 0;
+				printT((uns_ch*)"401x Connected...\n");
+				break;
+			case 4:
+				Board->BoardType = b402x;
+				Board->Subclass = 0;
+				printT((uns_ch*)"4022 Connected...\n");
+				break;
+			case 5:
+				Board->BoardType = b427x;
+				Board->Subclass = 0;
+				printT((uns_ch*)"4271 Connected...\n");
+				break;
+			case 0x0A: //change to 6 when loom is fixed
+				Board->BoardType = b422x;
+				Board->Subclass = 0;
+				printT((uns_ch*)"4220 Connected...\n");
+				break;
+			default:
+				Board->BoardType = bNone;
+				Board->Subclass = 0;
+				LCD_printf((uns_ch*)"Unknown Loom",1,0);
+				printT((uns_ch*)"Unknown Loom...\n");
+			}
+		}
 }
 
 void currentBoardConnected(TboardConfig * Board) {

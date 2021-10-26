@@ -22,7 +22,7 @@ void TestRig_Init() {
 
 	LCD_CursorOn_Off(false);
 	LCD_printf((uns_ch*) "Test Rig      ", 1, 0);
-	sprintf((char*) &lcdBuffer, "Firmware: v%.1f", FIRMWARE_VERSION);
+	sprintf((char*) &lcdBuffer, "Firmware: v%.2f", FIRMWARE_VERSION);
 	LCD_printf((uns_ch*) &lcdBuffer, 2, 0);
 	BoardCommsParameters[0] = 0;
 	BoardCommsParametersLength = 0;
@@ -43,10 +43,10 @@ void TestRig_Init() {
 	HAL_TIM_Base_Start_IT(&htim7);	// Scan keypad timer
 	HAL_TIM_Base_Start_IT(&htim10);	// Calibration & Latch test timer
 	HAL_TIM_Base_Start_IT(&htim11);	// Timeout, Input/Solar Voltage, Sampling timer
-	HAL_TIM_Base_Start_IT(&htim14);	// Async Timer
+	HAL_TIM_Base_Start_IT(&htim14);	// Async pulse Timer
 
-	timeOutCount = 0;	//General Timeout initialisation
-	timeOutEn = false;
+	timeOutCount = 0;				//General Timeout initialisation
+	timeOutEn = false;				// Disable general timer
 }
 
 void initialiseTargetBoard(TboardConfig *Board) {
@@ -91,15 +91,17 @@ void TargetBoardParamInit(_Bool FullErase) {
 	TloomConnected TempBoardType;
 	uns_ch TempSubClass;
 	uint32 TempSerial;
+	uint8 TempVersion;
 	if (!FullErase) {
 		TempBoardType = BoardConnected.BoardType;
 		TempSubClass = BoardConnected.Subclass;
 		TempSerial = BoardConnected.SerialNumber;
+		TempVersion = BoardConnected.Version;
 		memset(&BoardConnected, 0, sizeof(TboardConfig));
-		//Dont Clear BoardType, can only be accessed from scanLoom()
-		BoardConnected.BoardType = TempBoardType;
+		BoardConnected.BoardType = TempBoardType;			//Dont Clear BoardType, can only be accessed from scanLoom()
 		BoardConnected.Subclass = TempSubClass;
 		BoardConnected.SerialNumber = TempSerial;
+		BoardConnected.Version = TempVersion;
 	} else
 		memset(&BoardConnected, 0, sizeof(TboardConfig));
 	memset(&Vfuse, 0, sizeof(TADCconfig));
@@ -121,14 +123,14 @@ uint32 ReadSerialNumber(uint8 *Response, uns_ch *data, uint16 length) {
 	return 0;
 }
 
-void setTimeOut(uint16 wait) {
+void setTimeOut(uint16 wait) {		// General timeout routine on a 1ms interupt timer
 	timeOutEn = true;
 	timeOutCount = wait;
 	HAL_TIM_Base_Start_IT(&htim11);
 }
 
-void runLatchTimeOut(uint16 wait) {
-	latchTimeOutEn = true;
+void runLatchTimeOut(uint16 wait) {	// Timeout specifically for the latch routine to determine whether the system has become stable
+	latchTimeOutEn = true;			// Also initialised on the 1ms interupt timer
 	LatchTimeOut = true;
 	latchTimeOutCount = wait;
 	HAL_TIM_Base_Start_IT(&htim11);
@@ -163,12 +165,6 @@ uint8 getCurrentVersion(TloomConnected Board) {
 
 void SDIinit() {
 	HAL_GPIO_WritePin(Buffer_OE_GPIO_Port, Buffer_OE_Pin, GPIO_PIN_SET);	// SDI-12 Buffer enable, Tristate the BUS
-//	Port[Port_1].Sdi.setValue = 7.064;
-//	Port[Port_2].Sdi.setValue = 9.544;
-//	Port[Port_3].Sdi.setValue = 4.408;
-//	Port[Port_4].Sdi.setValue = 6.515;
-//	Port[Port_5].Sdi.setValue = 5.892;
-//	Port[Port_6].Sdi.setValue = 6.922;
 }
 
 void ASYNCinit() {
