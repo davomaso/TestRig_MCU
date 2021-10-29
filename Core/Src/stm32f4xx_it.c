@@ -224,12 +224,14 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
 	//500us timer for calculating ADC values for latching and power ports
 	//Poll 5 times each ms to gain a higher accuracy of voltage
-	if ((CurrentState == csCalibrating) && (ProcessState == psWaiting)) {
+	if ((CurrentState == csCalibrating) && (ProcessState == psWaiting)) { //
 		/*
 		 * Read the ADC to determine when the Port that the calibration is connected to falls to GND,
 		 * When a ground is detected for 5ms switch to current putting 20mA on all ports to calibrate
 		 * the current on all ports.
 		 * In the event of a failure set the ProcessState to psFailed to halt process
+		 *
+		 *
 		 */
 		if (CalibratingTimer < CALIBRATION_TIMEOUT) {
 			if (BoardConnected.BoardType == b401x)
@@ -240,11 +242,13 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				ADC_Ch0sel();
 
 			HAL_ADC_Start(&hadc1);
-			HAL_ADC_PollForConversion(&hadc1, 100);
+			HAL_ADC_PollForConversion(&hadc1, 10);
 			calibrateADCval.average = HAL_ADC_GetValue(&hadc1);
 			HAL_ADC_Stop(&hadc1);
-//			sprintf(debugTransmitBuffer, "%d", calibrateADCval.average);
+
+//			sprintf(debugTransmitBuffer, "%d\n", calibrateADCval.average);
 //			printT(&debugTransmitBuffer);
+
 			if (BoardConnected.BoardType == b401x || BoardConnected.BoardType == b402x) {
 				if (((BoardConnected.BoardType == b401x)) && (calibrateADCval.average >= 3000)) {
 					if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
@@ -257,11 +261,12 @@ void TIM1_UP_TIM10_IRQHandler(void)
 				} else
 					CalibrationCountdown = 50;
 			} else if ((calibrateADCval.average <= 500)) {
-				if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
+				if ((CalibrationCountdown == 0) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
 					TargetBoardCalibration_Current(&BoardConnected);
 				}
+				CalibrationCountdown--;
 			} else
-				CalibrationCountdown = 10;
+				CalibrationCountdown = 5;
 		}
 	}
 
@@ -394,7 +399,8 @@ void TIM1_UP_TIM10_IRQHandler(void)
 						LatchPortB.HighPulseWidth++;
 						LatchPortB.highVoltage += LatchPortB.currentValue;
 						if (LatchPortB.HighPulseWidth > 20 && LatchPortB.HighPulseWidth < 80) {
-							MOSFETvoltageB.total += Vfuse.currentValue - LatchPortB.currentValue;
+							if (Vfuse.currentValue > LatchPortB.currentValue)
+								MOSFETvoltageB.total += Vfuse.currentValue - LatchPortB.currentValue;
 							MOSFETvoltageB.HighPulseWidth++;
 						}
 						PulseCountDown =
@@ -412,7 +418,8 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					LatchPortB.lowVoltage /= 2;
 					LatchPortA.HighPulseWidth /= 2;
 					LatchPortB.LowPulseWidth /= 2;
-					MOSFETvoltageA.total = MOSFETvoltageB.total = MOSFETvoltageA.HighPulseWidth  = MOSFETvoltageB.LowPulseWidth =  0;
+					MOSFETvoltageA.total = MOSFETvoltageB.total = MOSFETvoltageA.HighPulseWidth =
+							MOSFETvoltageB.LowPulseWidth = 0;
 				}
 				if (!PulseCountDown && ((LatchPortB.HighPulseWidth > 94) || (LatchPortA.LowPulseWidth > 94))) {
 					SET_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE);
@@ -422,7 +429,8 @@ void TIM1_UP_TIM10_IRQHandler(void)
 					LatchPortB.HighPulseWidth /= 2;
 					LatchPortB.highVoltage /= 2;
 					LatchPortA.lowVoltage /= 2;
-					MOSFETvoltageA.total = MOSFETvoltageB.total = MOSFETvoltageA.LowPulseWidth  = MOSFETvoltageB.HighPulseWidth = 0;
+					MOSFETvoltageA.total = MOSFETvoltageB.total = MOSFETvoltageA.LowPulseWidth =
+							MOSFETvoltageB.HighPulseWidth = 0;
 				}
 
 			}
@@ -503,17 +511,50 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		 * if the timeout is complete the ProcessState is set
 		 * to Failed as a response or event did not occur as expected
 		 */
-		if ((--timeOutCount) == 0) {
-			ProcessState = psFailed;
+		if (timeOutCount) {
+			if ((--timeOutCount) == 0) {
+				timeOutEn = false;
+				ProcessState = psFailed;
+			}
 		}
+
+	}
+
+	if (BoardCommsTimeout)
+		BoardCommsTimeout--;
+
+	if (BoardResetTimer)	//Timer for board to reset
+		BoardResetTimer--;
+
+	if (ProgrammingTimeOut)
+		ProgrammingTimeOut--;
+
+	if (CheckLoomTimer)
+		CheckLoomTimer--;
+
+	if (terminalTimeOutEn) {
+		/*
+		 * Timeout routine to be run throughout the program,
+		 * if the timeout is complete the ProcessState is set
+		 * to Failed as a response or event did not occur as expected
+		 */
+		if (terminalTimeOutCount) {
+			if ((--terminalTimeOutCount) == 0) {
+				terminalTimeOutEn = false;
+			}
+		}
+
 	}
 
 	if (latchTimeOutEn) {
 		/*
 		 * Latch timeout to wait for the 0x27 response as this can occur any time following the transmission of a 0x26
 		 */
-		if (--latchTimeOutCount) {
-			LatchTimeOut = false;
+		if (latchTimeOutCount) {
+			if (--latchTimeOutCount == 0) {
+				latchTimeOutEn = false;
+				LatchTimeOut = false;
+			}
 		}
 	}
 
@@ -570,7 +611,6 @@ void USART2_IRQHandler(void)
 				UART2_RecPos = 0;
 				UART2_Length = 0;
 				UART2_Recdata = true;
-				timeOutEn = false;
 			}
 			UART2_RXbuffer[UART2_RecPos++] = data;
 		} else if (UART2_Recdata) {
@@ -597,6 +637,7 @@ void USART2_IRQHandler(void)
 					BoardCommsReceiveState = RxBAD;
 					printT((uns_ch*) "CRC Error...\n");
 				}
+				timeOutEn = false;
 				USART2->CR1 &= ~(USART_CR1_RXNEIE);
 			}
 		} else
@@ -610,22 +651,23 @@ void USART2_IRQHandler(void)
 		 * turn the interrupts off and continue as expected.
 		 * Following the transmission of a string/interrupt turned off use settimeout() to determine whether communications are operating correctly
 		 */
+		if (BoardCommsTimeout == 0) {
+			if (UART2_TXpos == UART2_TXcount) {
+				if (UART2_TXpos != 0)
+					//disable interrupts
+					if (UART2_TXcount > 0)
+						USART2->CR1 |= (USART_CR1_TCIE);
+				USART2->CR1 &= ~(USART_CR1_TXEIE);
+				UART2_TXcount = UART2_TXpos = 0;
+				BoardCommsReceiveState = RxWaiting;
+//				if (CurrentState == csCalibrating)
+//					setTimeOut(4000);
+//				else
+					setTimeOut(1500);
 
-		if (UART2_TXpos == UART2_TXcount) {
-			if (UART2_TXpos != 0)
-				//disable interrupts
-				if (UART2_TXcount > 0)
-					USART2->CR1 |= (USART_CR1_TCIE);
-			USART2->CR1 &= ~(USART_CR1_TXEIE);
-			UART2_TXcount = UART2_TXpos = 0;
-			BoardCommsReceiveState = RxWaiting;
-			if (CurrentState == csCalibrating)
-				setTimeOut(4000);
-			else
-				setTimeOut(1500);
-
-		} else {
-			USART2->DR = UART2_TXbuffer[UART2_TXpos++];
+			} else {
+				USART2->DR = UART2_TXbuffer[UART2_TXpos++];
+			}
 		}
 	}
 	if (USART2->SR & USART_SR_TC) {
@@ -699,8 +741,9 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 		if (Port[i].Async.Active) {
 			if (Port[i].Async.FilterEnabled) {
 				if (Port[i].Async.scount == 0) {
-					if ( --Port[i].Async.fcount  == 0) {
-						Port[i].Async.fcount  = AsyncDebounceBuffer[(Port[i].Async.PulseCount + i) % 5][Port[i].Async.FilteredCount++];
+					if (--Port[i].Async.fcount == 0) {
+						Port[i].Async.fcount =
+								AsyncDebounceBuffer[(Port[i].Async.PulseCount + i) % 5][Port[i].Async.FilteredCount++];
 						HAL_GPIO_TogglePin(Port[i].Async.Port, Port[i].Async.Pin);
 						if (Port[i].Async.FilteredCount > 15) {
 							Port[i].Async.FilteredCount = 0;
@@ -710,16 +753,16 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 				} else {
 					if (Port[i].Async.scount-- == 250) {
 						if (Port[i].Async.PulseState) {
-								--Port[i].Async.PulseCount;
-								HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_SET);
+							--Port[i].Async.PulseCount;
+							HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_SET);
 						} else {
-								Port[i].Async.Active = Port[i].Async.PulseCount;
-								HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
-							}
+							Port[i].Async.Active = Port[i].Async.PulseCount;
+							HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
+						}
 						Port[i].Async.PulseState ^= 1;
 					}
 				}
-			}  else if (++Port[i].Async.UnfilteredClkDiv == 16) {
+			} else if (++Port[i].Async.UnfilteredClkDiv == 16) {
 				if (Port[i].Async.fcount > 0) {
 					if (HAL_GPIO_ReadPin(Port[i].Async.Port, Port[i].Async.Pin)) {
 						if (!(--Port[i].Async.fcount)) {
@@ -774,13 +817,6 @@ void TIM6_IRQHandler(void)
 	} else if (LED1active && (LEDcounter > 10)) {
 		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 		LED1active = false;
-	}
-	if (LoomChecking) {
-		if (LoomCheckCount >= 50) {
-			CheckLoom = true;
-			LoomCheckCount = 0;
-		} else
-			LoomCheckCount++;
 	}
   /* USER CODE END TIM6_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
@@ -950,9 +986,11 @@ void USART6_IRQHandler(void)
 		if (RSstate == RSd) {
 			//Put the RS485 data in here
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_SET);
-			sprintf((char*) &RS485buffer[0], "1,1,%.3f,2,%.3f,3,%.3f,4,%.3f,5,%.3f,6,%.3f,7,%.3f,8,%.3f,9,%.3f\r\n", //
-					RS485sensorBuffer[0], RS485sensorBuffer[1], RS485sensorBuffer[2], RS485sensorBuffer[3], RS485sensorBuffer[4], RS485sensorBuffer[5], RS485sensorBuffer[6],
-					RS485sensorBuffer[7], RS485sensorBuffer[8]);
+			sprintf((char*) &RS485buffer[0],
+					"1,1,%.3f,2,%.3f,3,%.3f,4,%.3f,5,%.3f,6,%.3f,7,%.3f,8,%.3f,9,%.3f\r\n", //
+					RS485sensorBuffer[0], RS485sensorBuffer[1], RS485sensorBuffer[2], RS485sensorBuffer[3],
+					RS485sensorBuffer[4], RS485sensorBuffer[5], RS485sensorBuffer[6], RS485sensorBuffer[7],
+					RS485sensorBuffer[8]);
 			HAL_UART_Transmit(&SDI_UART, (uint8_t*) &RS485buffer[0], strlen((char*) &RS485buffer[0]), HAL_MAX_DELAY);
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 			RSstate = RSundef;

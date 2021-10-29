@@ -4,88 +4,87 @@
 #include "Delay.h"
 #include "UART_Routine.h"
 
-void scanLoom(TboardConfig *Board) {
+void ScanLoom(TloomConnected *Loom) {
 	uint8 PrevLoomState;
-	CheckLoom = false;
-	PrevLoomState = LoomState;
-	LoomState = 0x00;
-	for(int i = 0; i < 4;i++){
+	uint8 DifferentLoomCount;
+	PrevLoomState = *Loom;
+	*Loom = 0x00;
+	for (int i = 0; i < 4; i++) {
 		ADC_MUXsel(i);
-		delay_us(50); //Wait for system to become stable
-		if(!HAL_GPIO_ReadPin(Loom_Sel_GPIO_Port, Loom_Sel_Pin)){
-			LoomState |= (1 << (i));
+		delay_us(1500); //Wait for system to become stable
+		if (!HAL_GPIO_ReadPin(Loom_Sel_GPIO_Port, Loom_Sel_Pin)) {
+			*Loom |= (1 << (i));
 		}
 	}
-	if( LoomState != PrevLoomState) {
-			switch(LoomState){
-			case 0:
-				Board->BoardType = bNone;
-				TargetBoardParamInit(true);
-				printT((uns_ch*)"Connect Loom...\n");
-				LCD_printf((uns_ch*)"Connect Loom...\n", 2, 1);
-				break;
-			case 1:
-				Board->BoardType = b935x;
-				Board->Subclass = 'C';
-				printT((uns_ch*)"9352 Connected...\n");
-				break;
-			case 2:
-				Board->BoardType = b937x;
-				Board->Subclass = 'D';
-				printT((uns_ch*)"9371 Connected...\n");
-				break;
-			case 3:
-				Board->BoardType = b401x;
-				Board->Subclass = 0;
-				printT((uns_ch*)"401x Connected...\n");
-				break;
-			case 4:
-				Board->BoardType = b402x;
-				Board->Subclass = 0;
-				printT((uns_ch*)"4022 Connected...\n");
-				break;
-			case 5:
-				Board->BoardType = b427x;
-				Board->Subclass = 0;
-				printT((uns_ch*)"4271 Connected...\n");
-				break;
-			case 0x0A: //change to 6 when loom is fixed
-				Board->BoardType = b422x;
-				Board->Subclass = 0;
-				printT((uns_ch*)"4220 Connected...\n");
-				break;
-			default:
-				Board->BoardType = bNone;
-				Board->Subclass = 0;
-				LCD_printf((uns_ch*)"Unknown Loom",1,0);
-				printT((uns_ch*)"Unknown Loom...\n");
-			}
-		}
+	if (*Loom != PrevLoomState) {
+		CurrentState = csCheckLoom;
+		ProcessState = psInitalisation;
+	}
+	CheckLoomTimer = 250;
 }
 
-void currentBoardConnected(TboardConfig * Board) {
-			if(Board->BoardType == b935x) {
-				 	TestConfig935x(Board);
-					return;
-			} else if(Board->BoardType == b937x) {
-					TestConfig937x(Board);
-					return;
-			} else if(Board->BoardType == b401x) {
-					TestConfig401x(Board);
-					return;
-			} else if (Board->BoardType == b402x) {
-					TestConfig402x(Board);
-					return;
-			} else if (Board->BoardType == b422x) {
-					TestConfig422x(Board);
-					SET_BIT(Board->BSR, BOARD_CALIBRATED);
-					return;
-			} else if (Board->BoardType == b427x) {
-					TestConfig427x(Board);
-					return;
-			} else{
-				printT((uns_ch*)"\n BoardConfig Error/Loom Connected Error \n");
-			}
-			return;
+void SetBoardType(TboardConfig *Board, TloomConnected Loom) {
+	switch (Loom) {
+	case 0:
+		Board->BoardType = bNone;
+		printT((uns_ch*) "Connect Loom...\n");
+		break;
+	case 1:
+		Board->BoardType = b935x;
+		printT((uns_ch*) "9352 Connected...\n");
+		break;
+	case 2:
+		Board->BoardType = b937x;
+		printT((uns_ch*) "9371 Connected...\n");
+		break;
+	case 3:
+		Board->BoardType = b401x;
+		printT((uns_ch*) "401x Connected...\n");
+		break;
+	case 4:
+		Board->BoardType = b402x;
+		printT((uns_ch*) "4022 Connected...\n");
+		break;
+	case 5:
+		Board->BoardType = b427x;
+		printT((uns_ch*) "4271 Connected...\n");
+		break;
+	case 6:
+		Board->BoardType = b422x;
+		printT((uns_ch*) "4220 Connected...\n");
+		break;
+	default:
+		Board->BoardType = bNone;
+		break;
+	}
+}
+
+void currentBoardConnected(TboardConfig *Board) {
+	switch (Board->BoardType) {
+	case b935x:
+		TestConfig935x(Board);
+		break;
+	case b937x:
+		TestConfig937x(Board);
+		break;
+	case b401x:
+		TestConfig401x(Board);
+		break;
+	case b402x:
+		TestConfig402x(Board);
+		break;
+	case b422x:
+		TestConfig422x(Board);
+		SET_BIT(Board->BSR, BOARD_CALIBRATED);
+		break;
+	case b427x:
+		TestConfig427x(Board);
+		break;
+	case bNone:
+		break;
+	default:
+		printT((uns_ch*) "\n BoardConfig Error/Loom Connected Error \n");
+		break;
+	}
 }
 

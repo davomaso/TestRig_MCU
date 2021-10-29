@@ -17,37 +17,26 @@ void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 	const uint8 WakeBuffer[20] = { 0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	USART2->CR1 &= ~(USART_CR1_TXEIE);		// Disable transmit interupt enable and transmit complete registers
 	USART2->CR1 &= ~(USART_CR1_TCIE);
-	if (!Sleepstate) {
-		Sleepstate = true;
-		unsigned char i = 0;
-		while (i < 20) {
-			while (i < 2) {
-				//0x55 55 @ start of communication to ensure target board is awake
-				UART2_TXbuffer[UART2_TXcount++] = '\x55';
-				i++;
-			}
-			UART2_TXbuffer[UART2_TXcount++] = '\x00';
-			i++;
-		}
-	}
+
+	memcpy(&UART2_TXbuffer[0], &WakeBuffer, 20);
+	UART2_TXcount = 20;
+
 		// Copy data to be transmitted into UART2 transmit buffer
 	memcpy(&UART2_TXbuffer[UART2_TXcount], data, arraysize);
 	UART2_TXcount += arraysize;
-	//Return system to sleep state
-	if (Sleepstate) {
-		memcpy(&UART2_TXbuffer[UART2_TXcount], &WakeBuffer[0], 2);
-		UART2_TXcount+=2;
-		Sleepstate = false;									// Set Sleepstate to false following population of buffer
-	}
+
+	memcpy(&UART2_TXbuffer[UART2_TXcount], &WakeBuffer[0], 2);
+	UART2_TXcount+=2;									// Set Sleepstate to false following population of buffer
 	BoardCommsReceiveState = RxWaiting;						// Set boardcomms state to waiting, waiting for a reply from the target board
+	BoardCommsTimeout = 10;
 	USART2->CR1 |= USART_CR1_TXEIE;							// Reenable transmit interupt
 }
 
 void printT(uns_ch * Text) {
 	// Routine to take string and print it on the debug terminal
-	setTimeOut(10);														// 20ms timeout to display string on the terminal
-	while (CDC_Transmit_FS(Text, strlen((char*)Text)) != USBD_OK) {		// Reattempt to send string if the CDC does not return OK
+	setTerminalTimeOut(10);	// 20ms timeout to display string on the terminal
+	while ( (CDC_Transmit_FS(Text, strlen((char*)Text)) != USBD_OK) && terminalTimeOutEn) {		// Reattempt to send string if the CDC does not return OK
 
 	}
-	timeOutEn = false;													// Set timeout enable to false following transmission
+	terminalTimeOutEn = false;// Set timeout enable to false following transmission
 }

@@ -70,8 +70,6 @@ SD_HandleTypeDef hsd;
 
 SPI_HandleTypeDef hspi3;
 
-USBD_CDC_HandleTypeDef hcdc;
-
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
@@ -106,8 +104,8 @@ static void MX_USART6_UART_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM11_Init(void);
-static void MX_TIM1_Init(void);
 static void MX_RNG_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 uint32 read_serial(void);
 void read_correctionFactors(void);
@@ -132,7 +130,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -163,8 +161,8 @@ int main(void)
   MX_TIM10_Init();
   MX_USART1_UART_Init();
   MX_TIM11_Init();
-  MX_TIM1_Init();
   MX_RNG_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 //	HAL_Delay(2000); //I2C delay
 	HAL_I2C_Init(&hi2c1);
@@ -174,13 +172,12 @@ int main(void)
 	TestRig_Init();
 	DebounceArrayInit();					// Initialize the async debounce functionality array
 	ProcessState = psInitalisation;
-	CurrentState = csIDLE;
-	LoomChecking = true;
-	LoomState = 0xFF; 						// Ensure that checkloom() initialises LCD first iteration
+	CurrentState = csCheckLoom;
 
 	ConfigInit();							// Initialize test codes
 	read_correctionFactors();				// Read the calibration correction factors
 	SDcard.fresult = SDInit(&SDcard, "");	// Initialize SDcard
+	CheckLoomTimer = 0;
 
   /* USER CODE END 2 */
 
@@ -196,9 +193,19 @@ int main(void)
 		 * will return here to continue with the testing procedure, resetting the current state and resetting
 		 * the process state to waiting.
 		 */
+
+		if ( (CurrentState != csProgramming) && (CurrentState != csLatchTest) && (CurrentState != csCalibrating) && (CheckLoomTimer == 0) )
+			ScanLoom(&LoomState);	// Scan loom each time through the state machine to determine when a loom is removed mid process
+
 		switch (CurrentState) {
+		case csCheckLoom:
+			handleCheckLoom(&BoardConnected, &ProcessState);
+			break;
 		case csIDLE:
 			handleIdle(&BoardConnected, &ProcessState);
+			break;
+		case csSerialNumberEntry:
+			handleSerialNumberEntry(&BoardConnected, &ProcessState);
 			break;
 		case csSolarCharger:
 			handleSolarCharger(&BoardConnected, &ProcessState);
@@ -252,11 +259,8 @@ int main(void)
 			KP[star].Pressed = false;
 			LCD_Clear();
 			TestRig_Init();									// Clear LCD screen and return system to home defaults
-			TestRig_MainMenu();
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-			LoomChecking = true;							// Ensure loom checking is enabled
-			LoomState = 0xFF;
 			CurrentState = csIDLE;							// Return to default case
 			ProcessState = psInitalisation;
 		}

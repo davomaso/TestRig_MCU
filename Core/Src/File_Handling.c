@@ -350,10 +350,25 @@ uint32 Check_SD_Space(TfileConfig *file) {
 	sprintf(buf, "SD CARD Free Space: \t%lu\n", free_space);
 	printT((uns_ch*) buf);
 	free(buf);
-	free_space /= 1000;
 	LCD_setCursor(4, 0);
-	sprintf((char*) &debugTransmitBuffer[0], "%lu MB Free", free_space);
-	LCD_displayString((uint8*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
+	if (free_space <= round( 0.30 * (float) total) ) {
+		sprintf((char*) &debugTransmitBuffer[0], "%Storage level low");
+		LCD_displayString((uint8*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
+		while (!KP[hash].Pressed) {
+
+		}
+	} else if (free_space <= 0.15 * total) {
+		sprintf((char*) &debugTransmitBuffer[0], "%Storage level critical");
+		LCD_displayString((uint8*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
+		while (!KP[hash].Pressed) {
+
+		}
+	} else {
+		free_space /= 1000;
+		sprintf((char*) &debugTransmitBuffer[0], "%lu MB Free", free_space);
+		LCD_displayString((uint8*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
+		HAL_Delay(1000);	// Show storage on LCD screen for 1 sec
+	}
 	return free_space;
 }
 

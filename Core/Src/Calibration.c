@@ -183,7 +183,6 @@ void TargetBoardCalibration_Voltage(TboardConfig *Board) {
 	BoardCommsParameters[0] = 0x50;
 	BoardCommsParametersLength = 1;
 	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
-	CalibratingTimer = 0;
 	if (MuxState)
 		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 	else

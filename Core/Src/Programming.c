@@ -228,13 +228,13 @@ void PollReady() {
 	uns_ch data[4];
 	uns_ch receive[4];
 	receive[3] = 0xFF;
-	setTimeOut(1000);
+	ProgrammingTimeOut = 1500;
 
 	data[0] = 0xF0;
 	data[1] = 0x00;
 	data[2] = 0x00;
 	data[3] = 0x00;
-	while (((receive[3] & 0x01) != 0) && (ProcessState != psFailed)) {
+	while (((receive[3] & 0x01) != 0) && ProgrammingTimeOut) {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &receive[0], 4, HAL_MAX_DELAY);
 	}
 }
@@ -299,8 +299,8 @@ _Bool EnableProgramming() {
 	//Poll Ready
 	data[0] = 0xF0;
 	data[1] = 0x00;
-	setTimeOut(1500);
-	while (ProcessState) {
+	ProgrammingTimeOut = 1500;
+	while (ProcessState && ProgrammingTimeOut) {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		if (((response[3] & 0x01) == 0)) {
 			timeOutEn = false;
@@ -343,19 +343,18 @@ void ProgressBar(uint8 Percentage) {
 	 */
 	if (Percentage <= 100) {
 		uns_ch Byte;
-		if (!(Percentage & 0x01)) {
 			LCD_setCursor(4, 9);
-			sprintf((char*) &debugTransmitBuffer[0], "%d", Percentage);
-			LCD_displayString((uns_ch*) &debugTransmitBuffer, strlen((char*) debugTransmitBuffer));
-			Byte = 0x25;
-			LCD_displayString(&Byte, 1);
-//			uint8 Pos;
+			if (!(Percentage % 5)) {
+				sprintf((char*) &debugTransmitBuffer[0], "%d", Percentage);
+				LCD_displayString((uns_ch*) &debugTransmitBuffer, strlen((char*) debugTransmitBuffer));
+				Byte = 0x25;
+				LCD_displayString(&Byte, 1);
+			}
 			switch (Percentage % 10) {
 			case 0:
 				Byte = 0xD0;
 				LCD_setCursor(3, (5 + (Percentage / 10)));
 				LCD_displayString(&Byte, 1);
-//				Pos++;
 				break;
 			case 2:
 				Byte = 0xD4;
@@ -378,7 +377,6 @@ void ProgressBar(uint8 Percentage) {
 				LCD_displayString(&Byte, 1);
 				break;
 			}
-		}
 	}
 
 }

@@ -110,21 +110,24 @@ typedef enum {bNone = 0, b935x = 0x9350, b937x = 0x9370, b401x = 0x4010,  b402x 
 typedef enum {Port_1 = 0, Port_2 = 1, Port_3 = 2, Port_4 = 3, Port_5 = 4, Port_6 = 5, Port_7 = 6, Port_8 = 7, Port_9 = 8}TcalPortConfig;
 TcalPortConfig calPort;
 
-typedef enum {	csIDLE 			= 0, 		//
-				csInitialising 	= 1, 		//
-				csProgramming 	= 2, 		//
-				csCalibrating 	= 3,		//
-				csInterogating 	= 4, 		//
-				csConfiguring 	= 5, 		//
-				csSampling 		= 6, 		//
-				csUploading 	= 7, 		//
-				csSortResults 	= 8, 		//
-				csSerialise 	= 9, 		//
-				csOutputTest	= 10,		//
-				csLatchTest 	= 11, 		//
-				csAsyncTest 	= 12,		//
-				csSolarCharger  = 13,		//
-				csInputVoltage 	= 14,		//
+typedef enum {
+				csCheckLoom     	= 0,		//
+				csIDLE 				= 1, 		//
+				csSerialNumberEntry = 2,		//
+				csInitialising 		= 3, 		//
+				csProgramming 		= 4, 		//
+				csCalibrating 		= 5,		//
+				csInterogating 		= 6, 		//
+				csConfiguring 		= 7, 		//
+				csSampling 			= 8, 		//
+				csUploading 		= 9, 		//
+				csSortResults 		= 10, 		//
+				csSerialise 		= 11, 		//
+				csOutputTest		= 12,		//
+				csLatchTest 		= 13, 		//
+				csAsyncTest 		= 14,		//
+				csSolarCharger  	= 15,		//
+				csInputVoltage 		= 16,		//
 }TcurrentState;
 TcurrentState CurrentState;
 

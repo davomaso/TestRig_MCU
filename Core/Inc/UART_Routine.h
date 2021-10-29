@@ -24,6 +24,7 @@ void printT(uns_ch*);
 //void UART2_transmit(uns_ch*, uns_ch);	//Transmit function for transmitting out UART2	//Transmit function for transmitting out UART2
 
 //Variables for UART2 Transmit
+uint16 BoardCommsTimeout;
 uns_ch UART2_TXbuffer[LRGBUFFER]; //Buffer for transmitting data to UART2
 uint8 UART2_TXpos;				//Position of the array when transmitting
 uint8 UART2_TXcount;				//End reference point to stop transmitting, turn of interrupts

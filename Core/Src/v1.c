@@ -85,9 +85,11 @@ void TestComplete(TboardConfig *Board) {
 	LCD_printf(&previousTestBuffer[0], 1, 0);
 }
 void PrintHomeScreen(TboardConfig *Board) {
+	LCD_Clear();
 	if (Board->BoardType != bNone) {
 		sprintf(lcdBuffer, "TEST RIG        %x",Board->BoardType);
 	} else {
+		LCD_printf((uns_ch*)"Connect Loom",2,1);
 		sprintf(lcdBuffer, "TEST RIG");
 	}
 	LCD_printf((uns_ch*)&lcdBuffer,1,1);
@@ -98,11 +100,7 @@ void PrintHomeScreen(TboardConfig *Board) {
 		LCD_printf((uns_ch*) "3 - New SN  Prog - #", 4, 0);
 	} else if (TestRigMode != BatchMode) {
 		clearTestStatusLED();
-		LCD_printf((uns_ch*) "Test Rig", 1, 0);
-		sprintf((char*) &lcdBuffer, "SN: N/a");
 		LCD_ClearLine(3);
-		LCD_printf((uns_ch*) &lcdBuffer, 2, 7);
-		LCD_printf((uns_ch*) "Test - #", 4, 13);
 	}
 }
 
@@ -129,7 +127,6 @@ void PrintVoltages(TboardConfig *Board) {
 	}
 	sprintf((char*) &debugTransmitBuffer[0], "12V Output:            %.3f\n", Board->VoltageBuffer[V_12output]);
 	printT((uns_ch*) &debugTransmitBuffer[0]);
-
 	sprintf((char*) &debugTransmitBuffer[0], "Battery Level:         %.3f\n", Board->BatteryLevel);
 	printT((uns_ch*) &debugTransmitBuffer[0]);
 }

@@ -20,49 +20,73 @@
 #include "LatchTest.h"
 #include "TestFunctions.h"
 
+void handleCheckLoom(TboardConfig *Board, TprocessState *State) {
+	switch (*State) {
+	case psInitalisation:
+		TargetBoardParamInit(true);
+		*State = psWaiting;
+		break;
+	case psWaiting:
+		SetBoardType(Board, LoomState);
+		*State = psComplete;
+		break;
+	case psComplete:
+		currentBoardConnected(Board);
+		CurrentState = csIDLE;
+		*State = psInitalisation;
+		break;
+	case psFailed:
+
+		break;
+	}
+}
+
 void handleIdle(TboardConfig *Board, TprocessState *State) {
 	uint32 PreviousSerialNumber;
 	switch (*State) {
 	case psInitalisation:
-		PrintHomeScreen(Board);												// Print Homescreen when the system returns to default case
+		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+		BoardResetTimer = 1200;
+		PrintHomeScreen(Board);								// Print Homescreen when the system returns to default case
 		*State = psWaiting;
 		break;
 	case psWaiting:
-		if (CheckLoom) {
-			scanLoom(&BoardConnected); 										// Scan loom to determine which board is connected
-			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);	// Enable 2Pin power
-			PreviousSerialNumber = Board->SerialNumber;						// Store current serial number
-			interrogateTargetBoard();										// Find if valid board is connected/determine serial number
-			while ((BoardCommsReceiveState != RxGOOD) && (*State == psWaiting)) {
-				if (BoardCommsReceiveState == RxBAD)						// Comms go bad, no board connected
-					break;
-				if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed)	// button pressed start procedure associated with that button
-					break;
+		if (Board->BoardType  && BoardResetTimer == 0) {
+			if (BoardResetTimer == 0) {
+				PreviousSerialNumber = Board->SerialNumber;						// Store current serial number
+				interrogateTargetBoard();										// Find if valid board is connected/determine serial number
+				while ((BoardCommsReceiveState == RxWaiting) && (*State == psWaiting)) {
+					if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed)// button pressed start procedure associated with that button
+						break;
+				}
+				if (BoardCommsReceiveState == RxGOOD)							// Comms good, update home screen
+					communication_response(Board, &Data_Buffer[4], &Data_Buffer[5], strlen(Data_Buffer) - 5);
+				if ((PreviousSerialNumber != Board->SerialNumber))
+					PrintHomeScreen(Board);		// When previous serial number doesnt match current re print home screen
+				if ((Board->SerialNumber == 0) && (TestRigMode == BatchMode)) {
+					CLEAR_BIT(Board->BSR, BOARD_SERIALISED);
+					*State = psComplete;
+				}
+				BoardResetTimer = 250;
 			}
-			if (BoardCommsReceiveState == RxGOOD)							// Comms good, update home screen
-				communication_response(Board, &Data_Buffer[4], &Data_Buffer[5], strlen(Data_Buffer) - 5);
-			if ((PreviousSerialNumber != Board->SerialNumber ))
-				PrintHomeScreen(Board);		// When previous serial number doesnt match current re print home screen
-			if ( (Board->SerialNumber == 0) && (TestRigMode == BatchMode) )
-				*State = psComplete;
-		}
 
-		if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed) {
-			TestRig_Init();
-			TargetBoardParamInit(0);										// Reinitialise variables
-			clearTestStatusLED();
-			if (KP[1].Pressed)
-				TestRigMode = OldBoardMode;									// Test only, no serialise, no program
-			else if (KP[hash].Pressed)
-				TestRigMode = BatchMode;									// Program immediately
-			else if (KP[6].Pressed)
-				TestRigMode = VerboseMode;									// Display everything to terminal
-			else if (KP[3].Pressed)
-				TestRigMode = SerialiseMode;								// Update serial number only
+			if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed) {
+				TestRig_Init();
+				TargetBoardParamInit(0);										// Reinitialise variables
+				clearTestStatusLED();
+				if (KP[1].Pressed)
+					TestRigMode = OldBoardMode;									// Test only, no serialise, no program
+				else if (KP[hash].Pressed)
+					TestRigMode = BatchMode;									// Program immediately
+				else if (KP[6].Pressed)
+					TestRigMode = VerboseMode;									// Display everything to terminal
+				else if (KP[3].Pressed)
+					TestRigMode = SerialiseMode;								// Update serial number only
 
-			KP[1].Pressed = KP[3].Pressed = KP[6].Pressed = KP[hash].Pressed = false;
-			LCD_Clear();													// Clear LCD screen
-			*State = psComplete;											// Progress with the testing process
+				KP[1].Pressed = KP[3].Pressed = KP[6].Pressed = KP[hash].Pressed = false;
+				LCD_Clear();													// Clear LCD screen
+				*State = psComplete;											// Progress with the testing process
+			}
 		}
 		//Calibration Routine
 		if ((KP[7].Pressed && KP[9].Pressed)) {								// Calibrate Test Rig
@@ -70,32 +94,25 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			Calibration();
 			LCD_Clear();
 			TestRig_Init();
-			TestRig_MainMenu();
+//			TestRig_MainMenu();
 			printT((uns_ch*) "\n\n==========  Test Rig  ==========\n");
 		}
 		break;
 	case psComplete:
 		if (TestRigMode == OldBoardMode) {									// Test only, no serialise, no program
-			SET_BIT(Board->BSR, BOARD_SERIALISED);							// Set flags so system does not update serial or program board
+			SET_BIT(Board->BSR, BOARD_SERIALISED);		// Set flags so system does not update serial or program board
 			SET_BIT(Board->BSR, BOARD_PROGRAMMED);
 		}
 
-		if (!READ_BIT(Board->BSR, BOARD_SERIALISED) || (TestRigMode == BatchMode)) {
-			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-			TestRig_Init();
-			PrintHomeScreen(Board);
-			TargetBoardParamInit(0);										// Initialize targetboard variables, clear the board struct
-			clearTestStatusLED();											// Clear previously set LEDs on the front panel
-			Board->SerialNumber = read_serial();							// Read serial number in to be programmed into the board
-			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);	// Enable power, to communicate with the board
-		}
+		if (!READ_BIT(Board->BSR, BOARD_SERIALISED) ) // || (TestRigMode == BatchMode)
+			CurrentState = csSerialNumberEntry;
 		if (Board->SerialNumber) {
 			if (TestRigMode == SerialiseMode)
 				CurrentState = csSerialise;									// Set the next state to serialise
 			else
-				CurrentState = csSolarCharger;								// Set the next state to test the solar charger
+				CurrentState = csSolarCharger;							// Set the next state to test the solar charger
 		}
-		ProcessState = psInitalisation;
+		*State = psInitalisation;
 		break;
 	case psFailed:
 		retryCount++;
@@ -117,12 +134,114 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 	}
 }
 
+void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
+	uint8 tempdata;
+	uint32 tempSerialNumber;
+	switch (*State) {
+	case psInitalisation:
+		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+		TestRig_Init();
+		PrintHomeScreen(Board);
+		TargetBoardParamInit(0);							// Initialize targetboard variables, clear the board struct
+		Board->SerialNumber = 0;
+		clearTestStatusLED();											// Clear previously set LEDs on the front panel
+		USART3->CR1 |= (USART_CR1_RXNEIE);								// Enable Receive interupt for the barcode scanner
+		LCD_printf((uns_ch*) "Enter Serial Number", 2, 0);
+		LCD_printf((uns_ch*) " * - Esc    # - Ent ", 4, 0);
+		memset(&SerialNumber,0,9);
+		LCD_ClearLine(3);
+		LCD_setCursor(3, 0);
+		LCD_CursorOn_Off(true);
+		SerialCount = 0;
+		tempdata = 0;
+		tempSerialNumber = 0;
+		*State = psWaiting;
+		break;
+	case psWaiting:
+		tempdata = ScanKeypad();
+		if (tempdata) {
+			SerialNumber[SerialCount++] = tempdata;
+			if (SerialCount >= 9) {
+				memmove(&SerialNumber[0], &SerialNumber[1], 8);
+				SerialCount--;
+			}
+			LCD_ClearLine(3);
+			LCD_setCursor(3, 0);
+			LCD_displayString(&SerialNumber[0], SerialCount);
+		}
+
+		if (KP[star].Pressed) {
+			KP[star].Pressed = false;
+			if (SerialCount) {
+				SerialNumber[SerialCount--] = 0x08;
+				LCD_setCursor(3, SerialCount + 1);
+				sprintf((char*) &debugTransmitBuffer[0], "  ");
+				LCD_displayString((uns_ch*)&debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
+				LCD_setCursor(3, SerialCount + 1);
+				sprintf((char*) &debugTransmitBuffer[0], "\x8 \x8");
+				printT(&debugTransmitBuffer[0]);
+			} else {
+				CurrentState = csIDLE;
+				*State = psInitalisation;
+			}
+		}
+		if (KP[hash].Pressed) {
+			KP[hash].Pressed = false;
+			Board->SerialNumber = 0;
+			printT((uns_ch*)&SerialNumber);
+			uint8 i = 0;
+			while (SerialCount != i) {
+				Board->SerialNumber = (Board->SerialNumber * 10 + (SerialNumber[i++] - 0x30));
+			}
+		}
+
+			// Barcode Scanned
+		if (BarcodeScanned == true) {
+			BarcodeScanned = false;
+			Board->SerialNumber = 0;
+			LCD_ClearLine(3);	//
+			LCD_setCursor(3, 0);
+			LCD_displayString(&BarcodeBuffer[0], BarcodeCount);
+			printT((uns_ch*)&BarcodeBuffer);
+			uint8 i = 0;
+			while (BarcodeCount != i) {
+				Board->SerialNumber = (Board->SerialNumber * 10 + (BarcodeBuffer[i++] - 0x30));
+			}
+			SerialCount = BarcodeCount;
+			BarcodeCount = 0;
+			USART3->CR1 |= (USART_CR1_RXNEIE);
+			break;
+		}
+		if (Board->SerialNumber) {
+			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+			LCD_CursorOn_Off(false);
+			LCD_ClearLine(4);
+			BoardResetTimer = 2000;
+			*State = psComplete;
+		}
+		break;
+	case psComplete:
+	// Enable power, to communicate with the board
+		if (BoardResetTimer == 0) {
+			LCD_ClearLine(3);
+			if (TestRigMode == BatchMode)
+				CurrentState = csSolarCharger;
+			else
+				CurrentState = csSerialise;
+			*State = psInitalisation;
+		}
+		break;
+	case psFailed:
+		break;
+	}
+}
+
 void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
 		if ((Board->BoardType == b402x || Board->BoardType == b427x) && !READ_BIT(Board->BVR, BOARD_SOLAR_STABLE)) {
 			testSolarCharger();
-			setTimeOut(1250);
+//			setTimeOut(1250);
 			*State = psWaiting;
 		} else {
 			SET_BIT(Board->BVR, BOARD_SOLAR_STABLE);
@@ -161,7 +280,6 @@ void handleInputVoltage(TboardConfig *Board, TprocessState *State) {
 	case psInitalisation:
 		if (!READ_BIT(Board->BVR, FUSE_V_STABLE)) {
 			testInputVoltage();
-			setTimeOut(1250);
 			*State = psWaiting;
 		} else
 			*State = psComplete;
@@ -322,7 +440,7 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 					*State = psFailed;
 					break;
 				}
-				TestRig_MainMenu();
+//				TestRig_MainMenu();
 				LCD_printf((uns_ch*) "    Programming    ", 2, 0);
 				ProgressBarTarget = round((float) ((fileSize / 2) / MAX_PAGE_LENGTH) * 0.7);
 				SetSDclk(1);
@@ -375,6 +493,9 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 				SPI3->CR1 |= (0xFF & SPI_BAUDRATEPRESCALER_256);
 				HAL_Delay(10);
 				SetClkAndLck(Board);
+				printT((uns_ch*) "Programming Done\n");
+				HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+				BoardResetTimer = 1500;	//Allow for board to power up
 			} else {
 				if (LineBufferCount)
 					populatePageBuffer(&PageBuffer[PageBufferPosition], &PageBufferPosition, &LineBuffer[0],
@@ -386,17 +507,16 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psComplete:
-		retryCount = 0;
-		HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
-		SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
-		printT((uns_ch*) "Programming Done\n");
-		Close_File(&SDcard);
-		SetSDclk(0);
-		HAL_Delay(1200);	//Allow for board to power up
-		LCD_ClearLine(3);
-		LCD_ClearLine(4);
-		CurrentState = csSerialise;
-		*State = psInitalisation;
+		if (BoardResetTimer == 0) {
+			retryCount = 0;
+			SET_BIT(BoardConnected.BSR, BOARD_PROGRAMMED);
+			Close_File(&SDcard);
+			SetSDclk(0);
+			LCD_ClearLine(3);
+			LCD_ClearLine(4);
+			CurrentState = csSerialise;
+			*State = psInitalisation;
+		}
 		break;
 	case psFailed:
 		printT((uns_ch*) "Programming Failed\n");
@@ -435,15 +555,17 @@ void handleCalibrating(TboardConfig *Board, TprocessState *State) {
 			if (Response == 0xC1) {
 				uint8 FailedCalibrationCount = 0;
 				float CalibrationValue;
-				for (uint8 i = 2; i < (Board->analogInputCount * sizeof(float) * 5); i+=4) {		// 5 different forms of calibration on each port
-					memcpy(&CalibrationValue,&Data_Buffer[i], sizeof(float));				// IEEE 4 byte floating point values returned, check for 1.000 for uncalibrated ports
+				for (uint8 i = 2; i < (Board->analogInputCount * sizeof(float) * 5); i += 4) {// 5 different forms of calibration on each port
+					memcpy(&CalibrationValue, &Data_Buffer[i], sizeof(float));// IEEE 4 byte floating point values returned, check for 1.000 for uncalibrated ports
 					if (CalibrationValue == 1.000)
 						FailedCalibrationCount++;
 				}
-				if (FailedCalibrationCount > 2)												// If more than 2 ports are uncalibrated fail the calibration
+				if (FailedCalibrationCount > 2)			// If more than 2 ports are uncalibrated fail the calibration
 					*State = psFailed;
-				else
+				else {
+					BoardResetTimer = 300;
 					*State = psComplete;
+				}
 			} else
 				*State = psFailed;
 		} else if (BoardCommsReceiveState == RxBAD) {
@@ -451,10 +573,12 @@ void handleCalibrating(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psComplete:
-		SET_BIT(BoardConnected.BSR, BOARD_CALIBRATED);
-		printT((uns_ch*) "=====     Board Calibrated     =====\n");
-		CurrentState = csConfiguring;
-		*State = psInitalisation;
+		if (BoardResetTimer == 0) {
+			SET_BIT(BoardConnected.BSR, BOARD_CALIBRATED);
+			printT((uns_ch*) "=====     Board Calibrated     =====\n");
+			CurrentState = csConfiguring;
+			*State = psInitalisation;
+		}
 		break;
 	case psFailed:
 		retryCount++;
@@ -540,9 +664,10 @@ void handleConfiguring(TboardConfig *Board, TprocessState *State) {
 				TestFunction(Board);
 			Response = Data_Buffer[0];
 			if (Response == 0x57) {
-				HAL_Delay(300);	//pause for board reset
+					//pause for board reset
 				if (TestRigMode == VerboseMode)
 					printT((uns_ch*) "===Board Configuration Successful===\n");
+				BoardResetTimer = 1000;
 				*State = psComplete;
 			} else
 				*State = psFailed;
@@ -553,8 +678,10 @@ void handleConfiguring(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psComplete:
-		CurrentState = csOutputTest;
-		*State = psInitalisation;
+		if (BoardResetTimer == 0) {
+			CurrentState = csOutputTest;
+			*State = psInitalisation;
+		}
 		break;
 	case psFailed:
 		if (retryCount > 4) {
@@ -599,7 +726,7 @@ void handleOutputTest(TboardConfig *Board, TprocessState *State) {
 					*State = psFailed;
 				}
 			}
-		} else if (BoardCommsReceiveState == RxBAD){
+		} else if (BoardCommsReceiveState == RxBAD) {
 			*State = psFailed;
 		}
 		break;
@@ -629,12 +756,14 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 	case psWaiting:
 		if (LatchCountTimer < latchCountTo) {
 			if (READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {	//If input voltage is stable
-				if (!READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
+				if (!READ_BIT(LatchTestStatusRegister,
+						LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
 					SET_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING); //Begin Latch on sampling
 					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 1);
 					Data_Buffer[0] = 0;
 					communication_array(0x26, &BoardCommsParameters[0], 1);
-				} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
+				} else if (READ_BIT(LatchTestStatusRegister,
+						LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
 					if (BoardCommsReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
 						if (BoardCommsReceiveState == RxGOOD) {
 							Response = Data_Buffer[0];
@@ -688,13 +817,14 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 			PrintLatchResults();
 			LatchErrorCheck(Board);
 			if (Board->LTR == 0) {
-				printT( (uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
-				Board->TestResults[Board->GlobalTestNum][LatchTestPort*2] = 1000; 	// Base 1000 for easier sorting results															// Multiply by two to acount for 2ch of data
+				printT(
+						(uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
+				Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 1000; // Base 1000 for easier sorting results															// Multiply by two to acount for 2ch of data
 			} else {
 				printLatchError(Board);
 				printT(
 						(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
-				Board->TestResults[Board->GlobalTestNum][LatchTestPort*2] = 0;
+				Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 0;
 				if (Board->BoardType == b422x) { //TODO: Check if this needs to be here with code changes
 					HAL_Delay(250);
 					switch (LatchTestPort) {
@@ -794,21 +924,21 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		if (samplesUploading && (sampleTime >= 1000)) {	// Print percentage bar to LCD if the sample wait time is greater than 1000
 			if (sampleCount == 0)
 				LCD_ClearLine(3);
-			Percentage = (uint8) ((sampleCount / (float) sampleTime) * 100);
-			ProgressBar(Percentage);
+			Percentage = (uint8) ((sampleCount / ((float) sampleTime * 0.9)) * 100);// Reduce SampleTime range to ensure progress bar reaches 100/ holds 100 for a short time
+			ProgressBar(Percentage);					// Print the progress bar and percentage
 		}
 
 		if (samplesUploaded) {
 			samplesUploading = false;
-			samplesUploaded = false;
+			samplesUploaded = false;// Once timer times out ensure the system stops waiting and sample upload the results from the target board
 			*State = psComplete;
 			BoardCommsReceiveState = RxWaiting;
 		}
 		break;
 	case psComplete:
-		if (VuserSamples < 100) {
+		if (VuserSamples < 100) {// Sample the sample voltage shortly after the samples are uploaded, placed here as sample voltage took time to establish and become constant
 			if (Board->GlobalTestNum == V_12output) {
-				if ( (Board->BoardType == b401x) || (Board->BoardType == b402x) )
+				if ((Board->BoardType == b401x) || (Board->BoardType == b402x))
 					ADC_Ch4sel();
 				else
 					ADC_Ch3sel();
@@ -822,16 +952,20 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 			HAL_ADC_Stop(&hadc1);
 		}
 
-		if (TestRigMode == VerboseMode) {
+		if (TestRigMode == VerboseMode) {		// print what is occuring if the system is in verbose mode
 			printT((uns_ch*) "Samples Uploaded\n\n");
 			printT((uns_ch*) "Requesting Results\n\n");
 		}
 
-		if (VuserSamples >= 100) {
-			Vuser.total /=  VuserSamples;
+		if (VuserSamples >= 100) {	// take average across 100+ samples
+			Vuser.total /= VuserSamples;
 			Vuser.average = Vuser.total * (15.25 / 4096);
 			if (Board->GlobalTestNum <= V_trim)
 				Board->VoltageBuffer[Board->GlobalTestNum] = Vuser.average;
+			else {
+				*State = psInitalisation;
+				CurrentState = csUploading;
+			}
 			sampleCount = 0;
 			Vuser.total = 0;
 			if (Board->VoltageBuffer[Board->GlobalTestNum] > 0) {
@@ -842,7 +976,7 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psFailed:
-		if (retryCount > 2) {
+		if (retryCount > 2) { // Return to IDLE if the sampling fails more than twice, enable the FAILED status LED as well
 			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
@@ -955,7 +1089,10 @@ void handleSerialise(TboardConfig *Board, TprocessState *State) {
 	case psWaiting:
 		if (BoardCommsReceiveState == RxGOOD) {
 			tempSerial = ReadSerialNumber(&Response, &Data_Buffer[0], Datalen);
-			if (Response == 0x11) {
+			if (tempSerial == Board->SerialNumber)  {
+				SET_BIT(Board->BSR, BOARD_SERIALISED);
+				*State = psComplete;
+			} else if (Response == 0x11) {
 				//Load Current Serial Number
 				memcpy(&CurrentSerial, &tempSerial, 4);
 				//Write New Serial Number
@@ -990,7 +1127,7 @@ void handleSerialise(TboardConfig *Board, TprocessState *State) {
 		break;
 	case psFailed:
 		retryCount++;
-		if (retryCount >= 10) {
+		if (retryCount > 3) {
 			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);

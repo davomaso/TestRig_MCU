@@ -42,9 +42,7 @@ uint8 BoardCommsParametersLength;
 uns_ch BoardCommsParameters[LRGBUFFER];
 
 //Loom Variables
-_Bool CheckLoom;
-_Bool LoomChecking;
-uint8 LoomCheckCount;
+uint16 CheckLoomTimer;
 uint8 LoomState;
 
 //0x1A and 0x1B Command and Response
@@ -196,7 +194,13 @@ _Bool BarcodeScanned;
 bool timeOutEn;
 uint32 timeOutCount;
 
+bool terminalTimeOutEn;
+uint32 terminalTimeOutCount;
+
+uint16 ProgrammingTimeOut;
+
 uint8 retryCount;
+uint16 BoardResetTimer;
 
 bool latchTimeOutEn;
 bool LatchTimeOut;

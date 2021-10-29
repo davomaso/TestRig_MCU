@@ -17,36 +17,34 @@
 #include "UART_Routine.h"
 
 void TestRig_Init() {
-	printT((uns_ch*) "==========TestRig========== \n");
 	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
 
-	LCD_CursorOn_Off(false);
-	LCD_printf((uns_ch*) "Test Rig      ", 1, 0);
-	sprintf((char*) &lcdBuffer, "Firmware: v%.2f", FIRMWARE_VERSION);
-	LCD_printf((uns_ch*) &lcdBuffer, 2, 0);
-	BoardCommsParameters[0] = 0;
+	LCD_CursorOn_Off(false);				// Remove cursor from screen
+//	BoardCommsParameters[0] = 0;
 	BoardCommsParametersLength = 0;
 
 	BoardCommsReceiveState = RxNone;
 	samplesUploading = false;
 
-	ASYNCinit();
-	SDIinit();
-	keypadInit();
-	reset_ALL_DAC();	//Set DAC to zero
+//	timeOutCount = 0;						//General Timeout initialisation
+//	timeOutEn = false;						// Disable general timer
+
+	ASYNCinit();							// Set GPIO pins & ports, set all structs to false
+	SDIinit();								// Mount SD card and print the free space
+	keypadInit();							// Set GPIO pins & ports, set all structs to false
+	reset_ALL_DAC();						//Set all DAC to zero
 	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_GPIO_Port, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(MUX_EN_GPIO_Port, MUX_EN_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
-	reset_ALL_MUX();
+	reset_ALL_MUX();						// Reset all multiplexers, return to async port, (no voltage on the ports)
 
-	HAL_TIM_Base_Start_IT(&htim6); 	// LED blink, Scan Loom timer
-	HAL_TIM_Base_Start_IT(&htim7);	// Scan keypad timer
-	HAL_TIM_Base_Start_IT(&htim10);	// Calibration & Latch test timer
-	HAL_TIM_Base_Start_IT(&htim11);	// Timeout, Input/Solar Voltage, Sampling timer
-	HAL_TIM_Base_Start_IT(&htim14);	// Async pulse Timer
+	HAL_TIM_Base_Start_IT(&htim6); 			// LED blink, Scan Loom timer
+	HAL_TIM_Base_Start_IT(&htim7);			// Scan keypad timer
+	HAL_TIM_Base_Start_IT(&htim10);			// Calibration & Latch test timer
+	HAL_TIM_Base_Start_IT(&htim11);			// Timeout, Input/Solar Voltage, Sampling timer
+	HAL_TIM_Base_Start_IT(&htim14);			// Async pulse Timer
 
-	timeOutCount = 0;				//General Timeout initialisation
-	timeOutEn = false;				// Disable general timer
+	printT((uns_ch*) "==========TestRig========== \n");
 }
 
 void initialiseTargetBoard(TboardConfig *Board) {
@@ -126,14 +124,17 @@ uint32 ReadSerialNumber(uint8 *Response, uns_ch *data, uint16 length) {
 void setTimeOut(uint16 wait) {		// General timeout routine on a 1ms interupt timer
 	timeOutEn = true;
 	timeOutCount = wait;
-	HAL_TIM_Base_Start_IT(&htim11);
+}
+
+void setTerminalTimeOut (uint16 wait) {
+	terminalTimeOutCount = wait;
+	terminalTimeOutEn = true;
 }
 
 void runLatchTimeOut(uint16 wait) {	// Timeout specifically for the latch routine to determine whether the system has become stable
+	latchTimeOutCount = wait;
 	latchTimeOutEn = true;			// Also initialised on the 1ms interupt timer
 	LatchTimeOut = true;
-	latchTimeOutCount = wait;
-	HAL_TIM_Base_Start_IT(&htim11);
 }
 
 uint8 getCurrentVersion(TloomConnected Board) {
