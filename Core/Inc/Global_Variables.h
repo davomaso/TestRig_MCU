@@ -106,6 +106,10 @@ uint16_t LatchCountTimer;
 uint8_t stableVoltageCount;
 uint16_t latchCountTo;
 uint8 LatchTestPort;
+bool latchTimeOutEn;
+bool LatchTimeOut;
+uint16 latchTimeOutCount;
+
 
 #define ADC_BUF_LEN 2048
 
@@ -201,10 +205,6 @@ uint16 ProgrammingTimeOut;
 
 uint8 retryCount;
 uint16 BoardResetTimer;
-
-bool latchTimeOutEn;
-bool LatchTimeOut;
-uint16 latchTimeOutCount;
 
 _Bool InputVoltageStable;
 uint16 InputVoltageCounter;

@@ -25,5 +25,6 @@ void CheckPowerRegisters(TboardConfig *);
 void TestComplete(TboardConfig *);
 void GetBatteryLevel(TboardConfig *);
 void PrintVoltages(TboardConfig *);
+void PrintHomeScreen(TboardConfig *);
 
 #endif /* INC_V1_H_ */

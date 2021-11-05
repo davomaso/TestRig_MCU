@@ -130,7 +130,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -172,12 +173,12 @@ int main(void)
 	TestRig_Init();
 	DebounceArrayInit();					// Initialize the async debounce functionality array
 	ProcessState = psInitalisation;
-	CurrentState = csCheckLoom;
+	CurrentState = csCheckLoom;				// Determine what loom is connected first
+	CheckLoomTimer = 0;
 
 	ConfigInit();							// Initialize test codes
 	read_correctionFactors();				// Read the calibration correction factors
 	SDcard.fresult = SDInit(&SDcard, "");	// Initialize SDcard
-	CheckLoomTimer = 0;
 
   /* USER CODE END 2 */
 
@@ -255,14 +256,15 @@ int main(void)
 
 		//=========================================================================================================//
 		// Quit
-		if (KP[star].Pressed) {								// Check if the back/exit button is pressed
+		if (KP[star].Pressed && QuitEnabled) {									// Check if the back/exit button is pressed
 			KP[star].Pressed = false;
+			TargetBoardParamInit(true);							// Fully erase BoardConnected struct and associated memory
 			LCD_Clear();
-			TestRig_Init();									// Clear LCD screen and return system to home defaults
+			TestRig_Init();										// Clear LCD screen and return system to home defaults
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-			CurrentState = csIDLE;							// Return to default case
 			ProcessState = psInitalisation;
+			CurrentState = csCheckLoom;
 		}
 //=========================================================================================================//
 

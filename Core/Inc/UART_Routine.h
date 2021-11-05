@@ -9,7 +9,7 @@
 #define INC_UART_ROUTINE_H_
 
 //Includes
-//#include "interogate_project.h"
+#include "Global_Variables.h"
 #include "stdbool.h"
 
 void UART2_transmit(unsigned char*, unsigned char);

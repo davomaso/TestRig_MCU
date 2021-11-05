@@ -8,7 +8,6 @@
 #ifndef INC_SERIALNUMBER_H_
 #define INC_SERIALNUMBER_H_
 
-uint32 read_serial(void);
-bool ContinueWithCurrentSerial(void);
+uns_ch ScanKeypad(void);
 
 #endif /* INC_SERIALNUMBER_H_ */

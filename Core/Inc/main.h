@@ -147,7 +147,7 @@ uns_ch lcdBuffer[80];
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+_Bool QuitEnabled;
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

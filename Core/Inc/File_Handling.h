@@ -44,6 +44,7 @@ FRESULT Create_Dir(TCHAR *);
 FRESULT OpenFile(TfileConfig *);
 uint32 Check_SD_Space(TfileConfig *);
 FRESULT CreateResultsFile(TfileConfig *, TboardConfig *);
+FRESULT WriteVoltages(TboardConfig *, TfileConfig *);
 _Bool FetchLine(TfileConfig *, char *);
 
 #endif /* FILE_HANDLING_RTOS_H_ */

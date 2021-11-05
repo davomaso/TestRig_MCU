@@ -52,7 +52,7 @@ FRESULT Scan_SD(char *pat) {
 			{
 				if (!(strcmp("SYSTEM~1", SDcard.fileInfo.fname)))
 					continue;
-				char *buf = malloc(255 * sizeof(char));
+				char *buf = malloc(263 * sizeof(char));
 				sprintf(buf, "Dir: %s\r\n", SDcard.fileInfo.fname);
 				printT((uns_ch*) buf);
 				free(buf);
@@ -63,7 +63,7 @@ FRESULT Scan_SD(char *pat) {
 					break;
 				pat[i] = 0;
 			} else { /* It is a file. */
-				char *buf = malloc(255 * sizeof(char));
+				char *buf = malloc(264 * sizeof(char));
 				sprintf(buf, "File: %s/%s\n", pat, SDcard.fileInfo.fname);
 				printT((uns_ch*) buf);
 				free(buf);
@@ -108,7 +108,7 @@ _Bool Find_File(TfileConfig *FAT, char *path) {
 			res = f_readdir(&(FAT->directory), &(FAT->fileInfo)); /* Read a directory item */
 			if (TestRigMode == VerboseMode) {
 				printT((uns_ch*) &(FAT->fileInfo.fname[0]));
-				printT("\r\n");
+				printT((uns_ch*) "\r\n");
 			}
 			if (res != FR_OK || FAT->fileInfo.fname[0] == 0)
 				break; /* Break on error or end of dir */
@@ -248,7 +248,7 @@ FRESULT Close_File(TfileConfig *FAT) {
 	FRESULT res;
 	res = f_close(&(FAT->file));
 	if (res != FR_OK) {
-		char *buf = malloc(100 * sizeof(char));
+		char *buf = malloc(162 * sizeof(char));
 		sprintf(buf, "ERROR No. %d in closing file *%s*\n\n", res, (FAT->FILEname));
 		printT((uns_ch*) buf);
 		free(buf);
@@ -351,14 +351,14 @@ uint32 Check_SD_Space(TfileConfig *file) {
 	printT((uns_ch*) buf);
 	free(buf);
 	LCD_setCursor(4, 0);
-	if (free_space <= round( 0.30 * (float) total) ) {
-		sprintf((char*) &debugTransmitBuffer[0], "%Storage level low");
+	if (free_space <= round(0.30 * (float) total)) {
+		sprintf((char*) &debugTransmitBuffer[0], "Storage level low");
 		LCD_displayString((uint8*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
 		while (!KP[hash].Pressed) {
 
 		}
 	} else if (free_space <= 0.15 * total) {
-		sprintf((char*) &debugTransmitBuffer[0], "%Storage level critical");
+		sprintf((char*) &debugTransmitBuffer[0], "Storage level critical");
 		LCD_displayString((uint8*) &debugTransmitBuffer[0], strlen((char*) &debugTransmitBuffer[0]));
 		while (!KP[hash].Pressed) {
 
@@ -376,7 +376,7 @@ FRESULT CreateResultsFile(TfileConfig *FAT, TboardConfig *Board) {
 
 	FRESULT res;
 	sprintf(&(FAT->FILEname[0]), "/TEST_RESULTS/%lu_%x", Board->SerialNumber, Board->BoardType);
-	res = Create_Dir(&(FAT->FILEname));
+	res = Create_Dir((TCHAR*) &(FAT->FILEname));
 	sprintf(&(FAT->FILEname[0]), "/TEST_RESULTS/%lu_%x/%lu.CSV", Board->SerialNumber, Board->BoardType,
 			Board->SerialNumber);
 	res = Create_File(FAT);
@@ -407,7 +407,7 @@ FRESULT WriteVoltages(TboardConfig *Board, TfileConfig *FAT) {
 			sprintf((char*) &TestResultsBuffer, "Voltages\nInput, %.3f\n12V Sample, %.3f\n3V Sample, %.3f\n",
 					Board->VoltageBuffer[V_INPUT], Board->VoltageBuffer[V_12], Board->VoltageBuffer[V_3]);
 
-		res = Update_File((TfileConfig*) FAT, (char*) FAT->FILEname[0], (char*) &TestResultsBuffer[0]);
+		res = Update_File((TfileConfig*) FAT, (char*) (&FAT->FILEname[0]), (char*) &TestResultsBuffer[0]);
 		if (res == FR_OK)
 			res = Close_File(FAT);
 	}

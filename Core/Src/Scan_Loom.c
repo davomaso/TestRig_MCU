@@ -11,16 +11,16 @@ void ScanLoom(TloomConnected *Loom) {
 	*Loom = 0x00;
 	for (int i = 0; i < 4; i++) {
 		ADC_MUXsel(i);
-		delay_us(1500); //Wait for system to become stable
+		delay_us(50); // Wait mux and input to become stable
 		if (!HAL_GPIO_ReadPin(Loom_Sel_GPIO_Port, Loom_Sel_Pin)) {
 			*Loom |= (1 << (i));
 		}
 	}
 	if (*Loom != PrevLoomState) {
-		CurrentState = csCheckLoom;
+		CurrentState = csCheckLoom;	// Return the system to check loom if a change occurs during normal operation
 		ProcessState = psInitalisation;
 	}
-	CheckLoomTimer = 250;
+	CheckLoomTimer = 250;	// 250ms until next scan
 }
 
 void SetBoardType(TboardConfig *Board, TloomConnected Loom) {

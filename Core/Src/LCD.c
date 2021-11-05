@@ -87,15 +87,15 @@ void LCD_setCursor(uint8 Row, uint8 Col) {
 }
 
 void LCD_printf(uns_ch *data, uint8 Row, uint8 Col) {
-	LCD_ClearLine(Row);
-	LCD_setCursor(Row, Col);
-	LCD_displayString((uint8 *) data, strlen((char*) data));
+	LCD_ClearLine(Row);											// Clear line which data is to be placed on
+	LCD_setCursor(Row, Col);									// Set cursor to the row and col where data should be written
+	LCD_displayString((uint8 *) data, strlen((char*) data));	// Print to LCD screen
 }
 
 void LCD_displayString(uint8 *data, uint8 len) {
 	for (int i = 0; i < len; i++) {
 		HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0xC0, 0x01, data++, 1, HAL_MAX_DELAY);
-		delay_us(50);
+		delay_us(75); //TODO: Set to 50us usually run at 75us to check if the added delay will fix the LCD freezing
 	}
 }
 void LCD_CursorOn_Off(bool Cursor) {
@@ -117,7 +117,7 @@ void LCD_Clear() {
 }
 
 void LCD_ClearLine(uint8 Line) {
-	sprintf((char*) &debugTransmitBuffer[0], "                    ");
+	sprintf((char*) &debugTransmitBuffer[0], "                    ");		// Replaces the entire line with spaces/blanks
 	LCD_setCursor(Line, 0);
 	LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*)debugTransmitBuffer));
 }
@@ -137,9 +137,9 @@ void ChangeCharacterSet(uns_ch Set) {
 		Byte = 0x04;
 	else if (Set == 'C')
 		Byte = 0x0C;
-	HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0xC0, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0xC0, 0x01, &Byte, 0x01, HAL_MAX_DELAY);		// Change Character Set
 	delay_us(50);
 	Byte = 0x38;
-	HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);		// 8-Bit data length extension Bit RE=0
 	delay_us(50);
 }

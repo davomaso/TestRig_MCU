@@ -17,65 +17,60 @@
 #include "UART_Routine.h"
 
 void TestRig_Init() {
-	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(TB_Reset_GPIO_Port, TB_Reset_Pin, GPIO_PIN_SET);				// Pull target board reset high to enable communication if it was previously low
+	QuitEnabled = true;																// Allows the system to quit, (removal of quit from serial entry when using keypad)
+	LCD_CursorOn_Off(false);														// Remove cursor from screen
+	BoardCommsParametersLength = 0;													// Set board communications length to zero
 
-	LCD_CursorOn_Off(false);				// Remove cursor from screen
-//	BoardCommsParameters[0] = 0;
-	BoardCommsParametersLength = 0;
-
-	BoardCommsReceiveState = RxNone;
+	BoardCommsReceiveState = RxNone;												// State of board communications, no communications waiting
 	samplesUploading = false;
 
-//	timeOutCount = 0;						//General Timeout initialisation
-//	timeOutEn = false;						// Disable general timer
-
-	ASYNCinit();							// Set GPIO pins & ports, set all structs to false
-	SDIinit();								// Mount SD card and print the free space
-	keypadInit();							// Set GPIO pins & ports, set all structs to false
-	reset_ALL_DAC();						//Set all DAC to zero
-	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_GPIO_Port, GPIO_PIN_SET);
+	ASYNCinit();																	// Set GPIO pins & ports, set all structs to false
+	SDIinit();																		// Mount SD card and print the free space
+	keypadInit();																	// Set GPIO pins & ports, set all structs to false
+	reset_ALL_DAC();																//Set all DAC to zero
+	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_GPIO_Port, GPIO_PIN_SET);			// Enable the multiplexers for input testing on target board
 	HAL_GPIO_WritePin(MUX_EN_GPIO_Port, MUX_EN_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
-	reset_ALL_MUX();						// Reset all multiplexers, return to async port, (no voltage on the ports)
+	HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);	// Pull the RS485 enable to low to disable communications on the SDI-12 line
+	reset_ALL_MUX();																// Reset all multiplexers, return to async port, (no voltage on the ports)
 
-	HAL_TIM_Base_Start_IT(&htim6); 			// LED blink, Scan Loom timer
-	HAL_TIM_Base_Start_IT(&htim7);			// Scan keypad timer
-	HAL_TIM_Base_Start_IT(&htim10);			// Calibration & Latch test timer
-	HAL_TIM_Base_Start_IT(&htim11);			// Timeout, Input/Solar Voltage, Sampling timer
-	HAL_TIM_Base_Start_IT(&htim14);			// Async pulse Timer
+	HAL_TIM_Base_Start_IT(&htim6); 													// LED blink, Scan Loom timer
+	HAL_TIM_Base_Start_IT(&htim7);													// Scan keypad timer
+	HAL_TIM_Base_Start_IT(&htim10);													// Calibration & Latch test timer
+	HAL_TIM_Base_Start_IT(&htim11);													// Timeout, Input/Solar Voltage, Sampling timer
+	HAL_TIM_Base_Start_IT(&htim14);													// Async pulse Timer
 
 	printT((uns_ch*) "==========TestRig========== \n");
 }
 
 void initialiseTargetBoard(TboardConfig *Board) {
-	LCD_printf((uns_ch*) "    Initialising    ", 2, 0);
-
+	LCD_printf((uns_ch*) "    Initialising    ", 2, 0);								// Initialise target board ready to be placed on self or return to standard 250,1 parameters
 	uns_ch Command;
-	Command = 0xCC;
+	Command = 0xCC;																	// Initialisation command
 	BoardCommsParameters[0] = 0x49;
 	BoardCommsParametersLength = 1;
-	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
+	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);	// Transmit command
 }
 
 void interrogateTargetBoard() {
 	if(CurrentState != csIDLE){
-		if (CurrentState == csSerialise)
+		if (CurrentState == csSerialise)											// Print to LCD if in serialising or not in IDLE
 			LCD_printf((uns_ch *) "    Serialising    ", 2, 0);
 		else
 			LCD_printf((uns_ch *) "   Interrogating    ", 2, 0);
 	}
 	uns_ch Command;
 	Command = 0x10;
-	communication_arraySerial(Command, 0, 0);
+	communication_arraySerial(Command, 0, 0);										// Transmit the interogation command
 }
 
 void configureTargetBoard(TboardConfig *Board) {
 	uns_ch Command;
 	Command = 0x56;
 	SetPara(Board, Command);
-	if (Board->BoardType != b422x)	// No need to reconfigure as board is configured with the initialisation
+	if (Board->BoardType != b422x)													// No need to reconfigure as board is configured with the initialisation
 		communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
-	OutputsSet = false;
+	OutputsSet = false;																// Ensure that the outputs are only set the once
 }
 
 void uploadSamplesTargetBoard(TboardConfig *Board) {

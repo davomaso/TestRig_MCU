@@ -44,11 +44,11 @@ void communication_array(uns_ch Command, uns_ch *Para, uint8_t Paralen) {
 	uns_ch Com_buffer[LRGBUFFER];
 	uint16 Length;
 	uint16 Crc;
-	UART2_ReceiveComplete = false;
+	UART2_ReceiveComplete = false;			// Disable the receive complete flag prior to the string being transmitted
 	Length = 14 + Paralen;
-	Comlen = Length + 3;
+	Comlen = Length + 3;									// Calculate the Length parameter
 
-	Com_buffer[0] = 0xB2;
+	Com_buffer[0] = 0xB2;							// Populate header with network, length, comms direction & module
 	Com_buffer[1] = 0x21;
 	Com_buffer[2] = Length;
 	Com_buffer[3] = BoardConnected.Network;
@@ -59,72 +59,67 @@ void communication_array(uns_ch Command, uns_ch *Para, uint8_t Paralen) {
 	for (int i = 8; i <= 13; i++) {
 		Com_buffer[i] = '\x00';
 	}
-	Com_buffer[14] = Command;
+	Com_buffer[14] = Command;								// Populate communication buffer with command
 
 	if (Paralen > 0)
-		memcpy(&Com_buffer[15], Para, Paralen);
+		memcpy(&Com_buffer[15], Para, Paralen);				// Copy parameters into the communications string
 
-	Crc = uart_CalcCRC16(&Com_buffer[0], (Length + 1));
-	Com_buffer[Comlen - 2] = Crc;
+	Crc = uart_CalcCRC16(&Com_buffer[0], (Length + 1));		// Calculate CRC
+	Com_buffer[Comlen - 2] = Crc;							// Populate CRC at end of communication buffer
 	Com_buffer[Comlen - 1] = (Crc >> 8);
 
-	//Switch Comms to Radio or RS485 depending on Board Connected
-	switchCommsProtocol(&BoardConnected);
-	//Transmit the Communication array
-	UART2_transmit((uns_ch*) &Com_buffer[0], Comlen);
-	// UART2 Receive Interrupt Enable.
-	USART2->CR1 |= USART_CR1_RXNEIE;
+	switchCommsProtocol(&BoardConnected);				//Switch Comms to Radio or RS485 depending on Board Connected
+	UART2_transmit((uns_ch*) &Com_buffer[0], Comlen);		//Transmit the Communication array
+	USART2->CR1 |= USART_CR1_RXNEIE;						// UART2 Receive Interrupt Enable.
 }
 
 void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data, uint8 arraysize) {
 	switch (*Response) {
-	case 0x11:	//Serialise Command, Used to check the version of the board
+	case 0x11:												//Serialise Command, Used to check the version of the board
 		memcpy(&Board->SerialNumber, data, 4);
 		data += 4;
 		if ((Board->SerialNumber != 0) && (~(Board->SerialNumber) != 0))
 			SET_BIT(Board->BSR, BOARD_SERIALISED);
 		data += 2;  //LSB board number coming in
-		Board->Version = *data++; //version currently installed on board
-		Board->Subclass = *data++; //if a 93xx board is connected, what variety is it C, M, X, F...
+		Board->Version = *data++; 												//version currently installed on board
+		Board->Subclass = *data++;						//if a 93xx board is connected, what variety is it C, M, X, F...
 
 		memcpy(&Board->Network, data, 2);
 		data += 2;
 		memcpy(&Board->Module, data, 2);
 		if (CurrentState != csIDLE) {
 			printT((uns_ch*) "====Interogation Complete====\n");
-				//Print Board Info //Transmit Info To Terminal
-			printT((uns_ch*) "=====Board Info=====\n");
-				//Board
+			printT((uns_ch*) "=====Board Info=====\n");					//Print Board Info //Transmit Info To Terminal
+			//Board
 			sprintf((char*) &debugTransmitBuffer[0], "Board :		 %x%c \n", Board->BoardType, Board->Subclass);
 			printT(&debugTransmitBuffer[0]);
-				//Version
+			//Version
 			sprintf((char*) &debugTransmitBuffer[0], "Version :	 %x \n", Board->Version);
 			printT(&debugTransmitBuffer[0]);
-				//Network
+			//Network
 			sprintf((char*) &debugTransmitBuffer[0], "Network :	 %d \n", Board->Network);
 			printT(&debugTransmitBuffer[0]);
-				//Module
+			//Module
 			sprintf((char*) &debugTransmitBuffer[0], "Module :	 %d \n", Board->Module);
 			printT(&debugTransmitBuffer[0]);
 
 		}
 		break;
 	case 0x1B:
-		if (SDIenabled || RS485enabled) {
+		if (SDIenabled || RS485enabled) {// When testing includes RS485 or SDI-12 extend period in which sampling occurs
 			sampleTime = *data++;
 			sampleTime |= (*data++ << 8);
 			sampleTime *= 100;
 			sampleTime = (sampleTime > 1200) ? 1200 : sampleTime;
 		} else
-			sampleTime = Board->analogInputCount * 150;
+			sampleTime = Board->analogInputCount * 100;					// Multiple of 100ms per port for sample
 		sampleCount = 0;
 		samplesUploaded = false;
 		samplesUploading = true;
-		//Uploading begun
 		if (TestRigMode == VerboseMode) {
 			sprintf((char*) &debugTransmitBuffer, "Waiting : %.2f seconds....\n", (float) sampleTime / 1000);
 			printT((uns_ch*) &debugTransmitBuffer);
-			}
+		}
 		break;
 
 	case 0x19:
@@ -182,14 +177,6 @@ void SetPara(TboardConfig *Board, uns_ch Command) {
 		if (TestRigMode == VerboseMode)
 			printT("\nConfiguring Board...\n");
 		SetTestParam(Board, Board->GlobalTestNum, &BoardCommsParameters[0], &BoardCommsParametersLength);
-		if (BoardConnected.GlobalTestNum == 0) {
-			if (Board->Subclass)
-				sprintf((char*) &lcdBuffer[0], "%x%c   S/N: %lu", Board->BoardType, Board->Subclass,
-						Board->SerialNumber);
-			else
-				sprintf((char*) &lcdBuffer[0], "%x   S/N: %lu", Board->BoardType, Board->SerialNumber);
-			LCD_printf((uns_ch*) &lcdBuffer[0], 1, 0);
-		}
 		break;
 	}
 }
