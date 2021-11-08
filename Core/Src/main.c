@@ -258,13 +258,18 @@ int main(void)
 		// Quit
 		if (KP[star].Pressed && QuitEnabled) {									// Check if the back/exit button is pressed
 			KP[star].Pressed = false;
-			TargetBoardParamInit(true);							// Fully erase BoardConnected struct and associated memory
 			LCD_Clear();
 			TestRig_Init();										// Clear LCD screen and return system to home defaults
-			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+			if (CurrentState == csProgramming) {
+				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+				TargetBoardParamInit(0);
+				CurrentState = csSerialNumberEntry;
+			} else {
+				CurrentState = csCheckLoom;
+				TargetBoardParamInit(true);							// Fully erase BoardConnected struct and associated memory
+			}
 			ProcessState = psInitalisation;
-			CurrentState = csCheckLoom;
 		}
 //=========================================================================================================//
 

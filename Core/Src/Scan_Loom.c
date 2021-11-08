@@ -4,7 +4,7 @@
 #include "Delay.h"
 #include "UART_Routine.h"
 
-void ScanLoom(TloomConnected *Loom) {
+void ScanLoom(uint8 *Loom) {
 	uint8 PrevLoomState;
 	uint8 DifferentLoomCount;
 	PrevLoomState = *Loom;
@@ -23,7 +23,7 @@ void ScanLoom(TloomConnected *Loom) {
 	CheckLoomTimer = 250;	// 250ms until next scan
 }
 
-void SetBoardType(TboardConfig *Board, TloomConnected Loom) {
+void SetBoardType(TboardConfig *Board, uint8 Loom) {
 	switch (Loom) {
 	case 0:
 		Board->BoardType = bNone;

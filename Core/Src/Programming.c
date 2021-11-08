@@ -303,7 +303,7 @@ _Bool EnableProgramming() {
 	while (ProcessState && ProgrammingTimeOut) {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		if (((response[3] & 0x01) == 0)) {
-			timeOutEn = false;
+//			timeOutEn = false;
 			return true;
 		}
 	}

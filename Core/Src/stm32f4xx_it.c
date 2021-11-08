@@ -660,10 +660,7 @@ void USART2_IRQHandler(void)
 				USART2->CR1 &= ~(USART_CR1_TXEIE);
 				UART2_TXcount = UART2_TXpos = 0;
 				BoardCommsReceiveState = RxWaiting;
-//				if (CurrentState == csCalibrating)
-//					setTimeOut(4000);
-//				else
-					setTimeOut(1500);
+				setTimeOut(1500);
 
 			} else {
 				USART2->DR = UART2_TXbuffer[UART2_TXpos++];

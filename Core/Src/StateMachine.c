@@ -46,8 +46,10 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 	uint32 PreviousSerialNumber;
 	switch (*State) {
 	case psInitalisation:
-		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);		// Enable power
-		BoardResetTimer = 1500;												// Timer for board to reset
+		if (!HAL_GPIO_ReadPin(PIN2EN_GPIO_Port, PIN2EN_Pin)) {
+			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);		// Enable power
+			BoardResetTimer = 1500;												// Timer for board to reset
+		}
 		PrintHomeScreen(Board);								// Print Homescreen when the system returns to default case
 		*State = psWaiting;
 		break;
@@ -396,6 +398,8 @@ void handleProgramming(TboardConfig *Board, TprocessState *State) {
 			HAL_Delay(20);
 			if (response[2] == 0x53)
 				SET_BIT(Board->BPR, PROG_ENABLED);
+			else
+				*State = psFailed;
 		} else if (!READ_BIT(Board->BPR, CHIP_ERASED)) {
 			data[0] = 0xAC;	//	Chip Erase
 			data[1] = 0x80;
@@ -654,12 +658,15 @@ void handleInterogating(TboardConfig *Board, TprocessState *State) {
 		break;
 
 	case psFailed:
-		if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED) && (retryCount > 5)) {
-			currentBoardConnected(&BoardConnected);
-			LCD_ClearLine(1);
-			sprintf((char*) &debugTransmitBuffer[0], "    Programming    ");
-			LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
-			CurrentState = csProgramming;
+		if (retryCount > 3) {
+			if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED) ) {
+				currentBoardConnected(&BoardConnected);
+	//			LCD_ClearLine(1);
+	//			sprintf((char*) &debugTransmitBuffer[0], "    Programming    ");
+	//			LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
+				CurrentState = csProgramming;
+			} else
+				CurrentState = csIDLE;
 			*State = psInitalisation;
 		} else {
 			retryCount++;
@@ -875,19 +882,18 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 		*State = psInitalisation;
 		break;
 	case psFailed:
-		if (retryCount > 2) {
-			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
+		retryCount++;
+		if (retryCount > 3) {
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 			CurrentState = csIDLE;
-			ProcessState = psWaiting;
 		} else {
 			if (BoardCommsParameters[0] & 0x80) {
 				communication_array(0x26, &BoardCommsParameters[0], 1);
 			}
 			retryCount++;
-			*State = psInitalisation;
 		}
+		*State = psInitalisation;
 		break;
 	}
 }
@@ -911,11 +917,12 @@ void handleAsyncTest(TboardConfig *Board, TprocessState *State) {
 		break;
 	case psFailed:
 		retryCount++;
-		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-		CurrentState = csIDLE;
-		ProcessState = psWaiting;
+		if (retryCount > 3) {
+			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+			CurrentState = csIDLE;
+		}
+		*State = psInitalisation;
 		break;
 	}
 }
@@ -999,16 +1006,13 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psFailed:
-		if (retryCount > 2) { // Return to IDLE if the sampling fails more than twice, enable the FAILED status LED as well
-			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
+		retryCount++;
+		if (retryCount > 3) {
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 			CurrentState = csIDLE;
-			*State = psWaiting;
-		} else {
-			retryCount++;
-			*State = psInitalisation;
 		}
+		*State = psInitalisation;
 		break;
 	}
 }
@@ -1092,11 +1096,12 @@ void handleSortResults(TboardConfig *Board, TprocessState *State) {
 		break;
 	case psFailed:
 		retryCount++;
-		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-		CurrentState = csIDLE;
-		*State = psWaiting;
+		if (retryCount > 3) {
+			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+			CurrentState = csIDLE;
+		}
+		*State = psInitalisation;
 		break;
 	}
 }
@@ -1156,7 +1161,6 @@ void handleSerialise(TboardConfig *Board, TprocessState *State) {
 	case psFailed:
 		retryCount++;
 		if (retryCount > 3) {
-			HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 			CurrentState = csIDLE;
