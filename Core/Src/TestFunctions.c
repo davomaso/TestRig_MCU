@@ -27,14 +27,14 @@ void TestFunction(TboardConfig *Board) {
 	//====================== Analog Test Count ======================//
 	for (currPort = 0; currPort < Board->latchPortCount; currPort++) {
 		switch (Board->TestCode[totalPortCount]) {
-			case TWO_WIRE_LATCHING:
-				CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 1);
-				break;
-			case NOTEST:
-				CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 0);
-				break;
+		case TWO_WIRE_LATCHING:
+			CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 1);
+			break;
+		case NOTEST:
+			CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 0);
+			break;
 		}
-		DataChannel+=2;
+		DataChannel += 2;
 		totalPortCount++;
 	}
 	//====================== Analog Test Count ======================//
@@ -72,6 +72,7 @@ void TestFunction(TboardConfig *Board) {
 			CHval[Board->GlobalTestNum][DataChannel++] = setAsyncPulseCount(Board, currPort);
 			break;
 		}
+		totalPortCount++;
 	}
 	if (Board->BoardType == b402x) {
 		if (currPort == 9 && Board->TestCode[totalPortCount] == 0x01) {
@@ -185,7 +186,6 @@ float setAsyncPulseCount(TboardConfig *Board, uint8 Test_Port) {
 		Port[Test_Port].Async.PulseCount = 15;
 		break;
 	}
-//	HAL_Delay(10);
 	Port[Test_Port].Async.PulseState = true;
 	if (Port[Test_Port].Async.FilterEnabled) {
 		Port[Test_Port].Async.fcount = AsyncDebounceBuffer[(Port[Test_Port].Async.PulseCount + Test_Port) % 5][0];
@@ -209,13 +209,12 @@ float setSDItwelveValue(uint8 Test_Port) {
 }
 //	===================================================================================	//
 
-
-void setRS485values(float * RS485buffer) {
+void setRS485values(float *RS485buffer) {
 	for (uint i = 0; i < 9; i++) {
-		RS485sensorBuffer[i] = HAL_RNG_GetRandomNumber(&hrng) % 10000;		// Get true random number with 4 sig figures of data
-		RS485sensorBuffer[i] /= 1000;										// Get the data in floating point form with 3 decimal places
+		RS485sensorBuffer[i] = HAL_RNG_GetRandomNumber(&hrng) % 10000;// Get true random number with 4 sig figures of data
+		RS485sensorBuffer[i] /= 1000;						// Get the data in floating point form with 3 decimal places
 	}
-	memcpy(RS485buffer, &RS485sensorBuffer[0], sizeof(float)*9);			// Copy the array into ChVal
+	memcpy(RS485buffer, &RS485sensorBuffer[0], sizeof(float) * 9);			// Copy the array into ChVal
 }
 
 //	===================================    MUX    ===================================	//
@@ -326,32 +325,35 @@ void PrintLatchResults() {
 	float LatchCurrent1;
 	float LatchCurrent2;
 	printT((uns_ch*) "\n\n=======================             Latch Test             =======================\n\n");
-	sprintf((char*) &debugTransmitBuffer, "\n==============   Port A Latch time:   High: %d        Low: %d       ==============\n",
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port A Latch time:   High: %d        Low: %d       ==============\n",
 			LatchPortA.HighPulseWidth, LatchPortA.LowPulseWidth);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port A Voltage:      High: %.3f    Low: %.3f    ==============\n", LatchPortA.highVoltage,
-			LatchPortA.lowVoltage);
+			"\n==============   Port A Voltage:      High: %.3f    Low: %.3f    ==============\n",
+			LatchPortA.highVoltage, LatchPortA.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	//Port B Latch Time
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port B Latch time:   High: %d        Low: %d       ==============\n", LatchPortB.HighPulseWidth,
-			LatchPortB.LowPulseWidth);
+			"\n==============   Port B Latch time:   High: %d        Low: %d       ==============\n",
+			LatchPortB.HighPulseWidth, LatchPortB.LowPulseWidth);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port B Voltage:      High: %.3f    Low: %.3f    ==============\n\n", LatchPortB.highVoltage,
-			LatchPortB.lowVoltage);
+			"\n==============   Port B Voltage:      High: %.3f    Low: %.3f    ==============\n\n",
+			LatchPortB.highVoltage, LatchPortB.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf((char*) &debugTransmitBuffer, "\n==============   Vin Voltage:         AVG: %.3f     Min: %.3f   ==============\n",
-			Vin.average, Vin.lowVoltage);
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Vin Voltage:         AVG: %.3f     Min: %.3f   ==============\n", Vin.average,
+			Vin.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
-	sprintf((char*) &debugTransmitBuffer, "\n==============   Fuse Voltage:        AVG: %.3f     Min: %.3f   ==============\n",
-			Vfuse.average, Vfuse.lowVoltage);
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Fuse Voltage:        AVG: %.3f     Min: %.3f   ==============\n", Vfuse.average,
+			Vfuse.lowVoltage);
 	printT((uns_ch*) &debugTransmitBuffer);
 
 	sprintf((char*) &debugTransmitBuffer,
@@ -411,18 +413,19 @@ void normaliseLatchResults() {
 }
 
 void TransmitResults(TboardConfig *Board) {
-	sprintf(SDcard.FILEname, "TEST_RESULTS/%lu_%x/%lu_LATCH_%d.CSV", Board->SerialNumber, Board->BoardType, Board->SerialNumber,
-			Board->GlobalTestNum + 1);
+	sprintf(SDcard.FILEname, "TEST_RESULTS/%lu_%x/%lu_LATCH_%d.CSV", Board->SerialNumber, Board->BoardType,
+			Board->SerialNumber, Board->GlobalTestNum + 1);
 	Create_File(&SDcard);
 	if (TestRigMode == VerboseMode)
 		printT((uns_ch*) "==============   ADC Average Results   ==============");
 	sprintf((char*) &debugTransmitBuffer, "t(ms),PortA,PortB,Vin\n");
-	Write_File(&SDcard, &SDcard.FILEname, &debugTransmitBuffer);
+	Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);
 	for (int i = 0; i < LatchCountTimer; i++) {
-		sprintf((char*) &debugTransmitBuffer[0], "%.1f,%.3f,%.3f,%.3f\n", i * 0.5, (LatchPortA.avg_Buffer[i]*15.25/4096),
-				(LatchPortB.avg_Buffer[i]*15.25/4096), (Vfuse.avg_Buffer[i]*15.25/4096));
+		sprintf((char*) &debugTransmitBuffer[0], "%.1f,%.3f,%.3f,%.3f\n", i * 0.5,
+				(LatchPortA.avg_Buffer[i] * 15.25 / 4096), (LatchPortB.avg_Buffer[i] * 15.25 / 4096),
+				(Vfuse.avg_Buffer[i] * 15.25 / 4096));
 //		printT((uns_ch*) &debugTransmitBuffer);
-		Write_File(&SDcard, &SDcard.FILEname, &debugTransmitBuffer);
+		Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);
 	}
 	Close_File(&SDcard);
 }

@@ -33,7 +33,7 @@ _Bool FindBoardFile(TboardConfig *Board, TfileConfig *FAT) {
 		sprintf((char*) &debugTransmitBuffer[0], "FATFS not found");
 		LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 		printT((uns_ch*) &debugTransmitBuffer[0]);
-		printT("\n");
+		printT((uns_ch*) "\n");
 		return false;
 	}
 	return false;

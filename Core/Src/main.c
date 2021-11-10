@@ -35,6 +35,7 @@
 #include "Init.h"
 #include "LCD.h"
 #include "Programming.h"
+#include "ScanLoom.h"
 #include "SDcard.h"
 #include "SetVsMeasured.h"
 #include "StateMachine.h"
@@ -131,6 +132,7 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 
+
 	HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -179,6 +181,21 @@ int main(void)
 	ConfigInit();							// Initialize test codes
 	read_correctionFactors();				// Read the calibration correction factors
 	SDcard.fresult = SDInit(&SDcard, "");	// Initialize SDcard
+
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+	HAL_Delay(100);
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+	HAL_Delay(100);
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+	HAL_Delay(100);
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
+	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
+	HAL_Delay(100);
 
   /* USER CODE END 2 */
 

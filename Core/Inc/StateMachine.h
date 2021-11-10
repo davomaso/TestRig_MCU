@@ -8,6 +8,7 @@
 #ifndef INC_STATEMACHINE_H_
 #define INC_STATEMACHINE_H_
 
+void handleCheckLoom(TboardConfig *, TprocessState *);
 void handleIdle(TboardConfig *, TprocessState *);
 void handleSolarCharger(TboardConfig *, TprocessState *);
 void handleInputVoltage(TboardConfig *, TprocessState *);
@@ -23,5 +24,7 @@ void handleSampling(TboardConfig *, TprocessState *);
 void handleUploading(TboardConfig *, TprocessState *);
 void handleSortResults(TboardConfig *, TprocessState *);
 void handleSerialise(TboardConfig *, TprocessState *);
+void handleSerialNumberEntry(TboardConfig *, TprocessState *);
+void handleOutputTest(TboardConfig *, TprocessState *);
 
 #endif /* INC_STATEMACHINE_H_ */

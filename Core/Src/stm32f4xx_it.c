@@ -472,25 +472,28 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 		SolarChargerTimer--;
 	}
 
-	if (!InputVoltageStable && InputVoltageTimer) {
-		ADC_Ch2sel();
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1, 10);
-		Vin.currentValue = HAL_ADC_GetValue(&hadc1);
-		HAL_ADC_Stop(&hadc1);
-		if (Vin.currentValue >= 3000) {
-			Vin.total += Vin.currentValue;
-			InputVoltageCounter++;
-		}
-		InputVoltageTimer--;
-		if ((InputVoltageCounter > 500) || InputVoltageTimer == 0) {
-			if (InputVoltageCounter > 500)
-				InputVoltageStable = true;
-			float tempVal = Vin.total / (float) InputVoltageCounter;
-			BoardConnected.VoltageBuffer[V_INPUT] = tempVal * (15.25 / 4096);
-			Vin.total = InputVoltageCounter = 0;
+	if (InputVoltageSampling) {
+		if (!InputVoltageStable && InputVoltageTimer) {
+			ADC_Ch2sel();
+			HAL_ADC_Start(&hadc1);
+			HAL_ADC_PollForConversion(&hadc1, 100);
+			Vin.currentValue = HAL_ADC_GetValue(&hadc1);
+			HAL_ADC_Stop(&hadc1);
+			if (Vin.currentValue >= 3000) {
+				Vin.total += Vin.currentValue;
+				InputVoltageCounter++;
+			}
+			InputVoltageTimer--;
+			if ((InputVoltageCounter > 250) || InputVoltageTimer == 0) {
+				if (InputVoltageCounter > 250)
+					InputVoltageStable = true;
+				float tempVal = Vin.total / (float) InputVoltageCounter;
+				BoardConnected.VoltageBuffer[V_INPUT] = tempVal * (15.25 / 4096);
+				Vin.total = InputVoltageCounter = 0;
+			}
 		}
 	}
+
 	if (samplesUploading) {
 		/*
 		 * Timer that is set when samples begin uploading to determine when to send
@@ -595,11 +598,10 @@ void USART2_IRQHandler(void)
 		 * handle what the system does with the string and future processes.
 		 */
 		//Overflow check for Receive position, if the size of buffer is larger than 254 reset to 0
-		if (UART2_RecPos > (LRGBUFFER))
+		if (UART2_RecPos > (LRGBUFFER))	// Overflow, if receive position exceeds size of buffer, set pos back to 0
 			UART2_RecPos = 0;
 
-		//load the data from USART 2 data direction register into DATA variable
-		unsigned char data = USART2->DR;
+		unsigned char data = USART2->DR;			//load the data from USART 2 into data
 		//if data is equal to the header and Receive data is not active, set the flag and begin storing data.
 		//what will be allowed to pass: B2 Receive data not Active!
 		//								21 Receive data Active!
@@ -634,7 +636,7 @@ void USART2_IRQHandler(void)
 					}
 					BoardCommsReceiveState = RxGOOD;
 				} else {
-					BoardCommsReceiveState = RxBAD;
+                   	BoardCommsReceiveState = RxBAD;
 					printT((uns_ch*) "CRC Error...\n");
 				}
 				timeOutEn = false;
@@ -660,16 +662,17 @@ void USART2_IRQHandler(void)
 				USART2->CR1 &= ~(USART_CR1_TXEIE);
 				UART2_TXcount = UART2_TXpos = 0;
 				BoardCommsReceiveState = RxWaiting;
-				setTimeOut(1500);
-
+				setTimeOut(2000);
 			} else {
 				USART2->DR = UART2_TXbuffer[UART2_TXpos++];
 			}
 		}
 	}
-	if (USART2->SR & USART_SR_TC) {
-		USART2->CR1 |= (USART_CR1_RE);
+	if (READ_BIT(USART2->SR, USART_SR_TC) && UART2_TXcount == 0) {
 		USART2->CR1 &= ~(USART_CR1_TCIE);
+		USART2->CR1 &= ~(USART_CR1_TXEIE);
+		USART2->CR1 |= (USART_CR1_RE);
+		CLEAR_BIT(USART2->SR, USART_SR_TC);
 		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_SET);
 	}

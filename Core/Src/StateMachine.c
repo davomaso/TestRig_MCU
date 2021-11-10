@@ -18,6 +18,7 @@
 #include "Calibration.h"
 #include "Communication.h"
 #include "ErrorHandle.h"
+#include "LCD.h"
 #include "LatchTest.h"
 #include "TestFunctions.h"
 
@@ -56,9 +57,9 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 	case psWaiting:
 		if (Board->BoardType && BoardResetTimer == 0) {
 			PreviousSerialNumber = Board->SerialNumber;						// Store current serial number
-			interrogateTargetBoard(); 										// Find if valid board is connected/determine serial number
+			interrogateTargetBoard(); 						// Find if valid board is connected/determine serial number
 			while ((BoardCommsReceiveState == RxWaiting) && (*State == psWaiting)) {
-				if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed || KP[star].Pressed)// button pressed start procedure associated with that button
+				if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed || KP[star].Pressed) // button pressed start procedure associated with that button
 					break;
 			}
 			if (BoardCommsReceiveState == RxGOOD) {						// Comms good, update home screen
@@ -70,6 +71,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			if ((PreviousSerialNumber != Board->SerialNumber))
 				PrintHomeScreen(Board);			// When previous serial number doesnt match current re print home screen
 			if ((Board->SerialNumber == 0) && (TestRigMode == BatchMode)) { // No serial number and in batch mode jump to the serial number entry to begin testing
+				PrintHomeScreen(Board);
 				CLEAR_BIT(Board->BSR, BOARD_SERIALISED); // Clear serialised reg if no serial number present and in batch mode
 				*State = psComplete;
 			}
@@ -174,9 +176,6 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 		if (SerialCount)
 			QuitEnabled = false;
 
-
-
-
 		if (KP[star].Pressed) {
 			KP[star].Pressed = false;
 			if (SerialCount) {
@@ -213,7 +212,7 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 			Board->SerialNumber = 0;
 			LCD_ClearLine(3);	//
 			LCD_printf((uns_ch*) "Serial Number:", 2, 0);
-			LCD_printf(&BarcodeBuffer, 3, 0);
+			LCD_printf((uns_ch*) &BarcodeBuffer, 3, 0);
 			printT((uns_ch*) &BarcodeBuffer);
 			uint8 i = 0;
 			while (BarcodeCount != i) {
@@ -290,24 +289,32 @@ void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 void handleInputVoltage(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
-		if (Board->Subclass)
-			sprintf((char*) &lcdBuffer[0], "%x%c   S/N: %lu", Board->BoardType, Board->Subclass, Board->SerialNumber);
-		else
-			sprintf((char*) &lcdBuffer[0], "%x   S/N: %lu", Board->BoardType, Board->SerialNumber);
-		LCD_printf((uns_ch*) &lcdBuffer[0], 1, 0);
 		if (!READ_BIT(Board->BVR, FUSE_V_STABLE)) {
 			testInputVoltage();
 			*State = psWaiting;
 		} else
 			*State = psComplete;
+
+		sprintf((char*) &lcdBuffer[0], "%x", Board->BoardType);
+		LCD_printf((uns_ch*) &lcdBuffer[0], 1, 0);
+		sprintf((char*) &lcdBuffer, "S/N: %lu", Board->SerialNumber);
+		LCD_setCursor(1, (21 - strlen(&lcdBuffer)));
+		LCD_displayString((uns_ch*) &lcdBuffer[0], strlen(&lcdBuffer));
 		break;
 	case psWaiting:
-		if (InputVoltageStable) {
-			SET_BIT(Board->BVR, FUSE_V_STABLE);
-			*State = psComplete;
-		} else if (!InputVoltageTimer) {
-			CLEAR_BIT(Board->BVR, FUSE_V_STABLE);
-			*State = psComplete;
+		if (BoardResetTimer == 0 && !InputVoltageSampling) {
+			InputVoltageSampling = true;
+			InputVoltageTimer = 2000;
+			InputVoltageCounter = 0;
+		}
+		if (InputVoltageSampling) {
+			if (InputVoltageStable) {
+				SET_BIT(Board->BVR, FUSE_V_STABLE);
+					*State = psComplete;
+			} else if (!InputVoltageTimer) {
+					CLEAR_BIT(Board->BVR, FUSE_V_STABLE);
+					*State = psComplete;
+			}
 		}
 		break;
 	case psComplete:
@@ -659,11 +666,11 @@ void handleInterogating(TboardConfig *Board, TprocessState *State) {
 
 	case psFailed:
 		if (retryCount > 3) {
-			if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED) ) {
+			if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED)) {
 				currentBoardConnected(&BoardConnected);
-	//			LCD_ClearLine(1);
-	//			sprintf((char*) &debugTransmitBuffer[0], "    Programming    ");
-	//			LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
+				//			LCD_ClearLine(1);
+				//			sprintf((char*) &debugTransmitBuffer[0], "    Programming    ");
+				//			LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 				CurrentState = csProgramming;
 			} else
 				CurrentState = csIDLE;
@@ -966,22 +973,19 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psComplete:
-		if (VuserSamples < 100) {// Sample the sample voltage shortly after the samples are uploaded, placed here as sample voltage took time to establish and become constant
-			if (Board->GlobalTestNum == V_12output) {
-				if ((Board->BoardType == b401x) || (Board->BoardType == b402x))
-					ADC_Ch4sel();
-				else
-					ADC_Ch3sel();
-			} else
-				ADC_Ch5sel();
-			HAL_ADC_Start(&hadc1);
-			HAL_ADC_PollForConversion(&hadc1, 100);
-			Vuser.avg_Buffer[VuserSamples] = HAL_ADC_GetValue(&hadc1);
-			Vuser.total += Vuser.avg_Buffer[VuserSamples];
-			VuserSamples++;
-			HAL_ADC_Stop(&hadc1);
-		}
-
+		if (Board->GlobalTestNum == V_12output) {
+			if ((Board->BoardType == b401x) || (Board->BoardType == b402x))
+				ADC_Ch4sel();
+			else
+				ADC_Ch3sel();
+		} else
+			ADC_Ch5sel();
+		HAL_ADC_Start(&hadc1);
+		HAL_ADC_PollForConversion(&hadc1, 100);
+		Vuser.avg_Buffer[VuserSamples] = HAL_ADC_GetValue(&hadc1);
+		Vuser.total += Vuser.avg_Buffer[VuserSamples];
+		VuserSamples++;
+		HAL_ADC_Stop(&hadc1);
 		if (TestRigMode == VerboseMode) {		// print what is occuring if the system is in verbose mode
 			printT((uns_ch*) "Samples Uploaded\n\n");
 			printT((uns_ch*) "Requesting Results\n\n");

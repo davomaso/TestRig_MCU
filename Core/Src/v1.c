@@ -20,9 +20,10 @@ void clearTestStatusLED() {
 void testInputVoltage() {
 	Vin.total = InputVoltageCounter = 0;
 	HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+	BoardResetTimer = 125;
+	InputVoltageStable = false;
+	InputVoltageCounter = 0;
 	LCD_printf((uns_ch*) "Board Power Test", 2, 0);
-	InputVoltageTimer = 2500;
-	InputVoltageSampling = true;
 }
 
 void testSolarCharger() {
@@ -87,20 +88,23 @@ void TestComplete(TboardConfig *Board) {
 void PrintHomeScreen(TboardConfig *Board) {
 	LCD_Clear();
 	if (Board->BoardType != bNone) {
-		sprintf(lcdBuffer, "TEST RIG        %x",Board->BoardType);
+		sprintf((char*) &lcdBuffer, "TEST RIG        %x", Board->BoardType);
 	} else {
-		LCD_printf((uns_ch*)"Connect Loom",2,1);
-		sprintf(lcdBuffer, "TEST RIG");
+		LCD_printf((uns_ch*) "Connect Loom", 2, 1);
+		sprintf((char*) &lcdBuffer, "TEST RIG");
 	}
-	LCD_printf((uns_ch*)&lcdBuffer,1,1);
+	LCD_printf((uns_ch*) &lcdBuffer, 1, 1);
 	if (Board->SerialNumber) {
-		sprintf((char*) &lcdBuffer[0], "SN:%lu      v%x", Board->SerialNumber, Board->Version);
-		LCD_printf((uns_ch*) &lcdBuffer, 2, 1);
-		LCD_printf((uns_ch*) "1 - Test Only", 3, 0);
+		sprintf((char*) &lcdBuffer[0], "SN:%lu        ", Board->SerialNumber);	// populate buffer with serial no.
+		LCD_printf((uns_ch*) &lcdBuffer, 2, 1);									// display serial no. to screen
+		sprintf((char*) &lcdBuffer[0], "v%x", Board->Version);					// populate buffer with version no.
+		LCD_setCursor(2, 18);													// Move cursor to edge of screen
+		LCD_displayString((uns_ch*) &lcdBuffer[0], strlen((char*) &lcdBuffer));	// display version to screen
+		LCD_printf((uns_ch*) "1 - Test Only", 3, 0);							// print options to lcd screen
 		LCD_printf((uns_ch*) "3 - New SN  Prog - #", 4, 0);
 	} else if (TestRigMode != BatchMode) {
 		clearTestStatusLED();
-		LCD_ClearLine(3);
+		LCD_ClearLine(3);														// clear line 3 and status leds
 	}
 }
 

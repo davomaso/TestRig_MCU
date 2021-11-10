@@ -16,6 +16,7 @@
 #include "UART_Routine.h"
 #include "Board_Config.h"
 #include "Test.h"
+#include "Init.h"
 #include "Delay.h"
 #include "LCD.h"
 #include "stdio.h"
@@ -175,7 +176,7 @@ void SetPara(TboardConfig *Board, uns_ch Command) {
 		break;
 	case 0x56:
 		if (TestRigMode == VerboseMode)
-			printT("\nConfiguring Board...\n");
+			printT((uns_ch *)"\nConfiguring Board...\n");
 		SetTestParam(Board, Board->GlobalTestNum, &BoardCommsParameters[0], &BoardCommsParametersLength);
 		break;
 	}
@@ -211,6 +212,7 @@ void communication_arraySerial(uns_ch Command, uint32 CurrentSerial, uint32 NewS
 
 	//Switch Comms to Radio or RS485 depending on Board Connected
 	switchCommsProtocol(&BoardConnected);
+	HAL_Delay(50);
 
 	UART2_transmit(&Com_buffer[0], Comlen);
 	USART2->CR1 |= USART_CR1_RXNEIE;

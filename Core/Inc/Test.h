@@ -24,6 +24,7 @@ void TestConfig427x(TboardConfig *);
 void SetTestParam(TboardConfig *, uint8, uns_ch *, uint8 *);
 void Set_Test(TboardConfig *, uint8, uint8);
 _Bool CheckTestNumber(TboardConfig *);
+void SetVoltageParameters(TboardConfig *, uns_ch *, uint8 *);
 
 float CHval[10][16];
 

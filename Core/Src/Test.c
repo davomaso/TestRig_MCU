@@ -7,6 +7,7 @@
 #include "v1.h"
 #include "Global_Variables.h"
 #include "SetVsMeasured.h"
+#include "string.h"
 #include "UART_Routine.h"
 #include "DAC.h"
 #include "TestFunctions.h"
@@ -168,20 +169,12 @@ void TestConfig401x(TboardConfig *Board) {
 
 void TestConfig402x(TboardConfig *Board) {
 	//Port Test Array
-	TportConfig *tempTestARR[63] = { &sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest,
-			&asyncFilteredTest, &asyncUnfilteredTest,
-			&asyncFilteredTest,			//
-			&currentTest, &sdi12Test, &currentTest, &currentTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest,
-			&asyncUnfilteredTest,			//
-			&TwovoltTest, &TwovoltTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &TwovoltTest, &asyncUnfilteredTest,
-			&asyncFilteredTest,
-			&asyncFilteredTest,			//
-			&currentTest, &currentTest, &currentTest, &sdi12Test, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest,
-			&asyncFilteredTest, 					//
-			&OnevoltTest, &currentTest, &TwovoltTest, &currentTest, &sdi12Test, &OnevoltTest, &asyncFilteredTest, &asyncFilteredTest,
-			&asyncFilteredTest,					//
-			&TwovoltTest, &OnevoltTest, &OnevoltTest, &TwovoltTest, &OnevoltTest, &sdi12Test, &asyncFilteredTest, &asyncFilteredTest,
-			&asyncFilteredTest,				//
+	TportConfig *tempTestARR[63] = { &sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
+			&currentTest, &sdi12Test, &currentTest, &currentTest, &currentTest, &currentTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
+			&TwovoltTest, &TwovoltTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &TwovoltTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
+			&currentTest, &currentTest, &currentTest, &sdi12Test, &currentTest, &currentTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
+			&OnevoltTest, &currentTest, &TwovoltTest, &currentTest, &sdi12Test, &OnevoltTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
+			&TwovoltTest, &OnevoltTest, &OnevoltTest, &TwovoltTest, &OnevoltTest, &sdi12Test, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;

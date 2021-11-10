@@ -6,7 +6,6 @@
 
 void ScanLoom(uint8 *Loom) {
 	uint8 PrevLoomState;
-	uint8 DifferentLoomCount;
 	PrevLoomState = *Loom;
 	*Loom = 0x00;
 	for (int i = 0; i < 4; i++) {

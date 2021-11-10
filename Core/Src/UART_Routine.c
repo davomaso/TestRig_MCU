@@ -5,6 +5,7 @@
 #include "usbd_cdc_if.h"
 #include "UART_Routine.h"
 #include "Delay.h"
+#include "Init.h"
 
 void UART2_transmit(unsigned char *data, unsigned char arraysize) {
 	/*

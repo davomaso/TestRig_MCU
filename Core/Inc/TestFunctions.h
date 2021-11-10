@@ -23,5 +23,6 @@ void ADC_MUXsel(uint8 );
 void PrintLatchResults(void);
 void normaliseLatchResults(void);
 void TransmitResults(TboardConfig*);
+void setRS485values(float *);
 
 #endif /* INC_TESTFUNCTIONS_H_ */

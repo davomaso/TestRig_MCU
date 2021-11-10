@@ -6,6 +6,7 @@
 #include "main.h"
 #include "Global_Variables.h"
 #include "Channel_Analysis.h"
+#include "string.h"
 
 void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	uint8 CH_count = 0;
