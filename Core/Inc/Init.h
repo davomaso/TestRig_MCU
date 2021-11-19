@@ -14,6 +14,7 @@ void TestRig_Init(void);
 void initialiseTargetBoard(TboardConfig *);
 void interrogateTargetBoard(void);
 void configureTargetBoard(TboardConfig *);
+void sampleTargetBoard(TboardConfig * );
 void uploadSamplesTargetBoard(TboardConfig *);
 void TargetBoardParamInit(_Bool);
 uint32 ReadSerialNumber(uint8 *, uns_ch *, uint16 );

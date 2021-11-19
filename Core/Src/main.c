@@ -131,9 +131,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-
-	HAL_Init();
+HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -167,13 +165,13 @@ int main(void)
   MX_RNG_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-//	HAL_Delay(2000); //I2C delay
 	HAL_I2C_Init(&hi2c1);
 	LCD_init();
 	ChangeCharacterSet('A');				// Character set A for Progress Bar
 
 	TestRig_Init();
 	DebounceArrayInit();					// Initialize the async debounce functionality array
+	populateSetSampleVoltages();
 	ProcessState = psInitalisation;
 	CurrentState = csCheckLoom;				// Determine what loom is connected first
 	CheckLoomTimer = 0;
@@ -181,29 +179,12 @@ int main(void)
 	ConfigInit();							// Initialize test codes
 	read_correctionFactors();				// Read the calibration correction factors
 	SDcard.fresult = SDInit(&SDcard, "");	// Initialize SDcard
-
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
-	HAL_Delay(100);
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
 //=========================================================================================================//
 		/*

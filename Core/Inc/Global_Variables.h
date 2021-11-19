@@ -116,15 +116,14 @@ uint16 latchTimeOutCount;
 typedef struct {
 	uint32_t total;
 	float average;
-	int avg_Buffer[ADC_BUF_LEN];
+	uint32_t avg_Buffer[ADC_BUF_LEN];
 	uint16 readValue;
-	uint16 currentValue;
+	uint32_t currentValue;
 
 	uint8_t HighPulseWidth;
 	_Bool HighPulseMeasure;
 	uint8_t LowPulseWidth;
 	_Bool LowPulseMeasure;
-
 	float highVoltage;
 	float lowVoltage;
 
@@ -181,7 +180,8 @@ TkeypadConfig KP[12];
 typedef enum { star = 10, hash = 11 }TkeypadSpecialChars;
 
 //Voltage Test Enum
-typedef enum {V_12 = 0, V_3 = 1, V_0 = 2, V_12output = 3,  V_trim = 4, V_INPUT = 5, V_105 = 6, V_SOLAR = 7}TvoltageTestVariables;
+typedef enum {V_12output = 0, V_12 = 1, V_3 = 2, V_105 = 3, V_trim = 4, V_INPUT = 5, V_SOLAR = 6}TvoltageTestVariables;
+float setSampleVoltages[7];
 
 typedef enum {BatchMode = 0 , OldBoardMode = 1, VerboseMode = 2, SerialiseMode = 3}TtestMode;
 
@@ -216,7 +216,7 @@ uint16 SolarChargerCounter;
 uint16 SolarChargerTimer;
 _Bool SolarChargerSampling;
 
-_Bool OutputsSet;
+extern _Bool OutputsSet;
 
 _Bool RelayPort_Enabled;
 uint8 RelayCount;

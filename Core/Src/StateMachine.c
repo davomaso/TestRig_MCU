@@ -25,20 +25,24 @@
 void handleCheckLoom(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
+		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 		TargetBoardParamInit(true);							// Fully erase BoardConnected struct and associated memory
 		*State = psWaiting;
 		break;
 	case psWaiting:
+		BoardResetTimer = 500;
 		SetBoardType(Board, LoomState);									// Set board type depending on loom connected
 		*State = psComplete;
 		break;
 	case psComplete:
-		currentBoardConnected(Board);									// Set test struct with the boardtype variable
+		if (BoardResetTimer == 0)
+			currentBoardConnected(Board);							// Set test struct with the boardtype variable
 		CurrentState = csIDLE;										// Return to the IDLE state when a loom is connected
 		*State = psInitalisation;
 		break;
 	case psFailed:
-
+		*State = psInitalisation;
 		break;
 	}
 }
@@ -47,6 +51,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 	uint32 PreviousSerialNumber;
 	switch (*State) {
 	case psInitalisation:
+		LCD_init();
 		if (!HAL_GPIO_ReadPin(PIN2EN_GPIO_Port, PIN2EN_Pin)) {
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);		// Enable power
 			BoardResetTimer = 1500;												// Timer for board to reset
@@ -139,7 +144,6 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 
 void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 	uint8 tempdata;
-	uint32 tempSerialNumber;
 	switch (*State) {
 	case psInitalisation:
 		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
@@ -157,7 +161,6 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 		LCD_CursorOn_Off(true);
 		SerialCount = 0;
 		tempdata = 0;
-		tempSerialNumber = 0;
 		*State = psWaiting;
 		break;
 	case psWaiting:
@@ -204,6 +207,12 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 			while (SerialCount != i) {
 				Board->SerialNumber = (Board->SerialNumber * 10 + (SerialNumber[i++] - 0x30));
 			}
+				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+				LCD_CursorOn_Off(false);
+				LCD_ClearLine(4);
+				QuitEnabled = true;
+				BoardResetTimer = 2000;
+				*State = psComplete;
 		}
 
 		// Barcode Scanned
@@ -220,16 +229,14 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 			}
 			SerialCount = BarcodeCount;
 			BarcodeCount = 0;
-			USART3->CR1 |= (USART_CR1_RXNEIE);
+			USART3->CR1 &= ~(USART_CR1_RXNEIE);
+				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+				LCD_CursorOn_Off(false);
+				LCD_ClearLine(4);
+				QuitEnabled = true;
+				BoardResetTimer = 2000;
+				*State = psComplete;
 			break;
-		}
-		if (Board->SerialNumber) {
-			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-			LCD_CursorOn_Off(false);
-			LCD_ClearLine(4);
-			QuitEnabled = true;
-			BoardResetTimer = 2000;
-			*State = psComplete;
 		}
 		break;
 	case psComplete:
@@ -244,6 +251,12 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 		}
 		break;
 	case psFailed:
+		retryCount++;
+		if (retryCount > 3) {
+			retryCount = 0;
+			CurrentState = csIDLE;
+		}
+		*State = psInitalisation;
 		break;
 	}
 }
@@ -251,11 +264,11 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
-		if ((Board->BoardType == b402x || Board->BoardType == b427x) && !READ_BIT(Board->BVR, BOARD_SOLAR_STABLE)) {
+		if ((Board->BoardType == b402x || Board->BoardType == b427x) && !READ_BIT(Board->BVR, SOLAR_V_STABLE)) {
 			testSolarCharger();
 			*State = psWaiting;
 		} else {
-			SET_BIT(Board->BVR, BOARD_SOLAR_STABLE);
+			SET_BIT(Board->BVR, SOLAR_V_STABLE);
 			*State = psComplete;
 		}
 		break;
@@ -265,7 +278,7 @@ void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 			SolarChargerSampling = SolarChargerStable = false;
 			SolarChargerTimer = SolarChargerCounter = 0;
 			printT((uns_ch*) "Solar Charger Stable...\n");
-			SET_BIT(Board->BVR, BOARD_SOLAR_STABLE);
+			SET_BIT(Board->BVR, SOLAR_V_STABLE);
 			*State = psComplete;
 		} else if (!SolarChargerTimer)
 			*State = psFailed;
@@ -279,7 +292,7 @@ void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 		SolarChargerSampling = SolarChargerStable = false;
 		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_SET);
 		printT((uns_ch*) "Solar Charger Failure...\n");
-		CLEAR_BIT(Board->BVR, BOARD_SOLAR_STABLE);
+		CLEAR_BIT(Board->BVR, SOLAR_V_STABLE);
 		CurrentState = csInputVoltage;
 		*State = psInitalisation;
 		break;
@@ -289,7 +302,7 @@ void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 void handleInputVoltage(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
-		if (!READ_BIT(Board->BVR, FUSE_V_STABLE)) {
+		if (!READ_BIT(Board->BVR, INPUT_V_STABLE)) {
 			testInputVoltage();
 			*State = psWaiting;
 		} else
@@ -298,8 +311,8 @@ void handleInputVoltage(TboardConfig *Board, TprocessState *State) {
 		sprintf((char*) &lcdBuffer[0], "%x", Board->BoardType);
 		LCD_printf((uns_ch*) &lcdBuffer[0], 1, 0);
 		sprintf((char*) &lcdBuffer, "S/N: %lu", Board->SerialNumber);
-		LCD_setCursor(1, (21 - strlen(&lcdBuffer)));
-		LCD_displayString((uns_ch*) &lcdBuffer[0], strlen(&lcdBuffer));
+		LCD_setCursor(1, (21 - strlen((char*) &lcdBuffer)));
+		LCD_displayString((uns_ch*) &lcdBuffer[0], strlen((char*) &lcdBuffer));
 		break;
 	case psWaiting:
 		if (BoardResetTimer == 0 && !InputVoltageSampling) {
@@ -309,11 +322,11 @@ void handleInputVoltage(TboardConfig *Board, TprocessState *State) {
 		}
 		if (InputVoltageSampling) {
 			if (InputVoltageStable) {
-				SET_BIT(Board->BVR, FUSE_V_STABLE);
-					*State = psComplete;
+				SET_BIT(Board->BVR, INPUT_V_STABLE);
+				*State = psComplete;
 			} else if (!InputVoltageTimer) {
-					CLEAR_BIT(Board->BVR, FUSE_V_STABLE);
-					*State = psComplete;
+				CLEAR_BIT(Board->BVR, INPUT_V_STABLE);
+				*State = psComplete;
 			}
 		}
 		break;
@@ -351,9 +364,10 @@ void handleInitialising(TboardConfig *Board, TprocessState *State) {
 	case psWaiting:
 		if (BoardCommsReceiveState == RxGOOD) {
 			Response = Data_Buffer[0];
-			if (Response == 0xCD)
-				*State = psComplete;							// Board initialized correctly
-			else
+			if (Response == 0xCD) {
+				BoardResetTimer = 500;				//Allow board to reset, Required for electronic fuse
+				*State = psComplete;				// Board initialized correctly
+			} else
 				*State = psFailed;								// Initialization failed
 		} else if (BoardCommsReceiveState == RxBAD) {
 			*State = psFailed;									// Board comms failed
@@ -365,16 +379,14 @@ void handleInitialising(TboardConfig *Board, TprocessState *State) {
 			TestComplete(Board);								// Set pass LED
 			CurrentState = csIDLE;
 			*State = psInitalisation;
-		} else {
-			HAL_Delay(500);										//Allow board to reset, Required for electronic fuse
+		} else if (BoardResetTimer == 0) {
 			CurrentState = csInterogating;
 			*State = psInitalisation;
 		}
 		break;
 	case psFailed:
 		retryCount++;
-		initialiseTargetBoard(Board);
-		ProcessState = psWaiting;
+		ProcessState = psInitalisation;
 		break;
 	}
 }
@@ -668,9 +680,6 @@ void handleInterogating(TboardConfig *Board, TprocessState *State) {
 		if (retryCount > 3) {
 			if (!READ_BIT(BoardConnected.BSR, BOARD_PROGRAMMED)) {
 				currentBoardConnected(&BoardConnected);
-				//			LCD_ClearLine(1);
-				//			sprintf((char*) &debugTransmitBuffer[0], "    Programming    ");
-				//			LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 				CurrentState = csProgramming;
 			} else
 				CurrentState = csIDLE;
@@ -683,6 +692,8 @@ void handleInterogating(TboardConfig *Board, TprocessState *State) {
 		break;
 	}
 }
+
+_Bool OutputsSet;
 
 void handleConfiguring(TboardConfig *Board, TprocessState *State) {
 	uns_ch Response;
@@ -704,7 +715,7 @@ void handleConfiguring(TboardConfig *Board, TprocessState *State) {
 				//pause for board reset
 				if (TestRigMode == VerboseMode)
 					printT((uns_ch*) "===Board Configuration Successful===\n");
-				BoardResetTimer = 1000;
+				BoardResetTimer = 500;
 				*State = psComplete;
 			} else
 				*State = psFailed;
@@ -726,7 +737,7 @@ void handleConfiguring(TboardConfig *Board, TprocessState *State) {
 			*State = psInitalisation;
 		} else {
 			retryCount++;
-			HAL_Delay(100);
+//			HAL_Delay(100);
 			configureTargetBoard(Board);
 			*State = psWaiting;
 			BoardCommsReceiveState = RxWaiting;
@@ -799,8 +810,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 1);
 					Data_Buffer[0] = 0;
 					communication_array(0x26, &BoardCommsParameters[0], 1);
-				} else if (READ_BIT(LatchTestStatusRegister,
-						LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
+				} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
 					if (BoardCommsReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
 						if (BoardCommsReceiveState == RxGOOD) {
 							Response = Data_Buffer[0];
@@ -813,14 +823,12 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 						} else if (BoardCommsReceiveState == RxBAD)
 							*State = psFailed;
 					}
-				} else if (READ_BIT(LatchTestStatusRegister,
-						LATCH_ON_COMPLETE) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
+				} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
 					SET_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING); //Begin Latch off sampling
 					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 0);
 					Data_Buffer[0] = 0;
 					communication_array(0x26, &BoardCommsParameters[0], 1);
-				} else if (READ_BIT(LatchTestStatusRegister,
-						LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
+				} else if (READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
 					if (BoardCommsReceiveState != RxWaiting) { //Latch off sampling complete, reset voltage stability check
 						if (BoardCommsReceiveState == RxGOOD) {
 							Response = Data_Buffer[0];
@@ -862,23 +870,6 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 				printT(
 						(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
 				Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 0;
-				if (Board->BoardType == b422x) { //TODO: Check if this needs to be here with code changes
-					HAL_Delay(250);
-					switch (LatchTestPort) {
-					case Port_1:
-						CLEAR_BIT(Board->TPR, TEST_ONE_PASSED);
-						break;
-					case Port_2:
-						CLEAR_BIT(Board->TPR, TEST_TWO_PASSED);
-						break;
-					case Port_3:
-						CLEAR_BIT(Board->TPR, TEST_THREE_PASSED);
-						break;
-					case Port_4:
-						CLEAR_BIT(Board->TPR, TEST_FOUR_PASSED);
-						break;
-					}
-				}
 			}
 			CLEAR_REG(Board->LatchTestPort);
 		}
@@ -908,6 +899,7 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 void handleAsyncTest(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
+		HAL_TIM_Base_Start(&htim14);
 		AsyncComplete = false;
 		for (uint8 i = Port_1; i <= Port_9; i++) {
 			Port[i].Async.Active = Port[i].Async.PulseCount ? true : false;
@@ -919,6 +911,7 @@ void handleAsyncTest(TboardConfig *Board, TprocessState *State) {
 			*State = psComplete;
 		break;
 	case psComplete:
+		HAL_TIM_Base_Stop(&htim14);
 		CurrentState = csSampling;
 		*State = psInitalisation;
 		break;
@@ -927,6 +920,7 @@ void handleAsyncTest(TboardConfig *Board, TprocessState *State) {
 		if (retryCount > 3) {
 			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+			HAL_TIM_Base_Stop(&htim14);
 			CurrentState = csIDLE;
 		}
 		*State = psInitalisation;
@@ -935,16 +929,12 @@ void handleAsyncTest(TboardConfig *Board, TprocessState *State) {
 }
 
 void handleSampling(TboardConfig *Board, TprocessState *State) {
-	uns_ch Command;
 	uns_ch Response;
-	uint16 VuserSamples;
+	volatile uint16 VuserSamples;
 	uint8 Percentage;
 	switch (*State) {
 	case psInitalisation:
-		LCD_printf((uns_ch*) "      Sampling      ", 2, 0);
-		Command = 0x1A;
-		SetPara(Board, Command);
-		communication_array(Command, (uns_ch*) &BoardCommsParameters[0], BoardCommsParametersLength);
+		sampleTargetBoard(Board);
 		VuserSamples = 0;
 		*State = psWaiting;
 		break;
@@ -975,38 +965,25 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 	case psComplete:
 		if (Board->GlobalTestNum == V_12output) {
 			if ((Board->BoardType == b401x) || (Board->BoardType == b402x))
-				ADC_Ch4sel();
+				Vuser.total += getOutputVoltage();
 			else
-				ADC_Ch3sel();
+				Vuser.total += getFuseVoltage();
 		} else
-			ADC_Ch5sel();
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1, 100);
-		Vuser.avg_Buffer[VuserSamples] = HAL_ADC_GetValue(&hadc1);
-		Vuser.total += Vuser.avg_Buffer[VuserSamples];
+			Vuser.total += getSampleVoltage();
 		VuserSamples++;
-		HAL_ADC_Stop(&hadc1);
 		if (TestRigMode == VerboseMode) {		// print what is occuring if the system is in verbose mode
 			printT((uns_ch*) "Samples Uploaded\n\n");
 			printT((uns_ch*) "Requesting Results\n\n");
 		}
 
-		if (VuserSamples >= 100) {	// take average across 100+ samples
+		if (VuserSamples >= 100) {
 			Vuser.total /= VuserSamples;
-			Vuser.average = Vuser.total * (15.25 / 4096);
-			if (Board->GlobalTestNum <= V_trim) {
-				Board->VoltageBuffer[Board->GlobalTestNum] = Vuser.average;
-				if (Board->VoltageBuffer[Board->GlobalTestNum] > 0) {
-					*State = psInitalisation;
-					CurrentState = csUploading;
-				} else
-					VuserSamples = 0;
-			} else {
+			Vuser.average = Vuser.total * (15.25 / 4096);		// calculate the average sample voltage
+			if (compareSampleVoltage(Board, &(Vuser.average), &(setSampleVoltages[Board->GlobalTestNum]) )) {			// Check to see if the average
 				*State = psInitalisation;
 				CurrentState = csUploading;
 			}
-			sampleCount = 0;
-			Vuser.total = 0;
+			VuserSamples = Vuser.total = sampleCount = 0;
 		}
 		break;
 	case psFailed:
@@ -1025,7 +1002,6 @@ void handleUploading(TboardConfig *Board, TprocessState *State) {
 	uns_ch Response;
 	switch (*State) {
 	case psInitalisation:
-		LCD_printf((uns_ch*) "     Uploading      ", 2, 0);
 		uploadSamplesTargetBoard(Board);
 		*State = psWaiting;
 		break;

@@ -19,6 +19,7 @@ void HandleResults(TboardConfig *Board, float *SetVal) {
 	uint8 currentPort;
 	uint8 spacing;
 	float fMeasured;									// Value measured by target baord
+	float range;
 	float tolerance;									// Testing tolerance
 	tolerance = 0;
 	Tresult TresultStatus;
@@ -54,18 +55,19 @@ void HandleResults(TboardConfig *Board, float *SetVal) {
 		case TWOFIVE_VOLT:
 		case THREE_VOLT:
 			if (Board->TestCode[currentPort] == ONE_VOLT)
-				tolerance = (1 * 0.01) + (0.005 * *SetVal);
-			else if (Board->TestCode[currentPort] == TWOFIVE_VOLT)
-				tolerance = (2.5 * 0.01) + (0.005 * *SetVal);
+				range = 1;
+			else if (Board->TestCode[currentPort] == TWOFIVE_VOLT )
+				range = 2.5;
 			else if (Board->TestCode[currentPort] == THREE_VOLT)
-				tolerance = (3 * 0.01) + (0.005 * *SetVal);
+				range = 3.0;
+			tolerance = GET_VOLTAGE_TEST_TOLERANCE(range, *SetVal);
 			printT((uns_ch*) "\nTesting Voltage\n");
 			PortTypes[currentPort] = TTVoltage;
 			ChCount = OnevoltTest.Channels;
 			break;
 
 		case TWENTY_AMP:
-			tolerance = (20 * 0.005) + (0.005 * *SetVal);
+			tolerance = GET_CURRENT_TEST_TOLERANCE(*SetVal);
 			printT((uns_ch*) "\nTesting Currrent\n");
 			PortTypes[currentPort] = TTCurrent;
 			ChCount = currentTest.Channels;

@@ -47,31 +47,78 @@ void GetBatteryLevel(TboardConfig *Board) {
 
 void CheckPowerRegisters(TboardConfig *Board) {
 	PrintVoltages(Board);
-	if (Board->BoardType == b422x) {
+	if (VoltageComparison(&Board->VoltageBuffer[V_INPUT], INPUT_VOLTAGE_THRESHOLD))// Compare Input Voltage for all boards
+		SET_BIT(Board->BVR, INPUT_V_STABLE);
+
+	switch (Board->BoardType) {
+	case b422x:
+		if (VoltageComparison(&Board->VoltageBuffer[V_12output], OUTPUT_VOLTAGE_VALUE))
+			SET_BIT(Board->BVR, V12_OUTPUT_STABLE);
 		SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
 		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
-	} else {
-		if ((Board->BoardType != b401x) && (Board->BoardType != b402x) && (Board->VoltageBuffer[V_12] > 11))
-			SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
-		else if (((Board->BoardType == b401x) || (Board->BoardType == b402x)) && (Board->VoltageBuffer[V_trim] > 10.46))
-			SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
-		if (((Board->VoltageBuffer[V_3] >= 2.90) && (Board->VoltageBuffer[V_3] < 3.5)) || (Board->BoardType == b427x)
-				|| (Board->BoardType == b401x))
+		SET_BIT(Board->BVR, V10_SAMPLE_STABLE);
+		SET_BIT(Board->BVR, TRIM_VOLTAGE_STABLE);
+		SET_BIT(Board->BVR, SOLAR_V_STABLE);
+	case b427x:
+		if (VoltageComparison(&Board->VoltageBuffer[V_SOLAR], SOLAR_CHARGER_THRESHOLD))
+			SET_BIT(Board->BVR, SOLAR_V_STABLE);
+		SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
+		SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_12output], OUTPUT_VOLTAGE_VALUE))
+			SET_BIT(Board->BVR, V12_OUTPUT_STABLE);
+		SET_BIT(Board->BVR, V10_SAMPLE_STABLE);
+		SET_BIT(Board->BVR, TRIM_VOLTAGE_STABLE);
+		break;
+	case b935x:
+	case b937x:
+		SET_BIT(Board->BVR, SOLAR_V_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_3], THREE_VOLT_SAMPLE_VALUE))
 			SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_12], TWELVE_VOLT_SAMPLE_VALUE))
+			SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_12output], OUTPUT_VOLTAGE_VALUE))
+			SET_BIT(Board->BVR, V12_OUTPUT_STABLE);
+		SET_BIT(Board->BVR, V10_SAMPLE_STABLE);
+		SET_BIT(Board->BVR, TRIM_VOLTAGE_STABLE);
+		break;
+	case b401x:
+		SET_BIT(Board->BVR, SOLAR_V_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_3], THREE_VOLT_SAMPLE_VALUE))
+			SET_BIT(Board->BVR, V3_SAMPLE_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_12], TWELVE_VOLT_SAMPLE_VALUE))
+			SET_BIT(Board->BVR, V12_SAMPLE_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_12output], OUTPUT_VOLTAGE_VALUE))
+			SET_BIT(Board->BVR, V12_OUTPUT_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_105], TEN_VOLT_SAMPLE_THRESHOLD))
+			SET_BIT(Board->BVR, V10_SAMPLE_STABLE);
+		if (VoltageComparison(&Board->VoltageBuffer[V_trim], TEN_VOLT_SAMPLE_THRESHOLD))
+			SET_BIT(Board->BVR, TRIM_VOLTAGE_STABLE);
+		break;
+	case b402x:
+
+		break;
+	case bNone:
+		CLEAR_REG(Board->BVR);
+		break;
+
 	}
-	if (Board->VoltageBuffer[V_12output] > 11.0) {
-		SET_BIT(Board->BVR, V12_OUTPUT_STABLE);
-	}
-	if ( READ_REG(Board->BVR) != 0x3F)
+	if ( READ_REG(Board->BVR) != 0xFF)
 		CLEAR_BIT(Board->BSR, BOARD_POWER_STABLE);
+}
+
+_Bool VoltageComparison(float *Sample, float ExpectedValue) {
+	float tolerance;
+	tolerance = GET_SAMPLE_VOLTAGE_TOLERANCE(ExpectedValue);
+	if ((*Sample < (ExpectedValue + tolerance)) && (*Sample > (ExpectedValue - tolerance)))
+		return true;
 	else
-		SET_BIT(Board->BSR, BOARD_POWER_STABLE);
+		return false;
 }
 
 void TestComplete(TboardConfig *Board) {
 	HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-	if (READ_REG(Board->BSR) == 0x3F) {
+	if (READ_BIT(Board->BSR,BOARD_TEST_PASSED)) {
 		HAL_GPIO_WritePin(PASS_GPIO_Port, PASS_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
@@ -124,7 +171,7 @@ void PrintVoltages(TboardConfig *Board) {
 		sprintf((char*) &debugTransmitBuffer[0], "12V Sample Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
 		printT((uns_ch*) &debugTransmitBuffer[0]);
 	} else if (Board->BoardType == b401x || Board->BoardType == b402x) {
-		sprintf((char*) &debugTransmitBuffer[0], "10.5V User Voltage:    %.3f\n", Board->VoltageBuffer[V_12]);
+		sprintf((char*) &debugTransmitBuffer[0], "10.5V User Voltage:    %.3f\n", Board->VoltageBuffer[V_105]);
 		printT((uns_ch*) &debugTransmitBuffer[0]);
 		sprintf((char*) &debugTransmitBuffer[0], "10.5V Adjusted:        %.3f\n", Board->VoltageBuffer[V_trim]);
 		printT((uns_ch*) &debugTransmitBuffer[0]);

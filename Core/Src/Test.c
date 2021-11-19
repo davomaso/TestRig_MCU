@@ -1,4 +1,5 @@
 #include "main.h"
+#include "ADC_Variables.h"
 #include "Test.h"
 #include "stdio.h"
 #include "LCD.h"
@@ -77,12 +78,12 @@ void ConfigInit() {
 void TestConfig935x(TboardConfig *Board) {
 	// Port Test Array
 	TportConfig *tempTestARR[30] = {	//
-					&latchTest, &asyncFilteredTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 				//
-					&noTest, &sdi12Test, &TwovoltTest, &asyncFilteredTest, &asyncFilteredTest,							//
-					&noTest, &asyncFilteredTest, &sdi12Test, &asyncFilteredTest, &asyncFilteredTest, 							//
-					&noTest, &TwovoltTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 							//
-					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest, 								//
-					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest		 							//
+			&latchTest, &asyncFilteredTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 			//
+					&noTest, &sdi12Test, &TwovoltTest, &asyncFilteredTest, &asyncFilteredTest,						//
+					&noTest, &asyncFilteredTest, &sdi12Test, &asyncFilteredTest, &asyncFilteredTest, 				//
+					&noTest, &TwovoltTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 			//
+					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest, 					//
+					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest		 			//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -97,7 +98,7 @@ void TestConfig935x(TboardConfig *Board) {
 
 	Board->BoardType = b935x;
 	Board->Subclass = 'C';
-		// Quantity of each Port type & tests
+	// Quantity of each Port type & tests
 	Board->latchPortCount = 1;
 	Board->analogInputCount = 2;
 	Board->digitalInputCout = 2;
@@ -107,7 +108,7 @@ void TestConfig935x(TboardConfig *Board) {
 void TestConfig937x(TboardConfig *Board) {
 	// Port Test Array
 	TportConfig *tempTestARR[24] = {	// Array size must not exceed size of MAX_TEST_ARRAY_SIZE
-					&latchTest, &noTest, &asyncFilteredTest, &asyncUnfilteredTest,	//
+			&latchTest, &noTest, &asyncFilteredTest, &asyncUnfilteredTest,	//
 					&noTest, &latchTest, &TwovoltTest, &asyncFilteredTest,			//
 					&noTest, &noTest, &sdi12Test, &currentTest,				//
 					&noTest, &noTest, &asyncUnfilteredTest, &sdi12Test,		//
@@ -118,7 +119,7 @@ void TestConfig937x(TboardConfig *Board) {
 	Board->ArrayPtr = 0;
 	// Port Code Array
 	uint8 tempPcARR[16] = {	//
-					0x80, 0x81, 0x88, 0x89,	// Ensure that never two latch on same test
+			0x80, 0x81, 0x88, 0x89,	// Ensure that never two latch on same test
 					0x84, 0x85, 0x88, 0x89,	//
 					0xC0, 0xC1, 0xC2, 0x00,	//
 					0xD0, 0xD1, 0xD2, 0x00,	//
@@ -138,19 +139,17 @@ void TestConfig937x(TboardConfig *Board) {
 //====================================================  INPUT EXPANSION BOARDS  ====================================================//
 void TestConfig401x(TboardConfig *Board) {
 	// Port Test Array
-	TportConfig *tempTestARR[30] = {
-				&sdi12Test, &OnevoltTest, &currentTest, &asyncFilteredTest, &noTest,			//
-				&asyncFilteredTest, &sdi12Test, &OnevoltTest, &currentTest, &noTest,			//
-				&currentTest, &asyncFilteredTest, &sdi12Test, &OnevoltTest, &noTest,			//
-				&OnevoltTest, &currentTest, &asyncFilteredTest, &sdi12Test, &noTest,			//
-				&TwovoltTest, &currentTest, &TwovoltTest, &currentTest, &noTest,				//
-				&currentTest, &TwovoltTest, &currentTest, &TwovoltTest, &rs485Test				//
+	TportConfig *tempTestARR[30] = { &sdi12Test, &OnevoltTest, &currentTest, &asyncFilteredTest, &noTest,			//
+			&asyncFilteredTest, &sdi12Test, &OnevoltTest, &currentTest, &noTest,			//
+			&currentTest, &asyncFilteredTest, &sdi12Test, &OnevoltTest, &noTest,			//
+			&OnevoltTest, &currentTest, &asyncFilteredTest, &sdi12Test, &noTest,			//
+			&TwovoltTest, &currentTest, &TwovoltTest, &currentTest, &noTest,				//
+			&currentTest, &TwovoltTest, &currentTest, &TwovoltTest, &rs485Test				//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 	//Port Code Array
-	uint8 tempPcARR[20] = {
-			0xC0, 0xC2, 0xC1, 0xC3,		//Transmit Control bits first, then channel number
+	uint8 tempPcARR[20] = { 0xC0, 0xC2, 0xC1, 0xC3,		//Transmit Control bits first, then channel number
 			0xD0, 0xD2, 0xD1, 0xD3,		//
 			0xE0, 0xE2, 0xE1, 0xE3,		//
 			0xF0, 0xF2, 0xF1, 0xF3,		//
@@ -169,12 +168,23 @@ void TestConfig401x(TboardConfig *Board) {
 
 void TestConfig402x(TboardConfig *Board) {
 	//Port Test Array
-	TportConfig *tempTestARR[63] = { &sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
-			&currentTest, &sdi12Test, &currentTest, &currentTest, &currentTest, &currentTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
-			&TwovoltTest, &TwovoltTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &TwovoltTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
-			&currentTest, &currentTest, &currentTest, &sdi12Test, &currentTest, &currentTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
-			&OnevoltTest, &currentTest, &TwovoltTest, &currentTest, &sdi12Test, &OnevoltTest, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
-			&TwovoltTest, &OnevoltTest, &OnevoltTest, &TwovoltTest, &OnevoltTest, &sdi12Test, &asyncUnfilteredTest, &asyncUnfilteredTest, &asyncUnfilteredTest,			//
+	TportConfig *tempTestARR[64] = { &sdi12Test, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest, &OnevoltTest,
+			&asyncFilteredTest, &asyncUnfilteredTest,
+			&asyncUnfilteredTest,			//
+			&currentTest, &sdi12Test, &currentTest, &currentTest, &currentTest, &currentTest, &asyncUnfilteredTest,
+			&asyncFilteredTest,
+			&asyncUnfilteredTest,			//
+			&TwovoltTest, &TwovoltTest, &sdi12Test, &TwovoltTest, &TwovoltTest, &TwovoltTest, &asyncUnfilteredTest,
+			&asyncUnfilteredTest,
+			&asyncFilteredTest,			//
+			&currentTest, &currentTest, &currentTest, &sdi12Test, &currentTest, &currentTest, &asyncFilteredTest,
+			&asyncUnfilteredTest,
+			&asyncUnfilteredTest,			//
+			&OnevoltTest, &currentTest, &TwovoltTest, &currentTest, &sdi12Test, &OnevoltTest, &asyncUnfilteredTest,
+			&asyncFilteredTest,
+			&asyncUnfilteredTest,			//
+			&TwovoltTest, &OnevoltTest, &OnevoltTest, &TwovoltTest, &OnevoltTest, &sdi12Test, &asyncUnfilteredTest,
+			&asyncUnfilteredTest, &asyncFilteredTest, &outputTest		//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
@@ -203,16 +213,15 @@ void TestConfig402x(TboardConfig *Board) {
 
 //====================================================  OUTPUT EXPANSION BOARDS  ====================================================//
 void TestConfig422x(TboardConfig *Board) {
-	TportConfig *tempTestARR[16] = { &latchTest, &noTest, &noTest, &noTest,		//
-			&noTest, &latchTest, &noTest, &noTest,		//
-			&noTest, &noTest, &latchTest, &noTest,		//
+	TportConfig *tempTestARR[16] = { &noTest, &noTest, &latchTest, &noTest,		//
 			&noTest, &noTest, &noTest, &latchTest,		//
+			&latchTest, &noTest, &noTest, &noTest,		//
+			&noTest, &latchTest, &noTest, &noTest,		//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 
-	uint8 tempPcARR[8] = {
-			0xC0, 0xC1,		//
+	uint8 tempPcARR[8] = { 0xC0, 0xC1,		//
 			0xC4, 0xC5,		//
 			0xC8, 0xC9,		//
 			0xCC, 0xCD,		//
@@ -228,8 +237,7 @@ void TestConfig422x(TboardConfig *Board) {
 }
 
 void TestConfig427x(TboardConfig *Board) {
-	TportConfig *tempTestARR[20] = {
-			&latchTest, &noTest, &noTest, &noTest, &asyncFilteredTest,		//
+	TportConfig *tempTestARR[20] = { &latchTest, &noTest, &noTest, &noTest, &asyncFilteredTest,		//
 			&noTest, &latchTest, &noTest, &noTest, &OnevoltTest,	//
 			&noTest, &noTest, &latchTest, &noTest, &currentTest,	//
 			&noTest, &noTest, &noTest, &latchTest, &sdi12Test		//
@@ -237,13 +245,12 @@ void TestConfig427x(TboardConfig *Board) {
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 
-	uint8 tempPcARR[20] = {
-			0xC0, 0xC1, 0x00, 0x00,	//
+	uint8 tempPcARR[20] = { 0xC0, 0xC1, 0x00, 0x00,	//
 			0xC4, 0xC5, 0x00, 0x00, //
 			0xC8, 0xC9, 0x00, 0x00, //
 			0xCC, 0xCD, 0x00, 0x00, //
 			0x90, 0x91, 0x92, 0x93 //
-	};
+			};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
 	Board->BoardType = b427x;
@@ -257,7 +264,7 @@ void TestConfig427x(TboardConfig *Board) {
 
 //=====================================================  SET TEST PARAMETERS  =====================================================//
 void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Count) {
-	uint8 TotalPort = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout;//Error check to ensure no overflow of test count
+	uint8 TotalPort = Board->latchPortCount + Board->analogInputCount + Board->digitalInputCout; //Error check to ensure no overflow of test count
 	*Count = 0;
 //			if ( (Board->BoardType == b401x) && (Board->GlobalTestNum == Board->testNum) )
 //				TotalPort += 1; // Allow for
@@ -282,7 +289,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 				Para++;
 				*Para = Board->ThisTest->Channels;
 				if (Board->ThisTest->Code == TWO_WIRE_LATCHING)
-					Board->ChCount+=2;
+					Board->ChCount += 2;
 				else
 					Board->ChCount += Board->ThisTest->Channels;
 				(*Count)++;
@@ -315,8 +322,8 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 		} else
 			PCptr += 4;
 
-		if ( (Board->ThisTest->Code == NOTEST) && (PortCount < Board->latchPortCount))
-			Board->ChCount+=2;
+		if ((Board->ThisTest->Code == NOTEST) && (PortCount < Board->latchPortCount))
+			Board->ChCount += 2;
 
 		if (Board->ThisTest->Code == SDI_TWELVE) {
 			SDIenabled = true;
@@ -388,7 +395,7 @@ _Bool CheckTestNumber(TboardConfig *Board) {
 		GetBatteryLevel(Board);
 		CheckPowerRegisters(Board);
 
-		if ((READ_REG(Board->TPR) == 0) && (READ_REG(Board->BSR == 0x3E)))
+		if ((READ_REG(Board->TPR) == 0) && (READ_REG(Board->BSR == 0x1E)))
 			SET_BIT(Board->BSR, BOARD_TEST_PASSED);
 		return false;
 	}
@@ -396,7 +403,18 @@ _Bool CheckTestNumber(TboardConfig *Board) {
 }
 
 void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
+
 	if (Board->BoardType == b427x) {
+//		uns_ch tempBuffer[SMLBUFFER] = {
+//				0x81,	//
+//				0x02,	//
+//				0x82,	//
+//				0x01	//
+//				};
+//		memcpy(Para, &tempBuffer[0], sizeof(&tempBuffer[0]) );
+//		Para += sizeof(tempBuffer);
+//		*Count += sizeof(tempBuffer);
+
 		*Para = 0x81;
 		(*Count)++;
 		Para++;
@@ -410,18 +428,26 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 		(*Count)++;
 		Para++;
 	} else if (Board->BoardType == b422x) {
-		*Para = 0x80;
-		(*Count)++;
-		Para++;
-		*Para = 0x64;
-		(*Count)++;
-		Para++;
-		*Para = 0x83;
-		(*Count)++;
-		Para++;
-		*Para = 0x80;
-		(*Count)++;
-		Para++;
+		uns_ch tempBuffer[SMLBUFFER] = { 0x80,	//
+				0x64,	//
+				0x83,	//
+				0x80	//
+				};
+		memcpy(Para, &tempBuffer[0], sizeof((char*) &tempBuffer[0]));
+		Para += sizeof(tempBuffer);
+		*Count += sizeof(tempBuffer);
+//		*Para = 0x80;
+//		(*Count)++;
+//		Para++;
+//		*Para = 0x64;
+//		(*Count)++;
+//		Para++;
+//		*Para = 0x83;
+//		(*Count)++;
+//		Para++;
+//		*Para = 0x80;
+//		(*Count)++;
+//		Para++;
 	} else if (Board->BoardType == b402x) {	// 4020 Sample Voltage
 		*Para = 0x15;
 		(*Count)++;
@@ -456,10 +482,12 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 		*Para = 0x83;
 		(*Count)++;
 		Para++;
-		if (Board->GlobalTestNum == V_12 || BoardConnected.GlobalTestNum == V_trim)
-			*Para = 0x69;	// 0x69 is 10.5
+		if (Board->GlobalTestNum == V_105 || Board->GlobalTestNum == V_trim)
+			*Para = TEN_VOLT_SAMPLE_THRESHOLD * 10;	// 0x69 is 10.5
+		else if (Board->GlobalTestNum == V_12)
+			*Para = TWELVE_VOLT_SAMPLE_VALUE * 10;
 		else if (Board->GlobalTestNum == V_3)
-			*Para = 0x1E;
+			*Para = THREE_VOLT_SAMPLE_VALUE * 10;
 		else
 			*Para = 0x00;
 		(*Count)++;
@@ -468,7 +496,7 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 		(*Count)++;
 		Para++; // Set trim to get as close to Vuser
 		if (BoardConnected.GlobalTestNum == V_trim) {
-			uint8 trim = round((10.5 - Board->VoltageBuffer[V_12]) * 333.333);
+			uint8 trim = round((10.5 - Board->VoltageBuffer[V_105]) * 333.333);
 			*Para = trim;
 		} else
 			*Para = 0x00;
@@ -496,55 +524,45 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 		*Para = 0x83;
 		(*Count)++;
 		Para++;
-		if ((Board->GlobalTestNum == V_12) || (Board->GlobalTestNum == V_trim))	// Set Vuser
-			*Para = 0x69;	// 0x69 is 10.5
+		if (Board->GlobalTestNum == V_105 || Board->GlobalTestNum == V_trim)
+			*Para = TEN_VOLT_SAMPLE_THRESHOLD * 10;		// 0x69 is 10.5
+		else if (Board->GlobalTestNum == V_12)
+			*Para = TWELVE_VOLT_SAMPLE_VALUE * 10;
 		else if (Board->GlobalTestNum == V_3)
-			*Para = 0x1E;
+			*Para = THREE_VOLT_SAMPLE_VALUE * 10;
+		else
+			*Para = 0x00;
 		(*Count)++;
 		Para++;
 		*Para = 0x84;
 		(*Count)++;
 		Para++; // Set trim to get as close to Vuser
 		if (BoardConnected.GlobalTestNum == V_trim) {
-			uint8 trim = round((10.5 - Board->VoltageBuffer[V_12]) * 333.333);
+			uint8 trim = round((10.5 - Board->VoltageBuffer[V_105]) * 333.333);
 			*Para = trim;
 		} else
 			*Para = 0x00;
 		(*Count)++;
 		Para++;
 	} else if (((Board->BoardType == b935x) || (Board->BoardType == b937x))) {
-		if (Board->GlobalTestNum < V_12output) {
-			*Para++ = 0xA0;
-			(*Count)++;			// Permanently on command
+		*Para++ = 0xA0;
+		(*Count)++;			// Permanently on command
+		*Para++ = 0x02;
+		(*Count)++;
+		*Para++ = 0xA1;
+		(*Count)++;			// Voltage Selection Command
+		if (Board->GlobalTestNum == V_12 || Board->GlobalTestNum > V_3)
+			*Para++ = 0x00;		// Driven off menu rather than sample
+		else if (Board->GlobalTestNum == V_3)
+			*Para++ = 0x01;
+		else
 			*Para++ = 0x02;
-			(*Count)++;
-			*Para++ = 0xA1;
-			(*Count)++;			// Voltage Selection Command
-			if (Board->GlobalTestNum == V_12)
-				*Para++ = 0x00;
-			else if (Board->GlobalTestNum == V_3)
-				*Para++ = 0x01;
-			else
-				*Para++ = 0x02;
-			(*Count)++;
-			*Para++ = 0xA2;
-			(*Count)++;
-			*Para++ = 0x01;
-			(*Count)++;
-		} else {
-			*Para++ = 0xA0;
-			(*Count)++;			// Permanently on command
-			*Para++ = 0x00;
-			(*Count)++;
-			*Para++ = 0xA1;
-			(*Count)++;			// Voltage Selection Command
-			*Para++ = 0x00;
-			(*Count)++;
-			*Para++ = 0xA2;
-			(*Count)++;
-			*Para++ = 0x01;
-			(*Count)++;
-		}
+		(*Count)++;
+		*Para++ = 0xA2;
+		(*Count)++;
+		*Para++ = 0x01;
+		(*Count)++;
+
 	}
 }
 //	=================================================================================//

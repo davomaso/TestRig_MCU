@@ -11,6 +11,7 @@
 #include "main.h"
 #include "Global_Variables.h"
 #include "TestFunctions.h"
+#include "TestVectors.h"
 #include "Test.h"
 #include "DAC.h"
 #include "DAC_Variables.h"
@@ -115,14 +116,14 @@ float setCurrentTestDAC(uint8 Test_Port) {
 	uint16 DAC_Value;
 	//Correction Factor
 	if (!Port[Test_Port].lowItestComplete) {
-		current = 4.0;
+		current = LOW_CURRENT_TEST;
 		Port[Test_Port].lowItestComplete = true;
-		DAC_Value = DAC_4amp;
+		DAC_Value = DAC_CURRENT_CALC(current);
 		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_4];
 	} else {
-		current = 17.5;
+		current = HIGH_CURRENT_TEST;
 		Port[Test_Port].lowItestComplete = true;
-		DAC_Value = DAC_175amp;
+		DAC_Value = DAC_CURRENT_CALC(current);
 		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_175];
 	}
 	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)
@@ -143,18 +144,16 @@ float setVoltageTestDAC(uint8 Test_Port, uint8 TestCode) {
 	uint16 DAC_Value;
 	switch (TestCode) {
 	case ONE_VOLT:
-		voltage = 0.50;
-		DAC_Value = DAC_05volt;
+		voltage = LOW_VOLTAGE_TEST;
+		DAC_Value = DAC_VOLTAGE_CALC(voltage);
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_05];
 		break;
 	case TWOFIVE_VOLT:
-		voltage = 2.4;
-		DAC_Value = DAC_24volt;
+		voltage = HIGH_VOLTAGE_TEST;
+		DAC_Value = DAC_VOLTAGE_CALC(voltage);
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_24];
 		break;
 	}
-	if (TestCode == ONE_VOLT)
-		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_05];
-	else if (TestCode == TWOFIVE_VOLT)
-		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_24];
 
 	//	randDACvolt = round((Corrected_voltage * 4096 / 3.6864)); //round((voltage * 3448) / 3.014);
 	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)
@@ -175,15 +174,15 @@ float setAsyncPulseCount(TboardConfig *Board, uint8 Test_Port) {
 	switch (Board->GlobalTestNum) {
 	case 0:
 	case 1:
-		Port[Test_Port].Async.PulseCount = 5;
+		Port[Test_Port].Async.PulseCount = ASYNC_LOW_COUNT;
 		break;
 	case 2:
 	case 3:
-		Port[Test_Port].Async.PulseCount = 10;
+		Port[Test_Port].Async.PulseCount = ASYNC_MEDIUM_COUNT;
 		break;
 	case 4:
 	case 5:
-		Port[Test_Port].Async.PulseCount = 15;
+		Port[Test_Port].Async.PulseCount = ASYNC_HIGH_COUNT;
 		break;
 	}
 	Port[Test_Port].Async.PulseState = true;

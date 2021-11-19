@@ -1,5 +1,6 @@
 #include "main.h"
 #include "Global_Variables.h"
+#include "strings.h"
 #include "UART_Routine.h"
 #include "LatchTest.h"
 
@@ -35,32 +36,27 @@ uint8 LatchTestParam(uint8 Test_Port, bool OnOff) {
 	return (0x80 * OnOff) + (Test_Port * 2);
 }
 
+
 void LatchTestInit() {
+	bzero(&LatchPortA, sizeof(TADCconfig));
+	bzero(&LatchPortB, sizeof(TADCconfig));
+	bzero(&Vin, sizeof(TADCconfig));
+	bzero(&Vfuse, sizeof(TADCconfig));
+	bzero(&MOSFETvoltageA, sizeof(TADCconfig));
+	bzero(&MOSFETvoltageB, sizeof(TADCconfig));
 	CLEAR_REG(LatchTestStatusRegister);
 	LatchCountTimer = 0;
 	LatchTestPort = 0;
 	stableVoltageCount = 25;
 	Vfuse.lowVoltage = 4096.0;
 	Vin.lowVoltage = 4096.0;
-	Vin.total = 0.0;
-	Vfuse.total = 0.0;
-	Vin.average = 0.0;
-	Vfuse.average = 0.0;
-	MOSFETvoltageA.highVoltage = 0.0;
-	MOSFETvoltageB.highVoltage = 0.0;
 	MOSFETvoltageA.lowVoltage = 4096.0;
 	MOSFETvoltageB.lowVoltage = 4096.0;
 	MOSFETvoltageA.total = MOSFETvoltageB.total = 0;
 
 		//ADC 1
-	LatchPortA.highVoltage = 0.0;
-	LatchPortA.HighPulseWidth = 0;
 	LatchPortA.lowVoltage = 4096.0;
-	LatchPortA.LowPulseWidth = 0;
 
 		//ADC 2
-	LatchPortB.highVoltage = 0.0;
-	LatchPortB.HighPulseWidth = 0;
 	LatchPortB.lowVoltage = 4096.0;
-	LatchPortB.LowPulseWidth = 0;
 }

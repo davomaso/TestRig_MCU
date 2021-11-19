@@ -26,5 +26,6 @@ void TestComplete(TboardConfig *);
 void GetBatteryLevel(TboardConfig *);
 void PrintVoltages(TboardConfig *);
 void PrintHomeScreen(TboardConfig *);
+_Bool VoltageComparison(float *, float);
 
 #endif /* INC_V1_H_ */

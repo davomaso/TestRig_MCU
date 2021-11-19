@@ -1,4 +1,5 @@
 #include <main.h>
+#include "ADC_Variables.h"
 #include "ErrorHandle.h"
 #include "Global_Variables.h"
 #include "UART_Routine.h"
@@ -12,29 +13,29 @@ void LatchErrorCheck(TboardConfig *Board) {
 	 */
 	CLEAR_REG(Board->LTR);
 	//ADC1 Check
-	if (((LatchPortA.HighPulseWidth > 52) || (LatchPortA.HighPulseWidth < 48))
-			|| ((LatchPortA.LowPulseWidth > 52) || (LatchPortA.LowPulseWidth < 48)))
+	if (((LatchPortA.HighPulseWidth > LATCH_PULSE_WIDTH_MAX) || (LatchPortA.HighPulseWidth < LATCH_PULSE_WIDTH_MIN))
+			|| ((LatchPortA.LowPulseWidth > LATCH_PULSE_WIDTH_MAX) || (LatchPortA.LowPulseWidth < LATCH_PULSE_WIDTH_MIN)))
 		SET_BIT(Board->LTR, PORT_A_PULSEWIDTH_ERROR);
 	if (Board->BoardType == b935x || Board->BoardType == b937x) {
-		if ((LatchPortA.highVoltage < 9.2) || (LatchPortA.lowVoltage > 1.2) || (LatchPortA.highVoltage == 0))
+		if ((LatchPortA.highVoltage < LATCH_PULSE_HIGH_THRESHOLD) || (LatchPortA.lowVoltage > LATCH_PULSE_LOW_THRESHOLD))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if ((LatchPortB.highVoltage < 9.2) || (LatchPortB.lowVoltage > 1.2) || (LatchPortB.highVoltage == 0))
+		if ((LatchPortB.highVoltage < LATCH_PULSE_HIGH_THRESHOLD) || (LatchPortB.lowVoltage > LATCH_PULSE_LOW_THRESHOLD))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	} else {
-		if ((LatchPortA.highVoltage <= 9.2) || (LatchPortA.lowVoltage >= 1.2) || (LatchPortA.highVoltage == 0))
+		if ((LatchPortA.highVoltage <= LATCH_PULSE_HIGH_THRESHOLD) || (LatchPortA.lowVoltage >= LATCH_PULSE_LOW_THRESHOLD))
 			SET_BIT(Board->LTR, PORT_A_VOLTAGE_ERROR);
-		if ((LatchPortB.highVoltage <= 9.2) || (LatchPortB.lowVoltage >= 1.2) || (LatchPortB.highVoltage == 0))
+		if ((LatchPortB.highVoltage <= LATCH_PULSE_HIGH_THRESHOLD) || (LatchPortB.lowVoltage >= LATCH_PULSE_LOW_THRESHOLD))
 			SET_BIT(Board->LTR, PORT_B_VOLTAGE_ERROR);
 	}
 	//ADC2 Check
-	if (((LatchPortB.HighPulseWidth > 52) || (LatchPortB.HighPulseWidth < 48))
-			|| ((LatchPortB.LowPulseWidth > 52) || (LatchPortB.LowPulseWidth < 48)))
+	if (((LatchPortB.HighPulseWidth > LATCH_PULSE_WIDTH_MAX) || (LatchPortB.HighPulseWidth < LATCH_PULSE_WIDTH_MIN))
+			|| ((LatchPortB.LowPulseWidth > LATCH_PULSE_WIDTH_MAX) || (LatchPortB.LowPulseWidth < LATCH_PULSE_WIDTH_MIN)))
 		SET_BIT(Board->LTR, PORT_B_PULSEWIDTH_ERROR);
 	//Vin Check
 	if (Vin.average < 10.8)
 		SET_BIT(Board->LTR, INPUT_VOLTAGE_ERROR);
 	//Vfuse Check
-	if (Vfuse.average < 0.95 * Vin.average || Vfuse.lowVoltage < 0.85  * Vin.lowVoltage)
+	if (Vfuse.average < 0.95 * Vin.average || Vfuse.lowVoltage < 0.85 * Vin.lowVoltage)
 		SET_BIT(Board->LTR, FUSE_VOLTAGE_ERROR);
 	//Vmos Check
 	if (MOSFETvoltageA.highVoltage < 0.001 || MOSFETvoltageA.highVoltage > 1.8 || MOSFETvoltageA.lowVoltage > 1.8

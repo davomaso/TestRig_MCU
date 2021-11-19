@@ -73,9 +73,18 @@ void configureTargetBoard(TboardConfig *Board) {
 	OutputsSet = false;																// Ensure that the outputs are only set the once
 }
 
+void sampleTargetBoard(TboardConfig *Board) {
+	uns_ch Command;
+	LCD_printf((uns_ch*) "      Sampling      ", 2, 0);
+	Command = 0x1A;
+	SetPara(Board, Command);
+	communication_array(Command, (uns_ch*) &BoardCommsParameters[0], BoardCommsParametersLength);
+}
+
 void uploadSamplesTargetBoard(TboardConfig *Board) {
 	uns_ch Command;
 	Command = 0x18;
+	LCD_printf((uns_ch*) "     Uploading      ", 2, 0);
 	SetPara(Board, Command);
 	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
 }
@@ -156,7 +165,7 @@ uint8 getCurrentVersion(TloomConnected Board) {
 		return 255;
 		break;
 	}
-	return 255;
+	return 0;
 }
 
 void SDIinit() {

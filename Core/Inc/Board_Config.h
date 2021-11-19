@@ -32,12 +32,14 @@
 	#define BOARD_POWER_STABLE	(1 << 5)
 
 	//============		BOARD VOLTAGE VARIABLES		===========//
-	#define FUSE_V_STABLE		(1 << 0)
-	#define BOARD_SOLAR_STABLE	(1 << 1)
+	#define INPUT_V_STABLE		(1 << 0)
+	#define SOLAR_V_STABLE		(1 << 1)
 	#define V12_OUTPUT_STABLE	(1 << 2)
 	#define V3_SAMPLE_STABLE	(1 << 3)
 	#define V12_SAMPLE_STABLE	(1 << 4)
-	#define BATT_LVL_STABLE		(1 << 5)
+	#define V10_SAMPLE_STABLE 	(1 << 5)
+	#define TRIM_VOLTAGE_STABLE (1 << 6)
+	#define BATT_LVL_STABLE		(1 << 7)
 
 	//============		TEST PASSED VARIABLES		===========//
 	#define TEST_ONE_PASSED 	(1 << 0)

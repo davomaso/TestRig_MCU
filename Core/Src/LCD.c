@@ -8,7 +8,7 @@
 
 void LCD_init() {
 		// For more information regrading commands sent, see EA-DOGM204-A datasheet
-	printT((uns_ch*) "\nInitialising LCD Screen...\n\n");
+//	printT((uns_ch*) "\nInitialising LCD Screen...\n\n");
 	uint8 Byte = 0x0F;
 	HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);	// Display on, Cursor on, Blink On
 	HAL_Delay(1);
@@ -83,7 +83,7 @@ void LCD_setCursor(uint8 Row, uint8 Col) {
 	Byte |= Row ? ((Row - 1) << 5) : Row;
 	Byte |= Col ? (Col - 1) : Col;
 	HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0x00, 0x01, &Byte, 0x01, HAL_MAX_DELAY);
-	HAL_Delay(1);
+	delay_us(1000);
 }
 
 void LCD_printf(uns_ch *data, uint8 Row, uint8 Col) {
@@ -94,7 +94,7 @@ void LCD_printf(uns_ch *data, uint8 Row, uint8 Col) {
 
 void LCD_displayString(uint8 *data, uint8 len) {
 	for (int i = 0; i < len; i++) {
-		HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0xC0, 0x01, data++, 1, HAL_MAX_DELAY);
+		HAL_I2C_Mem_Write(&hi2c1, (LCD_ADR << 1), 0xC0, 0x01, data++, 1, 100);
 		delay_us(75); //TODO: Set to 50us usually run at 75us to check if the added delay will fix the LCD freezing
 	}
 }

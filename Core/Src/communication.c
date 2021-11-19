@@ -111,7 +111,7 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 			sampleTime = *data++;
 			sampleTime |= (*data++ << 8);
 			sampleTime *= 100;
-			sampleTime = (sampleTime > 1200) ? 1200 : sampleTime;
+			sampleTime = (sampleTime > 3000) ? 3000 : sampleTime;
 		} else
 			sampleTime = Board->analogInputCount * 100;					// Multiple of 100ms per port for sample
 		sampleCount = 0;
@@ -226,14 +226,14 @@ void switchCommsProtocol(TboardConfig *Board) {
 		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
 	} else if ((Board->BoardType == b402x) || (Board->BoardType == b427x)) {
-//		if (Board->GlobalTestNum > 2) {
-//			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_RESET);
-//		} else {
+		if (Board->GlobalTestNum > 2) {
+			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_RESET);
+		} else {
 			USART2->CR1 &= ~(USART_CR1_RE);
 			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_SET);
-//		}
+		}
 	}
 }

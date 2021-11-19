@@ -20,8 +20,8 @@ void Calibration() {
 	calTest = V_1;
 	calPort = Port_1;
 	read_correctionFactors();
-
-	DACval = 0x3000 + DAC_1volt + Port[Port_1].CalibrationFactor[V_1];
+	DACval = DAC_VOLTAGE_CALC(1);
+	DACval |= 0x3000 + Port[Port_1].CalibrationFactor[V_1];
 	DAC_set((calPort), DACval);
 	MUX_Sel((calPort), THREE_VOLT);
 	printT((uns_ch*) "==========Calibrating 1V==========\n");
@@ -72,38 +72,38 @@ void Calibration() {
 			}
 			switch (calTest) {
 			case V_1:
-				DACval = DAC_1volt;
+				DACval = DAC_VOLTAGE_CALC(1);
 				printT((uns_ch*) "==========Calibrating 1V========== \n\n");
 				sprintf((char*) &lcdBuffer[0], "1V - Port %d     ", (calPort + 1));
 				LCD_printf(&lcdBuffer[0], 3, 5);
 				break;
 			case V_05:
 				printT((uns_ch*) "==========Calibrating 0.5V========== \n\n");
-				DACval = DAC_05volt;
+				DACval = DAC_VOLTAGE_CALC(0.5);
 				sprintf((char*) &lcdBuffer[0], "0.5V - Port %d    ", (calPort + 1));
 				LCD_printf((uns_ch*) &lcdBuffer[0], 3, 3);
 				break;
 			case V_24:
 				printT((uns_ch*) "==========Calibrating 2.4V========== \n\n");
-				DACval = DAC_24volt;
+				DACval = DAC_VOLTAGE_CALC(2.4);
 				sprintf((char*) &lcdBuffer[0], "2.4V - Port %d    ", (calPort + 1));
 				LCD_printf((uns_ch*) &lcdBuffer, 3, 3);
 				break;
 			case I_20:
 				printT((uns_ch*) "==========Calibrating 20mA========== \n\n");
-				DACval = DAC_20amp;
+				DACval = DAC_CURRENT_CALC(20.0);
 				sprintf((char*) &lcdBuffer[0], "20mA - Port %d    ", (calPort + 1));
 				LCD_printf((uns_ch*) &lcdBuffer[0], 3, 3);
 				break;
 			case I_4:
 				printT((uns_ch*) "==========Calibrating 4mA========== \n\n");
-				DACval = DAC_4amp;
+				DACval = DAC_CURRENT_CALC(4);
 				sprintf((char*) &lcdBuffer[0], "4mA - Port %d    ", (calPort + 1));
 				LCD_printf((uns_ch*) &lcdBuffer[0], 3, 4);
 				break;
 			case I_175:
 				printT((uns_ch*) "==========Calibrating 17.5mA========== \n\n");
-				DACval = DAC_175amp;
+				DACval = DAC_CURRENT_CALC(17.5);
 				sprintf((char*) &lcdBuffer[0], "17.5mA - Port %d  ", (calPort + 1));
 				LCD_printf((uns_ch*) &lcdBuffer[0], 3, 1);
 				break;
@@ -168,7 +168,7 @@ void TargetBoardCalibration_Voltage(TboardConfig *Board) {
 	uns_ch Command;
 	_Bool MuxState = HAL_GPIO_ReadPin(MUX_A0_GPIO_Port, MUX_A0_Pin);
 	for (uint8 i = Port_1; i <= Port_6; i++) {
-		DACval = DAC_1volt + Port[i].CalibrationFactor[V_1];
+		DACval = DAC_VOLTAGE_CALC(1) + Port[i].CalibrationFactor[V_1];
 		DACval += (i & 0x01) ? 0xB000 : 0x3000;
 		DAC_set(i, DACval);
 		MUX_Sel(i, THREE_VOLT);
@@ -193,7 +193,7 @@ void TargetBoardCalibration_Current(TboardConfig *Board) {
 	uint16 DACval;
 	calibrateADCval.total = calibrateADCval.average = 0;
 	for (uint8 i = Port_1; i <= Port_6; i++) {
-		DACval = DAC_20amp + Port[i].CalibrationFactor[I_20];
+		DACval = DAC_CURRENT_CALC(20) + Port[i].CalibrationFactor[I_20];
 		DACval += (i & 0x01) ? 0xB000 : 0x3000;
 		DAC_set(i, DACval);
 		MUX_Sel(i, TWENTY_AMP);
