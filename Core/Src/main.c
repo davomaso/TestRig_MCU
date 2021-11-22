@@ -165,6 +165,7 @@ HAL_Init();
   MX_RNG_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+//  HAL_Delay(2000);
 	HAL_I2C_Init(&hi2c1);
 	LCD_init();
 	ChangeCharacterSet('A');				// Character set A for Progress Bar

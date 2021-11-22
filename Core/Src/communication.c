@@ -111,7 +111,7 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 			sampleTime = *data++;
 			sampleTime |= (*data++ << 8);
 			sampleTime *= 100;
-			sampleTime = (sampleTime > 3000) ? 3000 : sampleTime;
+			sampleTime = (sampleTime > 2000) ? 2000 : sampleTime;
 		} else
 			sampleTime = Board->analogInputCount * 100;					// Multiple of 100ms per port for sample
 		sampleCount = 0;

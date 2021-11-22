@@ -74,7 +74,6 @@ void currentBoardConnected(TboardConfig *Board) {
 		break;
 	case b422x:
 		TestConfig422x(Board);
-		SET_BIT(Board->BSR, BOARD_CALIBRATED);
 		break;
 	case b427x:
 		TestConfig427x(Board);

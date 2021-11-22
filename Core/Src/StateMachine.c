@@ -25,13 +25,13 @@
 void handleCheckLoom(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
-		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);	// Reset power to board
 		HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
 		TargetBoardParamInit(true);							// Fully erase BoardConnected struct and associated memory
 		*State = psWaiting;
 		break;
 	case psWaiting:
-		BoardResetTimer = 500;
+		BoardResetTimer = 500;											// Allow short time for reset
 		SetBoardType(Board, LoomState);									// Set board type depending on loom connected
 		*State = psComplete;
 		break;
@@ -134,7 +134,7 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 				TestRigMode = BatchMode;
 			}
 			CurrentState = csSerialNumberEntry;					// Return to serial entry to begin new test on new board
-			*State = psInitalisation;	//psWaiting;
+			*State = psInitalisation;
 		} else
 			*State = psWaiting;
 
@@ -147,12 +147,12 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 	switch (*State) {
 	case psInitalisation:
 		HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+		USART2->CR1 &= ~(USART_CR1_RXNEIE);								// Disable Board Comms while serial being read
 		TestRig_Init();
 		PrintHomeScreen(Board);
-		TargetBoardParamInit(0);							// Initialize targetboard variables, clear the board struct
+		TargetBoardParamInit(0);										// Initialize targetboard variables, clear the board struct
 		Board->SerialNumber = 0;
 		clearTestStatusLED();											// Clear previously set LEDs on the front panel
-		USART3->CR1 |= (USART_CR1_RXNEIE);							// Enable Receive interupt for the barcode scanner
 		LCD_printf((uns_ch*) "Enter Serial Number", 2, 0);
 		LCD_printf((uns_ch*) " * - Esc    # - Ent ", 4, 0);
 		memset(&SerialNumber, 0, 9);
@@ -160,6 +160,7 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 		LCD_setCursor(3, 0);
 		LCD_CursorOn_Off(true);
 		SerialCount = 0;
+		USART3->CR1 |= (USART_CR1_RXNEIE);								// Enable Receive interupt for the barcode scanner
 		tempdata = 0;
 		*State = psWaiting;
 		break;
@@ -230,6 +231,7 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 			SerialCount = BarcodeCount;
 			BarcodeCount = 0;
 			USART3->CR1 &= ~(USART_CR1_RXNEIE);
+			USART2->CR1 |= (USART_CR1_RXNEIE);
 				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
 				LCD_CursorOn_Off(false);
 				LCD_ClearLine(4);
@@ -274,7 +276,6 @@ void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 		break;
 	case psWaiting:
 		if (SolarChargerStable) {
-			HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_RESET);
 			SolarChargerSampling = SolarChargerStable = false;
 			SolarChargerTimer = SolarChargerCounter = 0;
 			printT((uns_ch*) "Solar Charger Stable...\n");
@@ -284,6 +285,7 @@ void handleSolarCharger(TboardConfig *Board, TprocessState *State) {
 			*State = psFailed;
 		break;
 	case psComplete:
+		HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_RESET);
 		CurrentState = csInputVoltage;
 		*State = psInitalisation;
 		break;

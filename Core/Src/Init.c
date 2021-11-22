@@ -76,7 +76,7 @@ void configureTargetBoard(TboardConfig *Board) {
 void sampleTargetBoard(TboardConfig *Board) {
 	uns_ch Command;
 	LCD_printf((uns_ch*) "      Sampling      ", 2, 0);
-	Command = 0x1A;
+	Command = 0x1A;																	// 0x1A command to initialise sampling
 	SetPara(Board, Command);
 	communication_array(Command, (uns_ch*) &BoardCommsParameters[0], BoardCommsParametersLength);
 }
