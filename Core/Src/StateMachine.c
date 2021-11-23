@@ -807,61 +807,10 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 		if (LatchADCflag) {
 			if (LatchCountTimer < 2048) {
 				HandleLatchSample();
-
 			} else
 				CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 			LatchADCflag = false;
 
-			if (LatchCountTimer < LATCH_TIME_OUT) {
-				if (READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {	//If input voltage is stable
-					if (!READ_BIT(LatchTestStatusRegister,
-							LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
-						SET_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING); //Begin Latch on sampling
-						BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 1);
-						Data_Buffer[0] = 0;
-						communication_array(0x26, &BoardCommsParameters[0], 1);
-					} else if (READ_BIT(LatchTestStatusRegister,
-							LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
-						if (BoardCommsReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
-							if (BoardCommsReceiveState == RxGOOD) {
-								Response = Data_Buffer[0];
-								if (Response == 0x27) {
-									CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
-									CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
-									stableVoltageCount = 50;
-								}
-								BoardCommsReceiveState = RxWaiting;
-							} else if (BoardCommsReceiveState == RxBAD)
-								*State = psFailed;
-						}
-					} else if (READ_BIT(LatchTestStatusRegister,
-							LATCH_ON_COMPLETE) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
-						SET_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING); //Begin Latch off sampling
-						BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 0);
-						Data_Buffer[0] = 0;
-						communication_array(0x26, &BoardCommsParameters[0], 1);
-					} else if (READ_BIT(LatchTestStatusRegister,
-							LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
-						if (BoardCommsReceiveState != RxWaiting) { //Latch off sampling complete, reset voltage stability check
-							if (BoardCommsReceiveState == RxGOOD) {
-								Response = Data_Buffer[0];
-								if (Response == 0x27) {
-									CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
-									CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
-									stableVoltageCount = 50;
-									runLatchTimeOut(2000);
-								}
-								BoardCommsReceiveState = RxWaiting;
-							} else if (BoardCommsReceiveState == RxBAD)
-								*State = psFailed;
-						}
-					}
-					if (READ_BIT(LatchTestStatusRegister,
-							LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE))
-						*State = psComplete;
-				}
-			} else
-				*State = psComplete;
 			if (!READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING))
 				*State = psComplete;
 			break;
