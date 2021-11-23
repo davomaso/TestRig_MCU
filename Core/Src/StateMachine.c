@@ -150,7 +150,7 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 		USART2->CR1 &= ~(USART_CR1_RXNEIE);								// Disable Board Comms while serial being read
 		TestRig_Init();
 		PrintHomeScreen(Board);
-		TargetBoardParamInit(0);										// Initialize targetboard variables, clear the board struct
+		TargetBoardParamInit(0);							// Initialize targetboard variables, clear the board struct
 		Board->SerialNumber = 0;
 		clearTestStatusLED();											// Clear previously set LEDs on the front panel
 		LCD_printf((uns_ch*) "Enter Serial Number", 2, 0);
@@ -160,7 +160,7 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 		LCD_setCursor(3, 0);
 		LCD_CursorOn_Off(true);
 		SerialCount = 0;
-		USART3->CR1 |= (USART_CR1_RXNEIE);								// Enable Receive interupt for the barcode scanner
+		USART3->CR1 |= (USART_CR1_RXNEIE);							// Enable Receive interupt for the barcode scanner
 		tempdata = 0;
 		*State = psWaiting;
 		break;
@@ -208,12 +208,12 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 			while (SerialCount != i) {
 				Board->SerialNumber = (Board->SerialNumber * 10 + (SerialNumber[i++] - 0x30));
 			}
-				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-				LCD_CursorOn_Off(false);
-				LCD_ClearLine(4);
-				QuitEnabled = true;
-				BoardResetTimer = 2000;
-				*State = psComplete;
+			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+			LCD_CursorOn_Off(false);
+			LCD_ClearLine(4);
+			QuitEnabled = true;
+			BoardResetTimer = 2000;
+			*State = psComplete;
 		}
 
 		// Barcode Scanned
@@ -232,12 +232,12 @@ void handleSerialNumberEntry(TboardConfig *Board, TprocessState *State) {
 			BarcodeCount = 0;
 			USART3->CR1 &= ~(USART_CR1_RXNEIE);
 			USART2->CR1 |= (USART_CR1_RXNEIE);
-				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
-				LCD_CursorOn_Off(false);
-				LCD_ClearLine(4);
-				QuitEnabled = true;
-				BoardResetTimer = 2000;
-				*State = psComplete;
+			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);
+			LCD_CursorOn_Off(false);
+			LCD_ClearLine(4);
+			QuitEnabled = true;
+			BoardResetTimer = 2000;
+			*State = psComplete;
 			break;
 		}
 		break;
@@ -804,97 +804,108 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 			*State = psComplete;
 		break;
 	case psWaiting:
-		if (LatchCountTimer < latchCountTo) {
-			if (READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {	//If input voltage is stable
-				if (!READ_BIT(LatchTestStatusRegister,
-						LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
-					SET_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING); //Begin Latch on sampling
-					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 1);
-					Data_Buffer[0] = 0;
-					communication_array(0x26, &BoardCommsParameters[0], 1);
-				} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
-					if (BoardCommsReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
-						if (BoardCommsReceiveState == RxGOOD) {
-							Response = Data_Buffer[0];
-							if (Response == 0x27) {
-								CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
-								CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
-								stableVoltageCount = 50;
-							}
-							BoardCommsReceiveState = RxWaiting;
-						} else if (BoardCommsReceiveState == RxBAD)
-							*State = psFailed;
+		if (LatchADCflag) {
+			if (LatchCountTimer < 2048) {
+				HandleLatchSample();
+
+			} else
+				CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
+			LatchADCflag = false;
+
+			if (LatchCountTimer < LATCH_TIME_OUT) {
+				if (READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {	//If input voltage is stable
+					if (!READ_BIT(LatchTestStatusRegister,
+							LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
+						SET_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING); //Begin Latch on sampling
+						BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 1);
+						Data_Buffer[0] = 0;
+						communication_array(0x26, &BoardCommsParameters[0], 1);
+					} else if (READ_BIT(LatchTestStatusRegister,
+							LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING)) {
+						if (BoardCommsReceiveState != RxWaiting) { //Latch on sampling complete, reset voltage stability check
+							if (BoardCommsReceiveState == RxGOOD) {
+								Response = Data_Buffer[0];
+								if (Response == 0x27) {
+									CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
+									CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
+									stableVoltageCount = 50;
+								}
+								BoardCommsReceiveState = RxWaiting;
+							} else if (BoardCommsReceiveState == RxBAD)
+								*State = psFailed;
+						}
+					} else if (READ_BIT(LatchTestStatusRegister,
+							LATCH_ON_COMPLETE) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
+						SET_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING); //Begin Latch off sampling
+						BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 0);
+						Data_Buffer[0] = 0;
+						communication_array(0x26, &BoardCommsParameters[0], 1);
+					} else if (READ_BIT(LatchTestStatusRegister,
+							LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
+						if (BoardCommsReceiveState != RxWaiting) { //Latch off sampling complete, reset voltage stability check
+							if (BoardCommsReceiveState == RxGOOD) {
+								Response = Data_Buffer[0];
+								if (Response == 0x27) {
+									CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
+									CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
+									stableVoltageCount = 50;
+									runLatchTimeOut(2000);
+								}
+								BoardCommsReceiveState = RxWaiting;
+							} else if (BoardCommsReceiveState == RxBAD)
+								*State = psFailed;
+						}
 					}
-				} else if (READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
-					SET_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING); //Begin Latch off sampling
-					BoardCommsParameters[0] = LatchTestParam(LatchTestPort, 0);
-					Data_Buffer[0] = 0;
-					communication_array(0x26, &BoardCommsParameters[0], 1);
-				} else if (READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING)) {
-					if (BoardCommsReceiveState != RxWaiting) { //Latch off sampling complete, reset voltage stability check
-						if (BoardCommsReceiveState == RxGOOD) {
-							Response = Data_Buffer[0];
-							if (Response == 0x27) {
-								CLEAR_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING);
-								CLEAR_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
-								stableVoltageCount = 50;
-								runLatchTimeOut(2000);
-							}
-							BoardCommsReceiveState = RxWaiting;
-						} else if (BoardCommsReceiveState == RxBAD)
-							*State = psFailed;
-					}
+					if (READ_BIT(LatchTestStatusRegister,
+							LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE))
+						*State = psComplete;
 				}
-				if (READ_BIT(LatchTestStatusRegister,
-						LATCH_ON_COMPLETE) && READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE))
-					*State = psComplete;
+			} else
+				*State = psComplete;
+			if (!READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING))
+				*State = psComplete;
+			break;
+			case psComplete:
+			if (READ_REG(Board->LatchTestPort)) {
+				HAL_TIM_Base_Stop(&htim10);
+				//Print Results & Error Messages
+				TransmitResults(Board);
+				normaliseLatchResults();
+				PrintLatchResults();
+				LatchErrorCheck(Board);
+				if (Board->LTR == 0) {
+					printT(
+							(uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
+					Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 1000; // Base 1000 for easier sorting results															// Multiply by two to acount for 2ch of data
+				} else {
+					printLatchError(Board);
+					printT(
+							(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
+					Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 0;
+				}
+				CLEAR_REG(Board->LatchTestPort);
 			}
-		} else
-			*State = psComplete;
-		if (!READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING)) {
-			*State = psComplete;
-		}
-		break;
-	case psComplete:
-		if (READ_REG(Board->LatchTestPort)) {
-			HAL_TIM_Base_Stop(&htim10);
-			//Print Results & Error Messages
-			TransmitResults(Board);
-			normaliseLatchResults();
-			PrintLatchResults();
-			LatchErrorCheck(Board);
-			if (Board->LTR == 0) {
-				printT(
-						(uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
-				Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 1000; // Base 1000 for easier sorting results															// Multiply by two to acount for 2ch of data
-			} else {
-				printLatchError(Board);
-				printT(
-						(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
-				Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 0;
-			}
-			CLEAR_REG(Board->LatchTestPort);
-		}
-		if (Board->BoardType == b422x)
-			CurrentState = csSampling;
-		else
-			CurrentState = csAsyncTest;
-		*State = psInitalisation;
-		break;
-	case psFailed:
-		retryCount++;
-		if (retryCount > 3) {
-			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-			CurrentState = csIDLE;
-		} else {
-			if (BoardCommsParameters[0] & 0x80) {
-				communication_array(0x26, &BoardCommsParameters[0], 1);
-			}
+			if (Board->BoardType == b422x)
+				CurrentState = csSampling;
+			else
+				CurrentState = csAsyncTest;
+			*State = psInitalisation;
+			break;
+			case psFailed:
 			retryCount++;
+			if (retryCount > 3) {
+				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+				CurrentState = csIDLE;
+			} else {
+				if (BoardCommsParameters[0] & 0x80) {
+					communication_array(0x26, &BoardCommsParameters[0], 1);
+				}
+				retryCount++;
+			}
+			*State = psInitalisation;
+			break;
 		}
-		*State = psInitalisation;
-		break;
 	}
 }
 
@@ -981,7 +992,7 @@ void handleSampling(TboardConfig *Board, TprocessState *State) {
 		if (VuserSamples >= 100) {
 			Vuser.total /= VuserSamples;
 			Vuser.average = Vuser.total * (15.25 / 4096);		// calculate the average sample voltage
-			if (compareSampleVoltage(Board, &(Vuser.average), &(setSampleVoltages[Board->GlobalTestNum]) )) {			// Check to see if the average
+			if (compareSampleVoltage(Board, &(Vuser.average), &(setSampleVoltages[Board->GlobalTestNum]))) {// Check to see if the average
 				*State = psInitalisation;
 				CurrentState = csUploading;
 			}

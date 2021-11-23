@@ -83,130 +83,117 @@ extern ADC_HandleTypeDef hadc1;
 /*           Cortex-M4 Processor Interruption and Exception Handlers          */
 /******************************************************************************/
 /**
-  * @brief This function handles Non maskable interrupt.
-  */
-void NMI_Handler(void)
-{
-  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
+ * @brief This function handles Non maskable interrupt.
+ */
+void NMI_Handler(void) {
+	/* USER CODE BEGIN NonMaskableInt_IRQn 0 */
 
-  /* USER CODE END NonMaskableInt_IRQn 0 */
-  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
+	/* USER CODE END NonMaskableInt_IRQn 0 */
+	/* USER CODE BEGIN NonMaskableInt_IRQn 1 */
 
-  /* USER CODE END NonMaskableInt_IRQn 1 */
+	/* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
 /**
-  * @brief This function handles Hard fault interrupt.
-  */
-void HardFault_Handler(void)
-{
-  /* USER CODE BEGIN HardFault_IRQn 0 */
+ * @brief This function handles Hard fault interrupt.
+ */
+void HardFault_Handler(void) {
+	/* USER CODE BEGIN HardFault_IRQn 0 */
 	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
 	printT((uns_ch*) "\n\n\nHard Fault Reset Device!!!!...\n");
-  /* USER CODE END HardFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
-  }
+	/* USER CODE END HardFault_IRQn 0 */
+	while (1) {
+		/* USER CODE BEGIN W1_HardFault_IRQn 0 */
+		/* USER CODE END W1_HardFault_IRQn 0 */
+	}
 }
 
 /**
-  * @brief This function handles Memory management fault.
-  */
-void MemManage_Handler(void)
-{
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
+ * @brief This function handles Memory management fault.
+ */
+void MemManage_Handler(void) {
+	/* USER CODE BEGIN MemoryManagement_IRQn 0 */
 
-  /* USER CODE END MemoryManagement_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
-  }
+	/* USER CODE END MemoryManagement_IRQn 0 */
+	while (1) {
+		/* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+		/* USER CODE END W1_MemoryManagement_IRQn 0 */
+	}
 }
 
 /**
-  * @brief This function handles Pre-fetch fault, memory access fault.
-  */
-void BusFault_Handler(void)
-{
-  /* USER CODE BEGIN BusFault_IRQn 0 */
+ * @brief This function handles Pre-fetch fault, memory access fault.
+ */
+void BusFault_Handler(void) {
+	/* USER CODE BEGIN BusFault_IRQn 0 */
 
-  /* USER CODE END BusFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_BusFault_IRQn 0 */
-    /* USER CODE END W1_BusFault_IRQn 0 */
-  }
+	/* USER CODE END BusFault_IRQn 0 */
+	while (1) {
+		/* USER CODE BEGIN W1_BusFault_IRQn 0 */
+		/* USER CODE END W1_BusFault_IRQn 0 */
+	}
 }
 
 /**
-  * @brief This function handles Undefined instruction or illegal state.
-  */
-void UsageFault_Handler(void)
-{
-  /* USER CODE BEGIN UsageFault_IRQn 0 */
+ * @brief This function handles Undefined instruction or illegal state.
+ */
+void UsageFault_Handler(void) {
+	/* USER CODE BEGIN UsageFault_IRQn 0 */
 
-  /* USER CODE END UsageFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
-    /* USER CODE END W1_UsageFault_IRQn 0 */
-  }
+	/* USER CODE END UsageFault_IRQn 0 */
+	while (1) {
+		/* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+		/* USER CODE END W1_UsageFault_IRQn 0 */
+	}
 }
 
 /**
-  * @brief This function handles System service call via SWI instruction.
-  */
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVCall_IRQn 0 */
+ * @brief This function handles System service call via SWI instruction.
+ */
+void SVC_Handler(void) {
+	/* USER CODE BEGIN SVCall_IRQn 0 */
 
-  /* USER CODE END SVCall_IRQn 0 */
-  /* USER CODE BEGIN SVCall_IRQn 1 */
+	/* USER CODE END SVCall_IRQn 0 */
+	/* USER CODE BEGIN SVCall_IRQn 1 */
 
-  /* USER CODE END SVCall_IRQn 1 */
+	/* USER CODE END SVCall_IRQn 1 */
 }
 
 /**
-  * @brief This function handles Debug monitor.
-  */
-void DebugMon_Handler(void)
-{
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+ * @brief This function handles Debug monitor.
+ */
+void DebugMon_Handler(void) {
+	/* USER CODE BEGIN DebugMonitor_IRQn 0 */
 
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+	/* USER CODE END DebugMonitor_IRQn 0 */
+	/* USER CODE BEGIN DebugMonitor_IRQn 1 */
 
-  /* USER CODE END DebugMonitor_IRQn 1 */
+	/* USER CODE END DebugMonitor_IRQn 1 */
 }
 
 /**
-  * @brief This function handles Pendable request for system service.
-  */
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
+ * @brief This function handles Pendable request for system service.
+ */
+void PendSV_Handler(void) {
+	/* USER CODE BEGIN PendSV_IRQn 0 */
 
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
+	/* USER CODE END PendSV_IRQn 0 */
+	/* USER CODE BEGIN PendSV_IRQn 1 */
 
-  /* USER CODE END PendSV_IRQn 1 */
+	/* USER CODE END PendSV_IRQn 1 */
 }
 
 /**
-  * @brief This function handles System tick timer.
-  */
-void SysTick_Handler(void)
-{
-  /* USER CODE BEGIN SysTick_IRQn 0 */
+ * @brief This function handles System tick timer.
+ */
+void SysTick_Handler(void) {
+	/* USER CODE BEGIN SysTick_IRQn 0 */
 
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
+	/* USER CODE END SysTick_IRQn 0 */
+	HAL_IncTick();
+	/* USER CODE BEGIN SysTick_IRQn 1 */
 
-  /* USER CODE END SysTick_IRQn 1 */
+	/* USER CODE END SysTick_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -217,11 +204,10 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
-  */
-void TIM1_UP_TIM10_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
+ * @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
+ */
+void TIM1_UP_TIM10_IRQHandler(void) {
+	/* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
 	//500us timer for calculating ADC values for latching and power ports
 	//Poll 5 times each ms to gain a higher accuracy of voltage
 	if ((CurrentState == csCalibrating) && (ProcessState == psWaiting)) { //
@@ -278,7 +264,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 		 */
 		//Poll ADC every 200us to take average across 1ms to get more accurate reading
 		//ADC 1
-		if (LatchCountTimer < 2048) {
+		if (!LatchADCflag) {
 			ADC_Ch0sel();
 			HAL_ADC_Start(&hadc1);
 			HAL_ADC_PollForConversion(&hadc1, 100);
@@ -302,152 +288,23 @@ void TIM1_UP_TIM10_IRQHandler(void)
 			HAL_ADC_PollForConversion(&hadc1, 100);
 			Vfuse.currentValue = HAL_ADC_GetValue(&hadc1);
 			HAL_ADC_Stop(&hadc1);
-
-			if (LatchCountTimer > 2048)
-				LatchCountTimer = 2048;
-			else {
-				//Vin
-				Vin.avg_Buffer[LatchCountTimer] = Vin.currentValue;
-				//Vfuse
-				Vfuse.avg_Buffer[LatchCountTimer] = Vfuse.currentValue;
-				//Latch A
-				LatchPortA.avg_Buffer[LatchCountTimer] = LatchPortA.currentValue;
-				//Latch B
-				LatchPortB.avg_Buffer[LatchCountTimer] = LatchPortB.currentValue;
-			}
-
-			if (LatchCountTimer > 100) {
-				/*
-				 *  Once voltage is stable find the lowest fuse and input voltage. If the calculated average voltage is less then the current minimum
-				 *  set the minimum to the calculated average
-				 *  */
-				Vfuse.lowVoltage = Vfuse.currentValue < Vfuse.lowVoltage ? Vfuse.currentValue : Vfuse.lowVoltage;
-				Vin.lowVoltage = Vin.currentValue < Vin.lowVoltage ? Vin.currentValue : Vin.lowVoltage;
-			}
-
-			if (stableVoltageCount) {
-				/*
-				 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
-				 * set LatchSampling to false so that the process is halted and the test fails
-				 */
-				if ((Vin.currentValue > 3000) && (Vfuse.currentValue > 0.75 * Vin.currentValue))
-					stableVoltageCount--;
-				else
-					stableVoltageCount++;
-				if (stableVoltageCount > 100)
-					CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
-				else if (stableVoltageCount == 0)
-					SET_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE);
-
-			}
-
-			if (LatchCountTimer == 100 && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {
-				/*
-				 * Calculate the steady state/ average voltage of the fuse and input across the range determined
-				 * if the fuse and input are determined to be stable
-				 */
-				Vfuse.total = Vin.total = 0;
-				for (int i = 0; i <= LatchCountTimer; i++) {
-					Vfuse.total += Vfuse.avg_Buffer[i];
-					Vin.total += Vin.avg_Buffer[i];
-				}
-				Vfuse.average = Vfuse.total / LatchCountTimer;
-				Vin.average = Vin.total / LatchCountTimer;
-			} else if (LatchCountTimer > 100 && READ_BIT(LatchTestStatusRegister, STABLE_INPUT_VOLTAGE)) {
-				/*
-				 * If statement to determine the voltages of the latch and pulsewidths.
-				 * If the pulse width is above 47ms the latchoff rountine can be run.
-				 */
-
-				//Latch On Test
-				if (READ_BIT(LatchTestStatusRegister, LATCH_ON_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE)) {
-					if (LatchPortA.currentValue > LATCH_HIGH_ADC_THRESHOLD) {
-						LatchPortA.HighPulseWidth++;
-						LatchPortA.highVoltage += LatchPortA.currentValue;
-						if (LatchPortA.HighPulseWidth >= 20 && LatchPortA.HighPulseWidth <= 80) {
-							if (Vfuse.currentValue > LatchPortA.currentValue)
-								MOSFETvoltageA.total += Vfuse.currentValue - LatchPortA.currentValue;
-							MOSFETvoltageA.HighPulseWidth++;
-						}
-						PulseCountDown =
-								(LatchPortA.HighPulseWidth > 90 || LatchPortB.LowPulseWidth > 90) ? 10 : PulseCountDown;
-					}
-					if (LatchPortB.currentValue < LATCH_LOW_ADC_THRESHOLD) {
-						LatchPortB.LowPulseWidth++;
-						LatchPortB.lowVoltage += LatchPortB.currentValue;
-						if (LatchPortB.LowPulseWidth > 20 && LatchPortB.LowPulseWidth < 80) {
-							MOSFETvoltageB.total += LatchPortB.currentValue;
-							MOSFETvoltageB.LowPulseWidth++;
-						}
-					}
-				}
-				if (READ_BIT(LatchTestStatusRegister, LATCH_OFF_SAMPLING) && !READ_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE)) {
-					//Latch Off Test
-					if (LatchPortA.currentValue < LATCH_LOW_ADC_THRESHOLD) {
-						LatchPortA.LowPulseWidth++;
-						LatchPortA.lowVoltage += LatchPortA.currentValue;
-						if (LatchPortA.LowPulseWidth >= 20 && LatchPortA.LowPulseWidth <= 80) {
-							MOSFETvoltageA.total += LatchPortA.currentValue;
-							MOSFETvoltageA.LowPulseWidth++;
-						}
-					}
-					if (LatchPortB.currentValue > LATCH_HIGH_ADC_THRESHOLD) {
-						LatchPortB.HighPulseWidth++;
-						LatchPortB.highVoltage += LatchPortB.currentValue;
-						if ( (LatchPortB.HighPulseWidth > 20) && (LatchPortB.HighPulseWidth < 80) ) {
-							if (Vfuse.currentValue > LatchPortB.currentValue)
-								MOSFETvoltageB.total += Vfuse.currentValue - LatchPortB.currentValue;
-							MOSFETvoltageB.HighPulseWidth++;
-						}
-						PulseCountDown =
-								(LatchPortB.HighPulseWidth > 90 || LatchPortA.LowPulseWidth > 90) ? 10 : PulseCountDown;
-					}
-				}
-				PulseCountDown--;
-
-				//Set latch complete bits
-				if (!PulseCountDown && ((LatchPortA.HighPulseWidth > 94) && (LatchPortB.LowPulseWidth > 94))) {	//|| (PulseCountDown == 0)
-					SET_BIT(LatchTestStatusRegister, LATCH_ON_COMPLETE);
-					MOSFETvoltageA.highVoltage = MOSFETvoltageA.total / MOSFETvoltageA.HighPulseWidth;
-					MOSFETvoltageB.lowVoltage = MOSFETvoltageB.total / MOSFETvoltageB.LowPulseWidth;
-					LatchPortA.highVoltage /= 2;
-					LatchPortB.lowVoltage /= 2;
-					LatchPortA.HighPulseWidth /= 2;
-					LatchPortB.LowPulseWidth /= 2;
-					MOSFETvoltageA.total = MOSFETvoltageB.total = MOSFETvoltageA.HighPulseWidth =
-							MOSFETvoltageB.LowPulseWidth = 0;
-				}
-				if (!PulseCountDown && ((LatchPortB.HighPulseWidth > 94) || (LatchPortA.LowPulseWidth > 94))) {
-					SET_BIT(LatchTestStatusRegister, LATCH_OFF_COMPLETE);
-					MOSFETvoltageB.highVoltage = MOSFETvoltageB.total / MOSFETvoltageB.HighPulseWidth;
-					MOSFETvoltageA.lowVoltage = MOSFETvoltageA.total / MOSFETvoltageA.LowPulseWidth;
-					LatchPortA.LowPulseWidth /= 2;
-					LatchPortB.HighPulseWidth /= 2;
-					LatchPortB.highVoltage /= 2;
-					LatchPortA.lowVoltage /= 2;
-					MOSFETvoltageA.total = MOSFETvoltageB.total = MOSFETvoltageA.LowPulseWidth =
-							MOSFETvoltageB.HighPulseWidth = 0;
-				}
-
-			}
-			LatchCountTimer++;
+			LatchADCflag = true;
 		}
-	} else
-		CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
-  /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim1);
-  HAL_TIM_IRQHandler(&htim10);
-  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
+	}
 
-  /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
+	/* USER CODE END TIM1_UP_TIM10_IRQn 0 */
+	HAL_TIM_IRQHandler(&htim1);
+	HAL_TIM_IRQHandler(&htim10);
+	/* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
+
+	/* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
 
 /**
-  * @brief This function handles TIM1 trigger and commutation interrupts and TIM11 global interrupt.
-  */
-void TIM1_TRG_COM_TIM11_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
+ * @brief This function handles TIM1 trigger and commutation interrupts and TIM11 global interrupt.
+ */
+void TIM1_TRG_COM_TIM11_IRQHandler(void) {
+	/* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
 	// 1ms Interrupt timer
 	if (!SolarChargerStable && SolarChargerTimer) {
 		ADC_Ch2sel();
@@ -570,20 +427,19 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void)
 			RelayCount--;
 	}
 
-  /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim1);
-  HAL_TIM_IRQHandler(&htim11);
-  /* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 1 */
+	/* USER CODE END TIM1_TRG_COM_TIM11_IRQn 0 */
+	HAL_TIM_IRQHandler(&htim1);
+	HAL_TIM_IRQHandler(&htim11);
+	/* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 1 */
 
-  /* USER CODE END TIM1_TRG_COM_TIM11_IRQn 1 */
+	/* USER CODE END TIM1_TRG_COM_TIM11_IRQn 1 */
 }
 
 /**
-  * @brief This function handles USART2 global interrupt.
-  */
-void USART2_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART2_IRQn 0 */
+ * @brief This function handles USART2 global interrupt.
+ */
+void USART2_IRQHandler(void) {
+	/* USER CODE BEGIN USART2_IRQn 0 */
 	if ((USART2->SR & USART_SR_RXNE) && (BoardCommsReceiveState == RxWaiting)) {
 		/*
 		 * Board Comms receive routine to handle the data from the RS485 or Radio
@@ -632,7 +488,7 @@ void USART2_IRQHandler(void)
 					}
 					BoardCommsReceiveState = RxGOOD;
 				} else {
-                   	BoardCommsReceiveState = RxBAD;
+					BoardCommsReceiveState = RxBAD;
 					printT((uns_ch*) "CRC Error...\n");
 				}
 				timeOutEn = false;
@@ -672,19 +528,18 @@ void USART2_IRQHandler(void)
 		HAL_GPIO_WritePin(RS485_EN_GPIO_Port, RS485_EN_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(Radio_EN_GPIO_Port, Radio_EN_Pin, GPIO_PIN_SET);
 	}
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
+	/* USER CODE END USART2_IRQn 0 */
+	HAL_UART_IRQHandler(&huart2);
+	/* USER CODE BEGIN USART2_IRQn 1 */
 
-  /* USER CODE END USART2_IRQn 1 */
+	/* USER CODE END USART2_IRQn 1 */
 }
 
 /**
-  * @brief This function handles USART3 global interrupt.
-  */
-void USART3_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART3_IRQn 0 */
+ * @brief This function handles USART3 global interrupt.
+ */
+void USART3_IRQHandler(void) {
+	/* USER CODE BEGIN USART3_IRQn 0 */
 	if (USART3->SR & USART_SR_RXNE) {
 		/*
 		 * Barcode Scanner Receive Interrupt
@@ -707,23 +562,22 @@ void USART3_IRQHandler(void)
 			}
 		}
 	}
-  /* USER CODE END USART3_IRQn 0 */
-  HAL_UART_IRQHandler(&huart3);
-  /* USER CODE BEGIN USART3_IRQn 1 */
+	/* USER CODE END USART3_IRQn 0 */
+	HAL_UART_IRQHandler(&huart3);
+	/* USER CODE BEGIN USART3_IRQn 1 */
 
-  /* USER CODE END USART3_IRQn 1 */
+	/* USER CODE END USART3_IRQn 1 */
 }
 
 /**
-  * @brief This function handles TIM8 trigger and commutation interrupts and TIM14 global interrupt.
-  */
-void TIM8_TRG_COM_TIM14_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 0 */
+ * @brief This function handles TIM8 trigger and commutation interrupts and TIM14 global interrupt.
+ */
+void TIM8_TRG_COM_TIM14_IRQHandler(void) {
+	/* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 0 */
 
-  /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim14);
-  /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 1 */
+	/* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
+	HAL_TIM_IRQHandler(&htim14);
+	/* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 1 */
 
 	/*
 	 * Interrupt Timer for Asynchronous Pulses
@@ -792,15 +646,14 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 			&& !Port[Port_4].Async.Active && !Port[Port_5].Async.Active && !Port[Port_6].Async.Active
 			&& !Port[Port_7].Async.Active && !Port[Port_8].Async.Active && !Port[Port_9].Async.Active) //
 		AsyncComplete = true;
-  /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 1 */
+	/* USER CODE END TIM8_TRG_COM_TIM14_IRQn 1 */
 }
 
 /**
-  * @brief This function handles TIM6 global interrupt.
-  */
-void TIM6_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM6_IRQn 0 */
+ * @brief This function handles TIM6 global interrupt.
+ */
+void TIM6_IRQHandler(void) {
+	/* USER CODE BEGIN TIM6_IRQn 0 */
 	/*
 	 * Loom Select Timer
 	 * Timer every 2s check the loom to determine whether a different loom has been
@@ -814,27 +667,26 @@ void TIM6_IRQHandler(void)
 		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 		LED1active = false;
 	}
-  /* USER CODE END TIM6_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim6);
-  /* USER CODE BEGIN TIM6_IRQn 1 */
+	/* USER CODE END TIM6_IRQn 0 */
+	HAL_TIM_IRQHandler(&htim6);
+	/* USER CODE BEGIN TIM6_IRQn 1 */
 
-  /* USER CODE END TIM6_IRQn 1 */
+	/* USER CODE END TIM6_IRQn 1 */
 }
 
 /**
-  * @brief This function handles TIM7 global interrupt.
-  */
-void TIM7_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM7_IRQn 0 */
+ * @brief This function handles TIM7 global interrupt.
+ */
+void TIM7_IRQHandler(void) {
+	/* USER CODE BEGIN TIM7_IRQn 0 */
 	/*
 	 //       ======      KEYPAD Scan Interupt      ======      //
 	 */
 
 	// 1ms timer to scan keypad
-  /* USER CODE END TIM7_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim7);
-  /* USER CODE BEGIN TIM7_IRQn 1 */
+	/* USER CODE END TIM7_IRQn 0 */
+	HAL_TIM_IRQHandler(&htim7);
+	/* USER CODE BEGIN TIM7_IRQn 1 */
 	/*
 	 * Timer to check which key presses have been made. A simple matrix scan functionality is run, with counters
 	 * incremented to eliminate switch bounce and be assured the user actually pressed the button
@@ -863,27 +715,25 @@ void TIM7_IRQHandler(void)
 		if (KP[currentScan].State != KP[currentScan].PreviousState)
 			KP[currentScan].Pressed = KP[currentScan].State;
 	}
-  /* USER CODE END TIM7_IRQn 1 */
+	/* USER CODE END TIM7_IRQn 1 */
 }
 
 /**
-  * @brief This function handles USB On The Go FS global interrupt.
-  */
-void OTG_FS_IRQHandler(void)
-{
-  /* USER CODE BEGIN OTG_FS_IRQn 0 */
-  /* USER CODE END OTG_FS_IRQn 0 */
-  HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-  /* USER CODE BEGIN OTG_FS_IRQn 1 */
-  /* USER CODE END OTG_FS_IRQn 1 */
+ * @brief This function handles USB On The Go FS global interrupt.
+ */
+void OTG_FS_IRQHandler(void) {
+	/* USER CODE BEGIN OTG_FS_IRQn 0 */
+	/* USER CODE END OTG_FS_IRQn 0 */
+	HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+	/* USER CODE BEGIN OTG_FS_IRQn 1 */
+	/* USER CODE END OTG_FS_IRQn 1 */
 }
 
 /**
-  * @brief This function handles USART6 global interrupt.
-  */
-void USART6_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART6_IRQn 0 */
+ * @brief This function handles USART6 global interrupt.
+ */
+void USART6_IRQHandler(void) {
+	/* USER CODE BEGIN USART6_IRQn 0 */
 	/*
 	 * SDI-12 Interrupt Rountine
 	 * If SDI-12 is enabled the USART6 Receive interrupt will be enabled.
@@ -987,17 +837,18 @@ void USART6_IRQHandler(void)
 					RS485sensorBuffer[0], RS485sensorBuffer[1], RS485sensorBuffer[2], RS485sensorBuffer[3],
 					RS485sensorBuffer[4], RS485sensorBuffer[5], RS485sensorBuffer[6], RS485sensorBuffer[7],
 					RS485sensorBuffer[8]);
-			HAL_UART_Transmit(&SDI_UART, (uint8_t*) &RS485buffer[0], strlen((char*) &RS485buffer[0]), HAL_MAX_DELAY);
+			HAL_UART_Transmit(&SDI_UART, (uint8_t*) &RS485buffer[0], strlen((char*) &RS485buffer[0]),
+			HAL_MAX_DELAY);
 			HAL_GPIO_WritePin(RS485_4011EN_GPIO_Port, RS485_4011EN_Pin, GPIO_PIN_RESET);
 			RSstate = RSundef;
 		}
 	}
 
-  /* USER CODE END USART6_IRQn 0 */
-  HAL_UART_IRQHandler(&huart6);
-  /* USER CODE BEGIN USART6_IRQn 1 */
+	/* USER CODE END USART6_IRQn 0 */
+	HAL_UART_IRQHandler(&huart6);
+	/* USER CODE BEGIN USART6_IRQn 1 */
 
-  /* USER CODE END USART6_IRQn 1 */
+	/* USER CODE END USART6_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

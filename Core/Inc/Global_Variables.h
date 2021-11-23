@@ -102,9 +102,9 @@ float RS485sensorBuffer[9];
 
 
 //Latch Variables
+_Bool LatchADCflag;
 uint16_t LatchCountTimer;
 uint8_t stableVoltageCount;
-uint16_t latchCountTo;
 uint8 LatchTestPort;
 bool latchTimeOutEn;
 bool LatchTimeOut;
