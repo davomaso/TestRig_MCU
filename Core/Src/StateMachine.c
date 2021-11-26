@@ -810,51 +810,50 @@ void handleLatchTest(TboardConfig *Board, TprocessState *State) {
 			} else
 				CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 			LatchADCflag = false;
-
-			if (!READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING))
-				*State = psComplete;
-			break;
-			case psComplete:
-			if (READ_REG(Board->LatchTestPort)) {
-				HAL_TIM_Base_Stop(&htim10);
-				//Print Results & Error Messages
-				TransmitResults(Board);
-				normaliseLatchResults();
-				PrintLatchResults();
-				LatchErrorCheck(Board);
-				if (Board->LTR == 0) {
-					printT(
-							(uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
-					Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 1000; // Base 1000 for easier sorting results															// Multiply by two to acount for 2ch of data
-				} else {
-					printLatchError(Board);
-					printT(
-							(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
-					Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 0;
-				}
-				CLEAR_REG(Board->LatchTestPort);
-			}
-			if (Board->BoardType == b422x)
-				CurrentState = csSampling;
-			else
-				CurrentState = csAsyncTest;
-			*State = psInitalisation;
-			break;
-			case psFailed:
-			retryCount++;
-			if (retryCount > 3) {
-				HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
-				CurrentState = csIDLE;
-			} else {
-				if (BoardCommsParameters[0] & 0x80) {
-					communication_array(0x26, &BoardCommsParameters[0], 1);
-				}
-				retryCount++;
-			}
-			*State = psInitalisation;
-			break;
 		}
+		if (!READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING) || READ_BIT(LatchTestStatusRegister, LATCH_TEST_COMPLETE))
+			*State = psComplete;
+		break;
+	case psComplete:
+		if (READ_REG(Board->LatchTestPort)) {
+			HAL_TIM_Base_Stop(&htim10);
+			//Print Results & Error Messages
+			TransmitResults(Board);
+			normaliseLatchResults();
+			PrintLatchResults();
+			LatchErrorCheck(Board);
+			if (Board->LTR == 0) {
+				printT(
+						(uns_ch*) "\n=======================          LATCH TEST PASSED         =======================\n\n");
+				Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 1000; // Base 1000 for easier sorting results															// Multiply by two to acount for 2ch of data
+			} else {
+				printLatchError(Board);
+				printT(
+						(uns_ch*) "\n=======================          LATCH TEST FAILED          =======================\n\n");
+				Board->TestResults[Board->GlobalTestNum][LatchTestPort * 2] = 0;
+			}
+			CLEAR_REG(Board->LatchTestPort);
+		}
+		if (Board->BoardType == b422x)
+			CurrentState = csSampling;
+		else
+			CurrentState = csAsyncTest;
+		*State = psInitalisation;
+		break;
+	case psFailed:
+		retryCount++;
+		if (retryCount > 3) {
+			HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PIN5EN_GPIO_Port, PIN5EN_Pin, GPIO_PIN_RESET);
+			CurrentState = csIDLE;
+		} else {
+			if (BoardCommsParameters[0] & 0x80) {
+				communication_array(0x26, &BoardCommsParameters[0], 1);
+			}
+			retryCount++;
+		}
+		*State = psInitalisation;
+		break;
 	}
 }
 

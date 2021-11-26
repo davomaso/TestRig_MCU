@@ -31,6 +31,8 @@ Latch Port Input________|________/\/\/\______________OPAMP
 #define LATCH_HIGH_ADC_THRESHOLD  ( (9.8 * 0.9) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH high voltage is above 90% of source voltage
 #define LATCH_LOW_ADC_THRESHOLD  ( (9.8 * 0.2 ) / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION // Ensure LATCH low voltage is below 10% of source voltage
 
+#define VIN_ADC_THRESHOLD  ( 11.5 / ADC_MAX_INPUT_VOLTAGE) * ADC_RESOLUTION
+
 	// Latch Test Thresholds
 #define LATCH_PULSE_HIGH_THRESHOLD	9.2
 #define LATCH_PULSE_LOW_THRESHOLD	1.2
@@ -83,6 +85,7 @@ uint8 LatchTestErrorRegister;
 #define LATCH_SAMPLING			(1 << 3)
 #define LATCH_ON_SAMPLING		(1 << 4)
 #define LATCH_OFF_SAMPLING		(1 << 5)
+#define LATCH_TEST_COMPLETE		(1 << 6)
 
 uint8 LatchTestStatusRegister;
 

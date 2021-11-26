@@ -162,7 +162,6 @@ typedef struct {
 TlatchResults LatchRes;
 
 //uint8 usADCcount; 			//us ADC count to poll the ADC every 100us
-uint8_t PulseCountDown;		// Stable voltage pulse
 
 //Keypad Variables
 typedef struct {

@@ -213,10 +213,10 @@ void TestConfig402x(TboardConfig *Board) {
 
 //====================================================  OUTPUT EXPANSION BOARDS  ====================================================//
 void TestConfig422x(TboardConfig *Board) {
-	TportConfig *tempTestARR[16] = { &noTest, &noTest, &latchTest, &noTest,		//
-			&noTest, &noTest, &noTest, &latchTest,		//
-			&latchTest, &noTest, &noTest, &noTest,		//
+	TportConfig *tempTestARR[16] = { &latchTest, &noTest, &noTest, &noTest,		//
 			&noTest, &latchTest, &noTest, &noTest,		//
+			&noTest, &noTest, &latchTest, &noTest,		//
+			&noTest, &noTest, &noTest, &latchTest,		//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
