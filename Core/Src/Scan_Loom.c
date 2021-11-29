@@ -4,6 +4,10 @@
 #include "Delay.h"
 #include "UART_Routine.h"
 
+/*
+ * Scan through the loom for grounds on each loomsel pin to determine which board is connected.
+ * Multiplexer is used to cutdown on pin usage. hardware change could be made to remove the multiplexer, allowing for no stopping when programming or latching occurs
+ */
 void ScanLoom(uint8 *Loom) {
 	uint8 PrevLoomState;
 	PrevLoomState = *Loom;
@@ -12,7 +16,7 @@ void ScanLoom(uint8 *Loom) {
 		ADC_MUXsel(i);
 		delay_us(50); // Wait mux and input to become stable
 		if (!HAL_GPIO_ReadPin(Loom_Sel_GPIO_Port, Loom_Sel_Pin)) {
-			*Loom |= (1 << (i));
+			*Loom |= (1 << (i));	// bitshift 1 up the loom pin being scanned if ground is detected
 		}
 	}
 	if (*Loom != PrevLoomState) {
@@ -22,6 +26,7 @@ void ScanLoom(uint8 *Loom) {
 	CheckLoomTimer = 250;	// 250ms until next scan
 }
 
+// Once loom is scanned board type can be established. Routine sets the board time and prints the loom connected to the terminal
 void SetBoardType(TboardConfig *Board, uint8 Loom) {
 	switch (Loom) {
 	case 0:
@@ -58,6 +63,7 @@ void SetBoardType(TboardConfig *Board, uint8 Loom) {
 	}
 }
 
+// Routine populates the boardconnected struct with the various variables and structs to run a successful test
 void currentBoardConnected(TboardConfig *Board) {
 	switch (Board->BoardType) {
 	case b935x:

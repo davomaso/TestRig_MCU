@@ -4,6 +4,7 @@
 #include "usbd_cdc_if.h"
 #include "usbd_cdc.h"
 
+// Read the DAC calibration factors from eeprom, assign them to the Port struct.CalibrationFactors variable
 void read_correctionFactors() {
 	int8 tempByte;
 	for (uint8 i = Port_1; i <= Port_6; i++) {
@@ -14,6 +15,8 @@ void read_correctionFactors() {
 		}
 	}
 }
+
+// Following calibration the adjsuted correction factors are rewritten to eeprom
 void write_correctionFactors() {
 	uint8 tempByte;
 	for (uint8 i = Port_1; i <= Port_6; i++) {

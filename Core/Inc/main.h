@@ -69,12 +69,12 @@ SPI_HandleTypeDef DAC_SPI;
 #define FIRMWARE_VERSION 1.22
 
 //==============	 CURRENT BOARD VERSIONS 	==============//
-#define BOARD_935x 0x52
-#define BOARD_937x 0x52
-#define BOARD_401x 0x52
-#define BOARD_402x 0x52
-#define BOARD_422x 0x52
-#define BOARD_427x 0x52
+#define CURRENT_VERSION_935x 0x52
+#define CURRENT_VERSION_937x 0x52
+#define CURRENT_VERSION_401x 0x52
+#define CURRENT_VERSION_402x 0x52
+#define CURRENT_VERSION_422x 0x52
+#define CURRENT_VERSION_427x 0x52
 
 //===============	 OUTPUT FUNCTIONALITY 	===============//
 #define TWO_WIRE_LATCHING 0x10	//One Pulse- Top 4 Bits, Two Wire Latching-Bottom 4 bits

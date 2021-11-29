@@ -12,8 +12,15 @@
 #include "UART_Routine.h"
 #include "DAC.h"
 #include "TestFunctions.h"
+/*
+ * Source file contains the various testConfig/boardConfigs rerquired to run different tests on each of the board
+ * Config determines the amount of ports on each board, tests being run, boardtype and subclass if necessary
+ */
+
+
 
 // ==================	Global Assignment of Port Configs	================== //
+// Set the configurations of all tests to be run, setting the codes, channels and gatetime variables of all structs
 void ConfigInit() {
 	//Output Test Assignment
 	outputTest.Code = 0x01;
@@ -77,7 +84,7 @@ void ConfigInit() {
 //=====================================================  SINGLE & DUAL BOARDS  =====================================================//
 void TestConfig935x(TboardConfig *Board) {
 	// Port Test Array
-	TportConfig *tempTestARR[30] = {	//
+	TportConfig *tempTestARR[30] = {	//	Tests to be run
 			&latchTest, &asyncFilteredTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 			//
 					&noTest, &sdi12Test, &TwovoltTest, &asyncFilteredTest, &asyncFilteredTest,						//
 					&noTest, &asyncFilteredTest, &sdi12Test, &asyncFilteredTest, &asyncFilteredTest, 				//
@@ -107,7 +114,7 @@ void TestConfig935x(TboardConfig *Board) {
 
 void TestConfig937x(TboardConfig *Board) {
 	// Port Test Array
-	TportConfig *tempTestARR[24] = {	// Array size must not exceed size of MAX_TEST_ARRAY_SIZE
+	TportConfig *tempTestARR[24] = {	//	Tests to be run
 			&latchTest, &noTest, &asyncFilteredTest, &asyncUnfilteredTest,	//
 					&noTest, &latchTest, &TwovoltTest, &asyncFilteredTest,			//
 					&noTest, &noTest, &sdi12Test, &currentTest,				//
@@ -357,6 +364,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 	}
 }
 
+	//Routine to set the location of where the test parameters are up to
 void Set_Test(TboardConfig *Board, uint8 Port, uint8 TotalPort) {
 	if (Port == 0)
 		Board->ArrayPtr = Board->GlobalTestNum * TotalPort;
@@ -364,40 +372,41 @@ void Set_Test(TboardConfig *Board, uint8 Port, uint8 TotalPort) {
 	Board->TestCode[Port] = Board->ThisTest->Code;
 }
 
+// Check what test the board is up to following a test to determine whether further configuration and testing is required
 _Bool CheckTestNumber(TboardConfig *Board) {
 	uint8 Test = Board->GlobalTestNum;
 	uint8 maxTest = Board->testNum;
 	SDIenabled = false;
 	RS485enabled = false;
-	if (Test == maxTest) {
+	if (Test == maxTest) {	// compare max test to the test currently run, if max test is reached determine if the testing passed or failed
 		sprintf((char*) &debugTransmitBuffer, "\n ========== Maximum Test Number Reached: %d ==========\n", Test);
 		printT((uns_ch*) &debugTransmitBuffer);
-		reset_ALL_MUX();
+		reset_ALL_MUX();		// Reset all MUX and DAC to zero
 		reset_ALL_DAC();
 
-		LCD_ClearLine(3);
+		LCD_ClearLine(3);	// clear the bottom 2 lines of LCD screen
 		LCD_ClearLine(4);
 		LCD_printf((uns_ch*) "    Test Results    ", 2, 0);
-		uint8 spacing = (20 - (Test) - (Test - 1));
+		uint8 spacing = (20 - (Test) - (Test - 1));			// Set the spacing for the amount of tests run on the board
 		spacing = (spacing & 1) ? spacing + 1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
-		for (uint8 i = 0; i < maxTest; i++) {
+		for (uint8 i = 0; i < maxTest; i++) {	// print the results of each individual test
 			if (Board->TPR & (1 << i)) {
 				sprintf((char*) &debugTransmitBuffer[0], "X ");
 				LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
-				CLEAR_BIT(Board->BSR, BOARD_TEST_PASSED);
+				CLEAR_BIT(Board->BSR, BOARD_TEST_PASSED);	// clear test passed if test failed
 			} else {
 				sprintf((char*) &debugTransmitBuffer[0], ". ");
 				LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 			}
 		}
-		GetBatteryLevel(Board);
-		CheckPowerRegisters(Board);
+		GetBatteryLevel(Board);		// Get the average battery voltage of the board
+		CheckPowerRegisters(Board);	// set the power registers
 
 		if ((READ_REG(Board->TPR) == 0) && (READ_REG(Board->BSR == 0x1E)))
-			SET_BIT(Board->BSR, BOARD_TEST_PASSED);
-		return false;
+			SET_BIT(Board->BSR, BOARD_TEST_PASSED);		// Set the test passed flag if test was successful
+		return false;	// return false if no further tests are required.
 	}
 	return true;
 }

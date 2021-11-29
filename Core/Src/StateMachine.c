@@ -84,13 +84,13 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 			if (KP[1].Pressed || KP[3].Pressed || KP[6].Pressed || KP[hash].Pressed) {
 				TestRig_Init();
 				TargetBoardParamInit(0);									// Reinitialise variables
-				clearTestStatusLED();
+				clearTestStatusLED();										// remove status led if it is enabled
 				if (KP[1].Pressed) {
 					TestRigMode = OldBoardMode;								// Test only, no serialise, no program
-					SET_BIT(Board->BSR, BOARD_SERIALISED);// Set flags so system does not update serial or program board
+					SET_BIT(Board->BSR, BOARD_SERIALISED);					// Set flags so system does not update serial or program board
 					SET_BIT(Board->BSR, BOARD_PROGRAMMED);
 				} else if (KP[hash].Pressed) {
-					if (Board->SerialNumber != 0 && (~Board->SerialNumber != 0))
+					if (Board->SerialNumber != 0 && (~Board->SerialNumber != 0))		// Check serial number is not 0 or 0xFFFFFFFF
 						SET_BIT(Board->BSR, BOARD_SERIALISED);
 					TestRigMode = BatchMode;								// Program immediately
 				} else if (KP[6].Pressed)
@@ -105,10 +105,10 @@ void handleIdle(TboardConfig *Board, TprocessState *State) {
 				*State = psComplete;										// Progress with the testing process
 			}
 		}
-		//Calibration Routine
+		//TestRig_Calibration Routine
 		if ((KP[7].Pressed && KP[9].Pressed)) {								// Calibrate Test Rig
 			KP[7].Pressed = KP[9].Pressed = false;
-			Calibration();
+			TestRig_Calibration();
 			LCD_Clear();
 			TestRig_Init();													// Return to initial state
 			printT((uns_ch*) "\n\n==========  Test Rig  ==========\n");
@@ -580,11 +580,12 @@ void handleCalibrating(TboardConfig *Board, TprocessState *State) {
 		if (READ_BIT(Board->BSR, BOARD_CALIBRATED) || (Board->BoardType == b422x)) {
 			*State = psComplete;
 		} else {
-			sprintf((char*) &lcdBuffer, "    Calibrating");
-			LCD_printf((uns_ch*) &lcdBuffer, 2, 0);
+//			sprintf((char*) &lcdBuffer, "    Calibrating");
+//			LCD_printf((uns_ch*) &lcdBuffer, 2, 0);
 			CLEAR_REG(CalibrationStatusRegister);
 			CalibratingTimer = 0;
 			TargetBoardCalibration_Voltage(Board);
+			calibrateTargetBoard(Board);
 			*State = psWaiting;
 		}
 		break;
@@ -622,7 +623,7 @@ void handleCalibrating(TboardConfig *Board, TprocessState *State) {
 	case psFailed:
 		retryCount++;
 		if (retryCount < 3) {
-			printT((uns_ch*) "Calibration Failed Recalibrating Device\n");
+			printT((uns_ch*) "TestRig_Calibration Failed Recalibrating Device\n");
 			CLEAR_REG(CalibrationStatusRegister);
 			ProcessState = psInitalisation;
 			BoardCommsReceiveState = RxWaiting;
@@ -793,7 +794,6 @@ void handleOutputTest(TboardConfig *Board, TprocessState *State) {
 }
 
 void handleLatchTest(TboardConfig *Board, TprocessState *State) {
-	uns_ch Response;
 	switch (*State) {
 	case psInitalisation:
 		LatchTestInit();

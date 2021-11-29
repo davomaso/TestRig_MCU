@@ -170,6 +170,7 @@ int main(void)
 	HAL_I2C_Init(&hi2c1);
 	LCD_init();
 	ChangeCharacterSet('A');				// Character set A for Progress Bar
+	PrintTestRigFirmwareVersion();			// Print the current firmware version on the LCD screen
 
 	TestRig_Init();
 	DebounceArrayInit();					// Initialize the async debounce functionality array
@@ -198,7 +199,7 @@ int main(void)
 		if ( (CurrentState != csProgramming) && (CurrentState != csLatchTest) && (CurrentState != csCalibrating) && (CheckLoomTimer == 0) )
 			ScanLoom(&LoomState);	// Scan loom each time through the state machine to determine when a loom is removed mid process
 
-		switch (CurrentState) {
+		switch (CurrentState) {	// Main statemachine for the system, handles change of state and most activity (excluding quiting & check loom functionality)
 		case csCheckLoom:
 			handleCheckLoom(&BoardConnected, &ProcessState);
 			break;

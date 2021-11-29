@@ -6,6 +6,9 @@
  */
 #include "HexToAsc.h"
 
+/*
+ * Hex to int and hex to ascii routines to convert hex variables to ascii if required, eg. 0x35 to 5 in int or "5" ascii
+ */
 int hex_to_int(char c){
         int first = c / 16 - 3;
         int second = c % 16;

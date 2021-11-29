@@ -7,6 +7,7 @@
 #include "main.h"
 #include "v1.h"
 #include "Global_Variables.h"
+#include "Communication.h"
 #include "LCD.h"
 #include "UART_Routine.h"
 #include "string.h"
@@ -32,6 +33,60 @@ void testSolarCharger() {
 	SolarChargerTimer = 1250;
 	SolarChargerSampling = true;
 	HAL_GPIO_WritePin(SOLAR_CH_EN_GPIO_Port, SOLAR_CH_EN_Pin, GPIO_PIN_SET);
+}
+
+void initialiseTargetBoard(TboardConfig *Board) {
+	LCD_printf((uns_ch*) "    Initialising    ", 2, 0);								// Initialise target board ready to be placed on self or return to standard 250,1 parameters
+	uns_ch Command;
+	Command = 0xCC;																	// Initialisation command
+	BoardCommsParameters[0] = 0x49;
+	BoardCommsParametersLength = 1;
+	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);	// Transmit command
+}
+
+void interrogateTargetBoard() {
+	if(CurrentState != csIDLE){
+		if (CurrentState == csSerialise)											// Print to LCD if in serialising or not in IDLE
+			LCD_printf((uns_ch *) "    Serialising    ", 2, 0);
+		else
+			LCD_printf((uns_ch *) "   Interrogating    ", 2, 0);
+	}
+	uns_ch Command;
+	Command = 0x10;
+	communication_arraySerial(Command, 0, 0);										// Transmit the interogation command
+}
+
+void configureTargetBoard(TboardConfig *Board) {
+	uns_ch Command;
+	Command = 0x56;
+	SetPara(Board, Command);
+	if (Board->BoardType != b422x)													// No need to reconfigure as board is configured with the initialisation
+		communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
+	OutputsSet = false;																// Ensure that the outputs are only set the once
+}
+
+void sampleTargetBoard(TboardConfig *Board) {
+	uns_ch Command;
+	LCD_printf((uns_ch*) "      Sampling      ", 2, 0);
+	Command = 0x1A;																	// 0x1A command to initialise sampling
+	SetPara(Board, Command);
+	communication_array(Command, (uns_ch*) &BoardCommsParameters[0], BoardCommsParametersLength);
+}
+
+void calibrateTargetBoard(TboardConfig *Board) {
+	uns_ch Command = 0xC0;
+	LCD_printf((uns_ch*) "     Calibrating      ", 2, 0);
+	BoardCommsParameters[0] = 0x50;
+	BoardCommsParametersLength = 1;
+	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
+}
+
+void uploadSamplesTargetBoard(TboardConfig *Board) {
+	uns_ch Command;
+	Command = 0x18;
+	LCD_printf((uns_ch*) "     Uploading      ", 2, 0);
+	SetPara(Board, Command);
+	communication_array(Command, &BoardCommsParameters[0], BoardCommsParametersLength);
 }
 
 void GetBatteryLevel(TboardConfig *Board) {

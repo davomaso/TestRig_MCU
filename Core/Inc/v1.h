@@ -27,5 +27,11 @@ void GetBatteryLevel(TboardConfig *);
 void PrintVoltages(TboardConfig *);
 void PrintHomeScreen(TboardConfig *);
 _Bool VoltageComparison(float *, float);
+void initialiseTargetBoard(TboardConfig *);
+void interrogateTargetBoard(void);
+void configureTargetBoard(TboardConfig *);
+void sampleTargetBoard(TboardConfig * );
+void uploadSamplesTargetBoard(TboardConfig *);
+void calibrateTargetBoard(TboardConfig *);
 
 #endif /* INC_V1_H_ */

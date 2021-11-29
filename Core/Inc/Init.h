@@ -11,11 +11,6 @@
 #include "Board_Config.h"
 
 void TestRig_Init(void);
-void initialiseTargetBoard(TboardConfig *);
-void interrogateTargetBoard(void);
-void configureTargetBoard(TboardConfig *);
-void sampleTargetBoard(TboardConfig * );
-void uploadSamplesTargetBoard(TboardConfig *);
 void TargetBoardParamInit(_Bool);
 uint32 ReadSerialNumber(uint8 *, uns_ch *, uint16 );
 void setTimeOut(uint16);
@@ -24,7 +19,9 @@ void runLatchTimeOut(uint16);
 uint8 getCurrentVersion(TloomConnected);
 void SDIinit(void);
 void ASYNCinit(void);
+void currentTestInit(void);
 void keypadInit(void);
 void DebounceArrayInit(void);
+void PrintTestRigFirmwareVersion(void);
 
 #endif /* INC_INIT_H_ */

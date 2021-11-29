@@ -10,10 +10,14 @@
 #include "ADC.h"
 #include "string.h"
 
+	// populate the sample voltage array to compare the sampled voltages to, used to derive the pass threshold levels
 void populateSetSampleVoltages() {
 	static float tempArray[] = { 12.0, 12.0, 3.0, 10.5, 10.5, 12.0, 13.6 };
 	memcpy(&setSampleVoltages, &tempArray, sizeof(float) * 7);
 }
+
+		// ADC_Ch0 - ADC_Ch5
+// Selects the channel which shall be polled to obtain the various sample & latch voltages of the target board
 
 //ADC Port A
 void ADC_Ch0sel() {
@@ -85,6 +89,10 @@ void ADC_Ch5sel() {
 	}
 }
 
+/*
+ * Routines below used to obtain the various sample voltages, selects the correct channel then polls the adc, returning the result
+ */
+
 uint32_t getVinVoltage() {
 	uint16 sampleVal;
 	ADC_Ch2sel();
@@ -125,6 +133,11 @@ uint32_t getSampleVoltage() {
 	return sampleVal;
 }
 
+	/*
+	 * CompareSampleVoltage() : dependant on the board connected will determine what sample voltages are sampled.
+	 * The different sample tests are enumerated so that globaltestnum can be used to determine which test to run.
+	 * Result is loaded into voltagebuffer and compared to the adjusted voltage with the tolerance
+	 */
 _Bool compareSampleVoltage(TboardConfig *Board, float *currSample, float *setVoltage) {
 	float tolerance = *setVoltage * 0.1;
 	if ((Board->BoardType == b935x || Board->BoardType == b937x) && (Board->GlobalTestNum > V_3))

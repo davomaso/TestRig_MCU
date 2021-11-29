@@ -9,6 +9,7 @@
 #include "SetVsMeasured.h"
 #include "LCD.h"
 
+// SDcard initialisation mounts the device and checks free space
 FRESULT SDInit(TfileConfig *file, TCHAR *path) {
 	FRESULT res;
 	res = Mount_SD(file, path);
@@ -20,6 +21,7 @@ FRESULT SDInit(TfileConfig *file, TCHAR *path) {
 	return res;
 }
 
+// Routine to search through the SDcard to determine whether a file exists
 _Bool FindBoardFile(TboardConfig *Board, TfileConfig *FAT) {
 	if (Board->Subclass)
 		sprintf((char*) &(FAT->FILEname[0]), "%x%c", Board->BoardType, Board->Subclass);

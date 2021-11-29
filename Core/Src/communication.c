@@ -35,21 +35,20 @@
 //Parameters:			variable
 //CRC:					2 bytes
 
+/*
+ * Communication routine that sets the buffer to be transmitted to the target board, implementing the parameters set by SetPara and
+ * puts the CRC at the end of the string from uart_CRC.
+ */
 void communication_array(uns_ch Command, uns_ch *Para, uint8_t Paralen) {
-	/*
-	 * Communication routine that sets the buffer to be transmitted to the target board, implementing the parameters set by SetPara and
-	 * puts the CRC at the end of the string from uart_CRC.
-	 *
-	 */
 	uint8 Comlen;
 	uns_ch Com_buffer[LRGBUFFER];
 	uint16 Length;
 	uint16 Crc;
-	UART2_ReceiveComplete = false;			// Disable the receive complete flag prior to the string being transmitted
+	UART2_ReceiveComplete = false;							// Disable the receive complete flag prior to the string being transmitted
 	Length = 14 + Paralen;
 	Comlen = Length + 3;									// Calculate the Length parameter
 
-	Com_buffer[0] = 0xB2;							// Populate header with network, length, comms direction & module
+	Com_buffer[0] = 0xB2;									// Populate header with network, length, comms direction & module
 	Com_buffer[1] = 0x21;
 	Com_buffer[2] = Length;
 	Com_buffer[3] = BoardConnected.Network;
@@ -69,26 +68,29 @@ void communication_array(uns_ch Command, uns_ch *Para, uint8_t Paralen) {
 	Com_buffer[Comlen - 2] = Crc;							// Populate CRC at end of communication buffer
 	Com_buffer[Comlen - 1] = (Crc >> 8);
 
-	switchCommsProtocol(&BoardConnected);				//Switch Comms to Radio or RS485 depending on Board Connected
-	UART2_transmit((uns_ch*) &Com_buffer[0], Comlen);		//Transmit the Communication array
+	switchCommsProtocol(&BoardConnected);					// Switch Comms to Radio or RS485 depending on Board Connected
+	UART2_transmit((uns_ch*) &Com_buffer[0], Comlen);		// Transmit the Communication array
 	USART2->CR1 |= USART_CR1_RXNEIE;						// UART2 Receive Interrupt Enable.
 }
 
+
+/*
+ * Handle the response from the board, pass the data returned in the communication string to be handled
+ */
 void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data, uint8 arraysize) {
 	switch (*Response) {
 	case 0x11:												//Serialise Command, Used to check the version of the board
 		memcpy(&Board->SerialNumber, data, 4);
 		data += 4;
-		if ((Board->SerialNumber != 0) && (~(Board->SerialNumber) != 0))
+		if ((Board->SerialNumber != 0) && (~(Board->SerialNumber) != 0))	// Set the serialised flag if a valid serial number is returned
 			SET_BIT(Board->BSR, BOARD_SERIALISED);
 		data += 2;  //LSB board number coming in
-		Board->Version = *data++; 												//version currently installed on board
-		Board->Subclass = *data++;						//if a 93xx board is connected, what variety is it C, M, X, F...
-
-		memcpy(&Board->Network, data, 2);
+		Board->Version = *data++; 											//version currently installed on board
+		Board->Subclass = *data++;											//if a 93xx board is connected, what variety is it C, M, X, F...
+		memcpy(&Board->Network, data, 2);									//copy 2 bytes of network address
 		data += 2;
-		memcpy(&Board->Module, data, 2);
-		if (CurrentState != csIDLE) {
+		memcpy(&Board->Module, data, 2);									//copy 2 bytes of module address
+		if (CurrentState != csIDLE) {										// print the state of the state machine if the system is not in idle
 			printT((uns_ch*) "====Interogation Complete====\n");
 			printT((uns_ch*) "=====Board Info=====\n");					//Print Board Info //Transmit Info To Terminal
 			//Board
@@ -106,8 +108,8 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 
 		}
 		break;
-	case 0x1B:
-		if (SDIenabled || RS485enabled) {// When testing includes RS485 or SDI-12 extend period in which sampling occurs
+	case 0x1B:		// Handle the sampling request return
+		if (SDIenabled || RS485enabled) {	// When testing includes RS485 or SDI-12 extend period in which sampling occurs
 			sampleTime = *data++;
 			sampleTime |= (*data++ << 8);
 			sampleTime *= 100;
@@ -117,22 +119,22 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 		sampleCount = 0;
 		samplesUploaded = false;
 		samplesUploading = true;
-		if (TestRigMode == VerboseMode) {
+		if (TestRigMode == VerboseMode) {								// Print wait time if the system is in verbose mode
 			sprintf((char*) &debugTransmitBuffer, "Waiting : %.2f seconds....\n", (float) sampleTime / 1000);
 			printT((uns_ch*) &debugTransmitBuffer);
 		}
 		break;
 
-	case 0x19:
+	case 0x19:		// Sampling complete, uploading results response
 		if (TestRigMode == VerboseMode) {
 			printT((uns_ch*) "=====Sampling Complete=====\n");
 			printT((uns_ch*) "Starting Test Procedure...\n\n");
 		}
-		memcpy(&sampleBuffer[0], data, (arraysize));
+		memcpy(&sampleBuffer[0], data, (arraysize));		// copy the data from the returned array to the Sample array
 		break;
 
 	case 0x03:	//Board Busy
-		setTimeOut(1000);
+		setTimeOut(1000);	// restart timeout
 		break;
 	case 0xCD:	// Initialise board command
 		if (TestRigMode == VerboseMode)
@@ -141,7 +143,9 @@ void communication_response(TboardConfig *Board, uns_ch *Response, uns_ch *data,
 
 	}
 }
-
+/*
+ * Boolean response to determine whether the CRC check on the returned string was valid. Return true if a valid CRC was found
+ */
 _Bool CRC_Check(uns_ch *input, uint8 length) {// Basic CRC check to determine whether the string received is correct, also add the CRC at the end of the string prior to transmission
 	uint16 Crc_response;
 	Crc_response = uart_CalcCRC16(input, length - 2);
@@ -152,12 +156,13 @@ _Bool CRC_Check(uns_ch *input, uint8 length) {// Basic CRC check to determine wh
 		return false;
 }
 
+/*
+ * Set Communication Parameters Routine
+ * Dependant on the command being transmitted to the target device a different parameter is required to be sent
+ * This function will determine what is sent with the command passed to it
+ */
 void SetPara(TboardConfig *Board, uns_ch Command) {
-	/*
-	 * Set Communication Parameters Routine
-	 * Dependant on the command being transmitted to the target device a different parameter is required to be sent
-	 * This function will determine what is sent with the command passed to it
-	 */
+
 	//Set parameters 00 - 0F sample inputs, command
 	switch (Command) {
 	case 0x18:
@@ -182,13 +187,13 @@ void SetPara(TboardConfig *Board, uns_ch Command) {
 	}
 }
 
+/*
+ * Rountine to set and read Serial number of the board
+ * If no currentserial number is passed, the routine will leave the 4 bytes of data out
+ * else a new serial number is being programmed to the board by which both serial numbers
+ * are required
+ */
 void communication_arraySerial(uns_ch Command, uint32 CurrentSerial, uint32 NewSerial) {
-	/*
-	 * Rountine to set and read Serial number of the board
-	 * If no currentserial number is passed, the routine will leave the 4 bytes of data out
-	 * else a new serial number is being programmed to the board by which both serial numbers
-	 * are required
-	 */
 	uint8 Comlen;
 	uns_ch Com_buffer[LRGBUFFER];
 	UART2_ReceiveComplete = false;
@@ -218,6 +223,9 @@ void communication_arraySerial(uns_ch Command, uint32 CurrentSerial, uint32 NewS
 	USART2->CR1 |= USART_CR1_RXNEIE;
 }
 
+/*
+ * Switch board comms protocol depending on board and test being run, some boards are constant radio/RS485 others have both
+ */
 void switchCommsProtocol(TboardConfig *Board) {
 	if ((Board->BoardType == b935x) || (Board->BoardType == b937x)) {
 		HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);

@@ -8,11 +8,11 @@
 #include "DAC.h"
 #include <Calibration.h>
 
-//void DAC_set(uint8,uint16 *);
-void reset_ALL_DAC(void);
-//void set_ALL_DAC(int *);
-
 //	=================================    DAC    =====================================//
+/*
+ * Set DAC to the port and value that is passed to the function, take the 16bit value and split into 2 8bit variables to be passed using the HAL spi routine
+ * Depending on the port required pull the relevent CS low so the value can be written
+ */
 void DAC_set(uint8 Test_Port, uint16 DACvalue) {
 	uns_ch DACdata[2];
 	DACdata[0] = (DACvalue & 0xFF00) >> 8;
@@ -39,6 +39,10 @@ void DAC_set(uint8 Test_Port, uint16 DACvalue) {
 	}
 }
 
+/*
+ * Routine to set all the DAC to the same value, no port is to be passed to the routine as all ports should read the same value
+ * No correction factor is added to each port
+ */
 void set_ALL_DAC(uint16 *DACvalue) {
 	//DAC 1 set
 	*DACvalue += 0x3000;	//OUTA Clear
@@ -73,7 +77,7 @@ void set_ALL_DAC(uint16 *DACvalue) {
 	HAL_SPI_Transmit(&DAC_SPI, (uint8_t*) &DACvalue, 2, 100);
 	HAL_GPIO_WritePin(DAC_CS3_GPIO_Port, DAC_CS3_Pin, GPIO_PIN_SET);
 }
-
+	// Reset all DAC values back to 0, no output on voltage or current circuits
 void reset_ALL_DAC() {
 	uint8 DACvalue[2];
 	//DAC 1 Clear

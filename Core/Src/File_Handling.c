@@ -4,15 +4,14 @@
 #include "Programming.h"
 #include "UART_Routine.h"
 
-/* =============================>>>>>>>> NO CHANGES AFTER THIS LINE =====================================>>>>>>> */
-FRESULT Mount_SD(TfileConfig *file, const TCHAR *path) {
 	/*
 	 * Routine to mount the SD card, returning FRESULT, if return is 0 then SD mounted correctly
 	 * see ff.h for further explanation of FATFS FRESULT responses.
 	 * An explanation of each of these responses can be found at http://elm-chan.org/fsw/ff/00index_e.html
 	 */
+FRESULT Mount_SD(TfileConfig *file, const TCHAR *path) {
 	FRESULT res;
-	res = f_mount(&(file->fatfs), path, 1);
+	res = f_mount(&(file->fatfs), path, 1); // FatFS mount command, 1=> force mount the drive
 	if (res != FR_OK)
 		printT((uns_ch*) "ERROR!!! in mounting SD CARD...\n\n");
 	else {
@@ -22,11 +21,11 @@ FRESULT Mount_SD(TfileConfig *file, const TCHAR *path) {
 	return res;
 }
 
+/*
+ * Following any operation of reading/writing to the SD card the UNMOUNT function is required to disconnect the SD card
+ * This function wil l act similarly to the previous routine return an FRESULT determining whether the unmounting was successful.
+ */
 FRESULT Unmount_SD(TfileConfig *file, const TCHAR *path) {
-	/*
-	 * Following any operation of reading/writing to the SD card the UNMOUNT function is required to disconnect the SD card
-	 * This function wil l act similarly to the previous routine return an FRESULT determining whether the unmounting was successful.
-	 */
 	FRESULT res;
 	res = f_mount(0, "", 1);
 	if (res == FR_OK)
@@ -36,11 +35,11 @@ FRESULT Unmount_SD(TfileConfig *file, const TCHAR *path) {
 	return res;
 }
 
+/*
+ * Routine to scan through the SD card searching for the file passed to the routine.
+ * Similary to the previous routines this will return an FRESULT to determine correct operation
+ */
 FRESULT Scan_SD(char *pat) {
-	/*
-	 * Routine to scan through the SD card searching for the file passed to the routine.
-	 * Similary to the previous routines this will return an FRESULT to determine correct operation
-	 */
 	uint8 i = 0;
 	SDcard.fresult = f_opendir(&SDcard.directory, pat);
 	if (SDcard.fresult == FR_OK) {
@@ -75,12 +74,14 @@ FRESULT Scan_SD(char *pat) {
 	return SDcard.fresult;
 }
 
+	// Pass the path to be opened and open the directory
 FRESULT Open_Dir(TfileConfig *FAT, char *path) {
 	FRESULT res;
 	res = f_opendir(&(FAT->directory), path);
 	return res;
 }
 
+	// Pass the path to be closed and close the directory
 FRESULT Close_Dir(TfileConfig *FAT) {
 	FRESULT res;
 	res = f_closedir(&(FAT->directory));
@@ -93,12 +94,13 @@ FRESULT Close_Dir(TfileConfig *FAT) {
 	}
 	return res;
 }
+
+/*
+ * As the previous routine scans for a specified file, this routine scans the SD card for a specific directory and file,
+ * this routine is typically for searching for the .hex board files as a string comparison is made to determine when the
+ * board file is found following the first 4 characters/ (the board type)
+ */
 _Bool Find_File(TfileConfig *FAT, char *path) {
-	/*
-	 * As the previous routine scans for a specified file, this routine scans the SD card for a specific directory and file,
-	 * this routine is typically for searching for the .hex board files as a string comparison is made to determine when the
-	 * board file is found following the first 4 characters/ (the board type)
-	 */
 	uint8 i;
 	FRESULT res;
 	res = f_opendir(&FAT->directory, path);
@@ -159,13 +161,11 @@ FRESULT Write_File(TfileConfig *file, TCHAR *name, char *data) {
 	return res;
 }
 
+/*
+ * Routine checks whether file exists, if true. The file is opened with read only permissions.
+ * The routine returns the contents of the file.
+ */
 FRESULT Read_File(TfileConfig *file, char *name) {
-	/*
-	 * Routine checks whether file exists, if true. The file is opened with read only permissions.
-	 * The routine returns the contents of the file.
-	 */
-
-	/**** check whether the file exists or not ****/
 	FRESULT res;
 	/* Open file to read */
 	res = f_open(&(file->file), name, FA_OPEN_EXISTING | FA_READ);
@@ -204,11 +204,11 @@ FRESULT Read_File(TfileConfig *file, char *name) {
 	return res;
 }
 
+/*
+ * f_open is used to create the file with CREATE_ALWAYS
+ * read and write privileges. FRESULT returned to determine if successful.
+ */
 FRESULT Create_File(TfileConfig *file) {
-	/*
-	 * f_stat used to determine whether file exists, if not f_open is used to create the file with
-	 * read and write privileges. FRESULT returned to determine if successful.
-	 */
 	FRESULT res;
 	res = f_open(&(file->file), &(file->FILEname[0]), FA_CREATE_ALWAYS | FA_WRITE | FA_READ);
 	if (res != FR_OK) {
@@ -226,13 +226,13 @@ FRESULT Create_File(TfileConfig *file) {
 	return res;
 }
 
+/*
+ * First the routine opens the file passed to the function. Read and Write permissions are
+ * granted. Open Append allows for the creation of a file if it has not previously existed,
+ * with the read and write pointer pointed to EOF.
+ * As previous FRESULT is returned to inform of any errors
+ */
 FRESULT Open_AppendFile(TfileConfig *FAT) {
-	/*
-	 * First the routine opens the file passed to the function. Read and Write permissions are
-	 * granted. Open Append allows for the creation of a file if it has not previously existed,
-	 * with the read and write pointer pointed to EOF.
-	 * As previous FRESULT is returned to inform of any errors
-	 */
 	FRESULT res;
 	res = f_open(&(FAT->file), &(FAT->FILEname[0]), FA_OPEN_APPEND | FA_WRITE | FA_READ);
 	if (res != FR_OK) {
@@ -244,6 +244,9 @@ FRESULT Open_AppendFile(TfileConfig *FAT) {
 	return res;
 }
 
+/*
+ * Close the file system that is passed to the function, return the result of the method
+ */
 FRESULT Close_File(TfileConfig *FAT) {
 	FRESULT res;
 	res = f_close(&(FAT->file));
@@ -261,6 +264,9 @@ FRESULT Close_File(TfileConfig *FAT) {
 	return res;
 }
 
+/*
+ * Update the file system that is passed to the function, return the result of the method
+ */
 FRESULT Update_File(TfileConfig *FAT, char *name, char *data) {
 	/**** check whether the file exists or not ****/
 	FRESULT res;
@@ -279,11 +285,11 @@ FRESULT Update_File(TfileConfig *FAT, char *name, char *data) {
 	return res;
 }
 
+/*
+ * Creates directory with the name passed to the routine. As the other FATFS routines above
+ * if a process fails FRESULT returns a value regarding what the failure was
+ */
 FRESULT Create_Dir(TCHAR *name) {
-	/*
-	 * Creates directory with the name passed to the routine. As the other FATFS routines above
-	 * if a process fails FRESULT returns a value regarding what the failure was
-	 */
 	FRESULT res;
 	res = f_mkdir(name);
 	if (res == FR_OK) {
@@ -301,13 +307,14 @@ FRESULT Create_Dir(TCHAR *name) {
 	}
 	return res;
 }
+
+/*
+ * Routine to open file
+ * Failure if the file does not exist
+ * Process only allows for read only permissions
+ * If the file is found the size of the file is displayed on the terminal
+ */
 FRESULT OpenFile(TfileConfig *FAT) {
-	/*
-	 * Routine to open file
-	 * Failure if the file does not exist
-	 * Process only allows for read only permissions
-	 * If the file is found the size of the file is displayed on the terminal
-	 */
 	FRESULT res;
 	res = f_open(&(FAT->file), &(FAT->FILEname[0]), FA_OPEN_EXISTING | FA_READ);
 	if (res != FR_OK) {
@@ -327,19 +334,18 @@ FRESULT OpenFile(TfileConfig *FAT) {
 	return res;
 }
 
+/*
+ * Routine required to print the FreeSpace left on the SD card to both the terminal and LCD
+ * Routine finds the number of FAT entries and the number of remaining clusters. Displaying the
+ * total space of the SD card on the terminal, and the free space to both the terminal and LCD.
+ *
+ */
 uint32 Check_SD_Space(TfileConfig *file) {
-	/*
-	 * Routine required to print the FreeSpace left on the SD card to both the terminal and LCD
-	 * Routine finds the number of FAT entries and the number of remaining clusters. Displaying the
-	 * total space of the SD card on the terminal, and the free space to both the terminal and LCD.
-	 *
-	 */
 	/**** capacity related *****/
 	FATFS *pfs;
 	DWORD fre_clust;
 	uint32 total, free_space;
 	/* Check free space */
-
 	f_getfree("", &fre_clust, &pfs);
 
 	total = (uint32) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
@@ -372,8 +378,12 @@ uint32 Check_SD_Space(TfileConfig *file) {
 	return free_space;
 }
 
+/*
+ * Create a results specific file for the results of the board test
+ * The routine also populates the header of the file to store the results under
+ * The result of the routine is returned
+ */
 FRESULT CreateResultsFile(TfileConfig *FAT, TboardConfig *Board) {
-
 	FRESULT res;
 	sprintf(&(FAT->FILEname[0]), "/TEST_RESULTS/%lu_%x", Board->SerialNumber, Board->BoardType);
 	res = Create_Dir((TCHAR*) &(FAT->FILEname));
@@ -388,6 +398,10 @@ FRESULT CreateResultsFile(TfileConfig *FAT, TboardConfig *Board) {
 	return res;
 }
 
+/*
+ * Routine to write the voltages to the results file, depending on the board connected write the various voltages associated to the board.
+ * Use the VoltageBuffer variable used in the handleSampling() to write these voltages to the file
+ */
 FRESULT WriteVoltages(TboardConfig *Board, TfileConfig *FAT) {
 	FRESULT res;
 	sprintf(FAT->FILEname, "/TEST_RESULTS/%lu_%x/%lu.CSV", Board->SerialNumber, Board->BoardType, Board->SerialNumber);
@@ -413,4 +427,3 @@ FRESULT WriteVoltages(TboardConfig *Board, TfileConfig *FAT) {
 	}
 	return res;
 }
-

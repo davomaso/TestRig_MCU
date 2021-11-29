@@ -9,7 +9,8 @@ enum LatchStates {
 };
 enum LatchStates Latch_states;
 
-void ConvertResultsToBase_ms(TADCconfig *high_p, TADCconfig *low_p, TADCconfig *high_mos, TADCconfig *low_mos) {
+// Converts the latch sample results from 500us samples to 1ms
+void ConvertResultsToBase_ms(TADCconfig *high_p, TADCconfig *low_p, TADCconfig *high_mos, TADCconfig *low_mos) {	// Pass the high/low latch/MOS values to convert to ms, as sampling occurs at 500us
 	high_mos->highVoltage = high_mos->total / high_mos->HighPulseWidth;
 	low_mos->lowVoltage = low_mos->total / low_mos->LowPulseWidth;
 	high_p->highVoltage /= 2;
@@ -19,26 +20,23 @@ void ConvertResultsToBase_ms(TADCconfig *high_p, TADCconfig *low_p, TADCconfig *
 	high_mos->total = low_mos->total = high_mos->HighPulseWidth = low_mos->LowPulseWidth = 0;
 }
 
-uint8 GetStableVoltageCnt(uint32 vin, uint32 vfuse, uint8 *v_count) { // , uint8 Mask
+// routine to establish weather sample voltage has returned to a stable state
+uint8 GetStableVoltageCnt(uint32 vin, uint32 vfuse, uint8 *v_count) { // initialise v_count (stableVoltageCount) to 75-100 to test voltage stability, then pass to this function repetively to establish stability
 	uint8 result = 0;
-	if (*v_count) {
-		/*
-		 * Determine whether the input and fuse voltages are stable, if stableVoltageCount increments too high
-		 * set LatchSampling to false so that the process is halted and the test fails
-		 */
-		if ((vin > VIN_ADC_THRESHOLD) && (vfuse > (0.85 * vin) ))
+	if (*v_count) {		// v_count > 0
+		if ((vin > VIN_ADC_THRESHOLD) && (vfuse > (0.85 * vin) ))	// When vin, surpass the threshold & vfuse, surpass 85% of vin decrement count, else increase count
 			(*v_count)--;
 		else
 			(*v_count)++;
 		if (*v_count > 200)
-			CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
+			CLEAR_BIT(LatchTestStatusRegister, LATCH_SAMPLING);	// DISABLE latch if the count surpasses 200
 		else if (*v_count == 0) {
-//			SET_BIT(LatchTestStatusRegister, Mask);
-			result = 1;
+			result = 1;	// return 1 if successful
 		}
 	}
 	return result;
 }
+
 
 int8 SetLatchValue(TADCconfig *high_p, TADCconfig *low_p, TADCconfig *high_mos, TADCconfig *low_mos) {
 	int8 result = 0;
@@ -68,19 +66,19 @@ int8 SetLatchValue(TADCconfig *high_p, TADCconfig *low_p, TADCconfig *high_mos, 
 	}
 	return result;
 }
+
 /*
- *
- *
- Initial_Stability: Check Input voltage Value, Check Fuse Voltage Value
+ * Latch testing state machine to handle latch testing, performs stability check before and after each latch to ensure a perfect latch operation
+ * stores values into avg_buffer to be written to file.
  */
 void HandleLatchSample() {
-	//Vin
-	Vin.avg_Buffer[LatchCountTimer] = Vin.currentValue;
-	//Vfuse
+		//Vin
+	Vin.avg_Buffer[LatchCountTimer] = Vin.currentValue; //TODO: Find a way to write this to a file as the results are read to reduce memory usage
+		//Vfuse
 	Vfuse.avg_Buffer[LatchCountTimer] = Vfuse.currentValue;
-	//Latch A
+		//Latch A
 	LatchPortA.avg_Buffer[LatchCountTimer] = LatchPortA.currentValue;
-	//Latch B
+		//Latch B
 	LatchPortB.avg_Buffer[LatchCountTimer] = LatchPortB.currentValue;
 
 	switch (Latch_states) {
@@ -132,16 +130,12 @@ void HandleLatchSample() {
 		break;
 	}
 
-	if (LatchCountTimer > 100) {
+	if (LatchCountTimer > 100) {	// After first 50ms begin calculating/comparing average and lowest value
 		Vfuse.lowVoltage = Vfuse.currentValue < Vfuse.lowVoltage ? Vfuse.currentValue : Vfuse.lowVoltage;
 		Vin.lowVoltage = Vin.currentValue < Vin.lowVoltage ? Vin.currentValue : Vin.lowVoltage;
 
 		Vin.average = Vin.average + (Vin.currentValue - Vin.average) / (LatchCountTimer-100);
 		Vfuse.average = Vfuse.average + (Vfuse.currentValue - Vfuse.average) / (LatchCountTimer-100);
-		/*
-		 *  Once voltage is stable find the lowest fuse and input voltage. If the calculated average voltage is less then the current minimum
-		 *  set the minimum to the calculated average
-		 *  */
 	}
 	LatchCountTimer++;
 }
@@ -153,6 +147,7 @@ uint8 runLatchTest(TboardConfig *Board, uint8 Test_Port) {
 	return Test_Port;
 }
 
+	// Check which port the latch test is to be run on then return true if the port is found, setting the latchtestport in the process.
 _Bool LatchingSolenoidDriverTest(TboardConfig *Board) {
 	if (Board->TestCode[Port_1] == 0x10) {
 		LatchTestPort = runLatchTest(Board, Port_1);
@@ -177,6 +172,7 @@ uint8 LatchTestParam(uint8 Test_Port, bool OnOff) {
 	return (0x80 * OnOff) + (Test_Port * 2);
 }
 
+	// Initialisation for the latch testing, setting all the various struct to zero, and returning all variables to initial states
 void LatchTestInit() {
 	bzero(&LatchPortA, sizeof(TADCconfig));
 	bzero(&LatchPortB, sizeof(TADCconfig));
@@ -199,5 +195,5 @@ void LatchTestInit() {
 	LatchPortB.lowVoltage = 4096.0;
 	LatchCountTimer = 0;
 	Latch_states = EInitial_Stability_Check;
-	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
+//	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
 }

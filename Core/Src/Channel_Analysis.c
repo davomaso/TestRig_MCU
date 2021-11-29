@@ -8,13 +8,18 @@
 #include "Channel_Analysis.h"
 #include "string.h"
 
+// Decompress the data returned from the target board, for more information on the decompression of data returned check "Tech Note-Currently supported field commands"
+/*
+ *	Routine checks what channel the data was returned from, Bottom 5bits, top 3bits determine how many bytes of data are associated to that channel.
+ *	The amount of bytes specified are then read in and stored in the TestResults array to be compared to the set values.
+ */
 void Decompress_Channels(TboardConfig * Board, uns_ch *data) {
 	uint8 CH_count = 0;
 	int32 Channel_value;
 	uint8 Channel;
 	Channel_value = 0;
 	uint8 Compression_type;
-	uint8 length = Board->ChCount;						//	Acount for battery voltage
+	uint8 length = Board->ChCount;						//	Account for battery voltage
 	if (Board->BoardType == b402x)						// Increase length by 1 on 4020 to ensure battery level is read
 		length += 1;									// Accounting for the output port
 	while (CH_count <= length) {						// Inclusive to acount for the battery level voltage

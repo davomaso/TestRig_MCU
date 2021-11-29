@@ -17,5 +17,6 @@ uint8 runLatchTest(TboardConfig *, uint8);
 _Bool LatchingSolenoidDriverTest(TboardConfig *);
 uint8 LatchTestParam(uint8, bool);
 void LatchTestInit(void);
+void HandleLatchSample(void);
 
 #endif /* INC_LATCHTEST_H_ */

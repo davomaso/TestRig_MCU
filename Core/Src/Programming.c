@@ -18,6 +18,10 @@ _Bool VerifyPage(uint8, uns_ch*);
 _Bool EnableProgramming(void);
 void SetSDclk(_Bool);
 
+/*
+ * sortLine() takes a full line of intel hex format data and removes the colon, and all unnecessary data for programming.
+ * Given the data is read in ascii from the SD card ascii to hex function is required to get it in a form to program the device
+ */
 void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	/*
 	 * Routine to sort through a line of INTEL hex format data
@@ -45,13 +49,13 @@ void sortLine(uns_ch *Line, uns_ch *lineBuffer, uint8 *Position) {
 	}
 }
 
+/*
+ * Populate the page buffer with a line of data, if the page is populated return true so the page
+ * can be programmed to the target board.
+ * Else return false if the whole line is loaded into the buffer so that more data can be loaded into a line
+ * to be repopulated until the buffer is full.
+ */
 _Bool populatePageBuffer(uns_ch *Page, uint16 *PagePos, uns_ch *Line, uint8 *ByteCount) {
-	/*
-	 * Populate the page buffer with a line of data, if the page is populated return true so the page
-	 * can be programmed to the target board.
-	 * Else return false if the whole line is loaded into the buffer so that more data can be loaded into a line
-	 * to be repopulated until the buffer is full.
-	 */
 	if ((*PagePos + *ByteCount) <= MAX_PAGE_LENGTH) {
 		memcpy(Page, Line, *ByteCount);
 		*PagePos += *ByteCount;
@@ -72,12 +76,11 @@ _Bool populatePageBuffer(uns_ch *Page, uint16 *PagePos, uns_ch *Line, uint8 *Byt
 	return false;
 }
 
+/*
+ * Following successful programmming, and verification this routine is used to set the clk and lock bytes so the
+ * target boards can operate with the expected 3-8Mhz external XTAL.
+ */
 void SetClkAndLck(TboardConfig *Board) {
-	/*
-	 * Following successful programmming, and verification this routine is used to set the clk and lock bytes so the
-	 * target boards can operate with the expected 3-8Mhz external XTAL.
-	 */
-
 	uint8 data[4];
 	uint8 response[4];
 	PollReady();
@@ -153,16 +156,15 @@ void SetClkAndLck(TboardConfig *Board) {
 		data[3] = 0x00;
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4,
 		HAL_MAX_DELAY);
-
 	}
 }
 
+/*
+ * Find the version of firmware of the string that was passed to the routine.
+ * Routine should take any string, searching through the string until a v is found
+ * returning integers following the 'v' or 'V'
+ */
 uint8 findVer(char *data) {
-	/*
-	 * Find the version of firmware of the string that was passed to the routine.
-	 * Routine should take any string, searching through the string until a v is found
-	 * returning integers following the 'v' or 'V'
-	 */
 	while (*data != 'v')
 		data++;
 	uint8 tempVer[2];
@@ -175,11 +177,11 @@ uint8 findVer(char *data) {
 	return Ver;
 }
 
+/*
+ * Routine to convert ascii characters to hex so each byte read from the files on the SD card can be correctly
+ * read prior to programming
+ */
 char Ascii2hex(char *ch) {
-	/*
-	 * Routine to convert ascii characters to hex so each byte read from the files on the SD card can be correctly
-	 * read prior to programming
-	 */
 	char hex;
 	if (*ch < 0x40)
 		hex = ((*ch++ - 0x30) << 4);
@@ -192,12 +194,13 @@ char Ascii2hex(char *ch) {
 	return hex;
 }
 
+//routine to load byte prior to page write
 void loadByte(uint8_t hilo, uint8 page, uint8 addr, uint8 data) {
 	spi_transaction(0x40 + 8 * hilo, page, addr, data);
 }
 
+// Transmit 4 bytes of data on SPI3, routine used typically for programming the target devices
 void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
-	// Transmit 4 bytes of data on SPI3, routine used typically for programming the target devices
 	uint8 data[4];
 	data[0] = a;
 	data[1] = b;
@@ -206,14 +209,13 @@ void spi_transaction(uint8 a, uint8 b, uint8 c, uint8 d) {
 	HAL_SPI_Transmit(&hspi3, &data[0], 4, HAL_MAX_DELAY);
 }
 
+/*
+ * Take buffer of 'length' bytes long and write page
+ * Load each byte onto the device, incrementing the address from 0-255
+ * Once limit is reached write the page with the page commit routine.
+ *
+ */
 void PageWrite(uint8 *buff, uint16 length, uint8 page) {
-	/*
-	 * Take buffer of 'length' bytes long and write page
-	 *
-	 * Load each byte onto the device, incrementing the address from 0-255
-	 * Once limit is reached write the page with the page commit routine.
-	 *
-	 */
 	uint8 adr;
 	for (adr = 0; adr < length; adr++) {
 		loadByte(LOW, 0, adr, *buff++);
@@ -223,6 +225,7 @@ void PageWrite(uint8 *buff, uint16 length, uint8 page) {
 	PollReady();
 }
 
+// Poll board until ready or programming timeout occurs
 void PollReady() {
 	//Poll Ready
 	uns_ch data[4];
@@ -239,15 +242,16 @@ void PollReady() {
 	}
 }
 
+// Once page is full or EOF is reached, pagecommit command is required to write data to board
 void pageCommit(uint8 currPage) {
 	spi_transaction(0x4C, (currPage >> 1), ((currPage & 0x01) << 7), 0x00);
 }
 
+/*
+ * Take user input to determine whether to continue with programming or continue with
+ * the current firmware that is currently loaded onto the board.
+ */
 _Bool ContinueWithCurrentProgram() {
-	/*
-	 * Take user input to determine whether to continue with programming or continue with
-	 * the current firmware that is currently loaded onto the board.
-	 */
 	LCD_ClearLine(2);
 	sprintf((char*) &lcdBuffer[0], "  Update Program?");
 	printT((uns_ch*) &lcdBuffer[0]);
@@ -280,10 +284,10 @@ _Bool ContinueWithCurrentProgram() {
 	return false;
 }
 
+/*
+ * Routine to enable programming and poll until ready
+ */
 _Bool EnableProgramming() {
-	/*
-	 * Routine to enable programming and poll until ready
-	 */
 	uns_ch data[4];
 	uns_ch response[4];
 	//Reenable programming prior to writing a page,
@@ -303,17 +307,15 @@ _Bool EnableProgramming() {
 	while (ProcessState && ProgrammingTimeOut) {
 		HAL_SPI_TransmitReceive(&hspi3, &data[0], &response[0], 4, HAL_MAX_DELAY);
 		if (((response[3] & 0x01) == 0)) {
-//			timeOutEn = false;
 			return true;
 		}
 	}
 	return false;
 }
 
+
+// Routine to verify the data programmed to the device was correct comparing to the page buffer
 _Bool VerifyPage(uint8 page, uns_ch *PageByte) {
-	/*
-	 * Routine to verify the data programmed to the device was correct comparing to the page buffer
-	 */
 	uns_ch LowByte;
 	uns_ch HighByte;
 	uns_ch data[4];
@@ -337,10 +339,10 @@ _Bool VerifyPage(uint8 page, uns_ch *PageByte) {
 	return true;
 }
 
+/*
+ * Passing a percentage to this routine will update the progress bar present on the LCD screen
+ */
 void ProgressBar(uint8 Percentage) {
-	/*
-	 * Passing a percentage to this routine will update the progress bar present on the LCD screen
-	 */
 	if (Percentage <= 100) {
 		uns_ch Byte;
 			LCD_setCursor(4, 9);
@@ -381,10 +383,11 @@ void ProgressBar(uint8 Percentage) {
 
 }
 
+// Set the speed at which the SDcard runs, slower speed is required for initialisation
 void SetSDclk(_Bool OnOff) {
 	if (OnOff) {
-		hsd.Instance->CLKCR &= 0xFF00;
-		hsd.Instance->CLKCR |= 4;
+		hsd.Instance->CLKCR &= 0xFF00;	// clear the clock adjustment bits
+		hsd.Instance->CLKCR |= 4;	// reduce the clk divider for faster operation
 	} else {
 		hsd.Instance->CLKCR &= 0xFF00;
 		hsd.Instance->CLKCR |= 16;

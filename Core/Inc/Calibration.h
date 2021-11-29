@@ -6,7 +6,7 @@
 
 #define CALIBRATION_TIMEOUT 10000
 
-void Calibration(void);
+void TestRig_Calibration(void);
 void TargetBoardCalibration_Voltage(TboardConfig *);
 void TargetBoardCalibration_Current(TboardConfig *);
 
