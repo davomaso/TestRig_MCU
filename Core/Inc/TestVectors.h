@@ -21,4 +21,8 @@
 #define ASYNC_MEDIUM_COUNT		10
 #define ASYNC_HIGH_COUNT	 	15
 
+
+	//	Voltage Threshold Vectors
+#define BATTERY_VOLTAGE_THRESHOLD 11.5
+
 #endif /* INC_TESTVECTORS_H_ */

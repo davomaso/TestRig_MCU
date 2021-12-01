@@ -20,26 +20,29 @@
 #include "File_Handling.h"
 #include "UART_Routine.h"
 
+/*
+ * This function will check the test that is being run on each port, then assign the various channel values to be compared to the measured values by the target board
+ */
 void TestFunction(TboardConfig *Board) {
 	//	HAL_GPIO_WritePin(MUX_RS_GPIO_Port, MUX_RS_Pin, GPIO_PIN_SET);
 	uint8 totalPortCount = 0;
 	uint8 currPort;
 	uint8 DataChannel = 0;
 	//====================== Analog Test Count ======================//
-	for (currPort = 0; currPort < Board->latchPortCount; currPort++) {
+	for (currPort = 0; currPort < Board->latchPortCount; currPort++) {	// Iterate through each port to assign the channel values
 		switch (Board->TestCode[totalPortCount]) {
 		case TWO_WIRE_LATCHING:
-			CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 1);
+			CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 1);	// set the CHval to 1000 if latch test is enabled
 			break;
 		case NOTEST:
 			CHval[Board->GlobalTestNum][DataChannel] = twoWireLatching(Board, currPort, 0);
 			break;
 		}
-		DataChannel += 2;
+		DataChannel += 2;																	// increment ch count by 2 if no test or latch test is assigned
 		totalPortCount++;
 	}
 	//====================== Analog Test Count ======================//
-	for (currPort = 0; currPort < Board->analogInputCount; currPort++) {
+	for (currPort = 0; currPort < Board->analogInputCount; currPort++) {					// Assign the values to all current, voltage, SDI-12, async tests
 		switch (Board->TestCode[totalPortCount]) {
 		case TWENTY_AMP:
 			CHval[Board->GlobalTestNum][DataChannel++] = setCurrentTestDAC(currPort);
@@ -67,7 +70,7 @@ void TestFunction(TboardConfig *Board) {
 		totalPortCount++;
 	}
 	//====================== Digital Test Count ======================//
-	for (currPort = 6; currPort < Board->digitalInputCout + 6; currPort++) {
+	for (currPort = 6; currPort < Board->digitalInputCout + 6; currPort++) {				// Assign the amount of asynchronous pulses to be generated on the top 3 ports/supplementary inputs of 9350
 		switch (Board->TestCode[totalPortCount]) {
 		case ASYNC_PULSE:
 			CHval[Board->GlobalTestNum][DataChannel++] = setAsyncPulseCount(Board, currPort);
@@ -75,18 +78,18 @@ void TestFunction(TboardConfig *Board) {
 		}
 		totalPortCount++;
 	}
-	if (Board->BoardType == b402x) {
+	if (Board->BoardType == b402x) {														// Enable Ouput test on 4020, Handling of the results are required by the set/measured TODO: handle the output test in SetVsMeasured()
 		if (currPort == 9 && Board->TestCode[totalPortCount] == 0x01) {
-			CHval[Board->GlobalTestNum][totalPortCount++] = 1; //RunOutputTest();
+			CHval[Board->GlobalTestNum][totalPortCount++] = 1;
 		} else
 			CHval[Board->GlobalTestNum][totalPortCount++] = 0;
 	}
-	OutputsSet = true;
+	OutputsSet = true;																		// Following the assignment of outputs, enable a set flag to assure they are not set twice
 }
 //	==================================================================================	//
 
 //	=================================   Two Wire   =================================	//
-_Bool twoWireLatching(TboardConfig *Board, uint8 Test_Port, _Bool state) {
+_Bool twoWireLatching(TboardConfig *Board, uint8 Test_Port, _Bool state) {				// Using the test port passed to the routine enable the latchtest and return the state
 	switch (Test_Port) {
 	case Port_1:
 		if (state)
@@ -110,60 +113,58 @@ _Bool twoWireLatching(TboardConfig *Board, uint8 Test_Port, _Bool state) {
 //	==================================================================================	//
 
 //	================================   20mA Current   ================================	//
-float setCurrentTestDAC(uint8 Test_Port) {
+float setCurrentTestDAC(uint8 Test_Port) {												// Pass the port to be configured, if low current test has been complete test the board at a higher current, return the set value
 	float current;
 	uint16 Corrected_DACvalue;
 	uint16 DAC_Value;
 	//Correction Factor
 	if (!Port[Test_Port].lowItestComplete) {
-		current = LOW_CURRENT_TEST;
-		Port[Test_Port].lowItestComplete = true;
-		DAC_Value = DAC_CURRENT_CALC(current);
-		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_4];
+		current = LOW_CURRENT_TEST;														// Set the current to the low value
+		Port[Test_Port].lowItestComplete = true;										// flip the flag to true
+		DAC_Value = DAC_CURRENT_CALC(current);											// Calculate the DAC value
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_4];		// Add the correction factor
 	} else {
-		current = HIGH_CURRENT_TEST;
-		Port[Test_Port].lowItestComplete = true;
-		DAC_Value = DAC_CURRENT_CALC(current);
-		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_175];
+		current = HIGH_CURRENT_TEST;													// Set the current to the high value
+		Port[Test_Port].lowItestComplete = true;										// flip the flag to true
+		DAC_Value = DAC_CURRENT_CALC(current);											// Calculate the DAC value
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[I_175];		// Add the correction factor
 	}
-	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)
+	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)				// OR the correct port factor to the DAC to enable which ch to place the voltage on
 		Corrected_DACvalue += 0x3000;
 	else if (Test_Port == Port_2 || Test_Port == Port_4 || Test_Port == Port_6)
 		Corrected_DACvalue += 0xB000;
-	DAC_set(Test_Port, Corrected_DACvalue);
-	MUX_Sel(Test_Port, TWENTY_AMP);
-	return current;
+	DAC_set(Test_Port, Corrected_DACvalue);												// Set the DAC with the value
+	MUX_Sel(Test_Port, TWENTY_AMP);														// Enable the multiplexer with the type of test and port the Value is being placed on
+	return current;																		// return the value being tested
 }
 //	==================================================================================	//
 
 //	=================================   Three Volt   =================================	//
-float setVoltageTestDAC(uint8 Test_Port, uint8 TestCode) {
+float setVoltageTestDAC(uint8 Test_Port, uint8 TestCode) {								// Pass the test port and test code to establish which port and what test is being run
 	float voltage;
 	uint16 Corrected_DACvalue;
 	Corrected_DACvalue = 0;
 	uint16 DAC_Value;
 	switch (TestCode) {
-	case ONE_VOLT:
-		voltage = LOW_VOLTAGE_TEST;
-		DAC_Value = DAC_VOLTAGE_CALC(voltage);
-		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_05];
+	case ONE_VOLT:																		// 1v Range test
+		voltage = LOW_VOLTAGE_TEST;		//"TestVectors.h"								// Low voltage vector loaded into voltage
+		DAC_Value = DAC_VOLTAGE_CALC(voltage);											// Calculate the DAC value
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_05];		// Add the correction factor
 		break;
-	case TWOFIVE_VOLT:
-		voltage = HIGH_VOLTAGE_TEST;
-		DAC_Value = DAC_VOLTAGE_CALC(voltage);
-		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_24];
+	case TWOFIVE_VOLT:																	//2.5v range test
+		voltage = HIGH_VOLTAGE_TEST;													// set the voltage to the high range
+		DAC_Value = DAC_VOLTAGE_CALC(voltage);											// Calculate the DAC value
+		Corrected_DACvalue = DAC_Value + Port[Test_Port].CalibrationFactor[V_24];		// Add the correction factor
 		break;
 	}
-
-	//	randDACvolt = round((Corrected_voltage * 4096 / 3.6864)); //round((voltage * 3448) / 3.014);
-	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)
+	if (Test_Port == Port_1 || Test_Port == Port_3 || Test_Port == Port_5)				// OR the correct port factor to the DAC to enable which ch to place the voltage on
 		Corrected_DACvalue += 0x3000;
 	else if (Test_Port == Port_2 || Test_Port == Port_4 || Test_Port == Port_6)
 		Corrected_DACvalue += 0xB000;
 
-	DAC_set(Test_Port, Corrected_DACvalue);
-	MUX_Sel(Test_Port, THREE_VOLT);
-	return voltage;
+	DAC_set(Test_Port, Corrected_DACvalue);												// Set the DAC with the value
+	MUX_Sel(Test_Port, THREE_VOLT);														// Enable the multiplexer with the type of test and port the Value is being placed on
+	return voltage;																		// return the value being tested
 }
 //	==================================================================================	//
 
@@ -174,53 +175,53 @@ float setAsyncPulseCount(TboardConfig *Board, uint8 Test_Port) {
 	switch (Board->GlobalTestNum) {
 	case 0:
 	case 1:
-		Port[Test_Port].Async.PulseCount = ASYNC_LOW_COUNT;
+		Port[Test_Port].Async.PulseCount = ASYNC_LOW_COUNT;								// Set async count to low count, vectors found in "TestVectors.h"
 		break;
 	case 2:
 	case 3:
-		Port[Test_Port].Async.PulseCount = ASYNC_MEDIUM_COUNT;
+		Port[Test_Port].Async.PulseCount = ASYNC_MEDIUM_COUNT;							// Set async count to medium count
 		break;
 	case 4:
 	case 5:
-		Port[Test_Port].Async.PulseCount = ASYNC_HIGH_COUNT;
+		Port[Test_Port].Async.PulseCount = ASYNC_HIGH_COUNT;							// Set async count to high count
 		break;
 	}
-	Port[Test_Port].Async.PulseState = true;
-	if (Port[Test_Port].Async.FilterEnabled) {
+	Port[Test_Port].Async.PulseState = true;											// Enable pulsestate to begin pulsing when statemachine reaches csAsync
+	if (Port[Test_Port].Async.FilterEnabled) {											// If filter is enabled increased apply the noise buffer, should filter out faster high freq noise
 		Port[Test_Port].Async.fcount = AsyncDebounceBuffer[(Port[Test_Port].Async.PulseCount + Test_Port) % 5][0];
-		return Port[Test_Port].Async.PulseCount;
+		return Port[Test_Port].Async.PulseCount;										// Return the pulsecount to CHval
 	} else {
-		Port[Test_Port].Async.fcount = 5;
-		return Port[Test_Port].Async.PulseCount * 11;
+		Port[Test_Port].Async.fcount = 5;												// return the short pulse count
+		return Port[Test_Port].Async.PulseCount * 11;									// multiply the pulse count by 11 if filter isnt enabled,	counts: 6 on pulse on 5 pulse off, 5fcount 1 pulse down 5fcount as pulses back to steady state
 	}
 }
 //	===================================================================================	//
 
 //	===================================   SDI-12    ===================================	//
 float setSDItwelveValue(uint8 Test_Port) {
-	MUX_Sel(Test_Port, SDI_TWELVE);
-	SDSstate = SDSundef;
-	Port[Test_Port].Sdi.Enabled = true;
-	Port[Test_Port].Sdi.Address = Test_Port;
-	Port[Test_Port].Sdi.setValue = HAL_RNG_GetRandomNumber(&hrng) % 10000;		// Set the SDI-12 to random 4 sig figure
-	Port[Test_Port].Sdi.setValue /= 1000;										// 3 decimal places result
-	return Port[Test_Port].Sdi.setValue;										// return the results to CHval
+	MUX_Sel(Test_Port, SDI_TWELVE);														// Set the multiplexer to SDI-12
+	SDSstate = SDSundef;																// Set the SDI-12 initial state to undefined
+	Port[Test_Port].Sdi.Enabled = true;													// Enable SDI on the specific port
+	Port[Test_Port].Sdi.Address = Test_Port;											// Set the address of the sensor to the port of the test
+	Port[Test_Port].Sdi.setValue = HAL_RNG_GetRandomNumber(&hrng) % 10000;				// Set the SDI-12 to random 4 sig figure
+	Port[Test_Port].Sdi.setValue /= 1000;												// 3 decimal places result
+	return Port[Test_Port].Sdi.setValue;												// return the results to CHval
 }
 //	===================================================================================	//
 
 void setRS485values(float *RS485buffer) {
 	for (uint i = 0; i < 9; i++) {
-		RS485sensorBuffer[i] = HAL_RNG_GetRandomNumber(&hrng) % 10000;// Get true random number with 4 sig figures of data
-		RS485sensorBuffer[i] /= 1000;						// Get the data in floating point form with 3 decimal places
+		RS485sensorBuffer[i] = HAL_RNG_GetRandomNumber(&hrng) % 10000;					// Get true random number with 4 sig figures of data
+		RS485sensorBuffer[i] /= 1000;													// Get the data in floating point form with 3 decimal places
 	}
-	memcpy(RS485buffer, &RS485sensorBuffer[0], sizeof(float) * 9);			// Copy the array into ChVal
+	memcpy(RS485buffer, &RS485sensorBuffer[0], sizeof(float) * 9);						// Copy the array into ChVal
 }
 
 //	===================================    MUX    ===================================	//
-void MUX_Sel(uint8 Test_Port, uint8 Test) {
-	_Bool MuxState = HAL_GPIO_ReadPin(MUX_A0_GPIO_Port, MUX_A0_Pin);
+void MUX_Sel(uint8 Test_Port, uint8 Test) {												// Multiplexer select routine, requires the port and test being run, Sets the multiplexer to the required signal being switched through
+	_Bool MuxState = HAL_GPIO_ReadPin(MUX_A0_GPIO_Port, MUX_A0_Pin);					// Maintain the state of the MUX_A0 pin for comms
 	if (Test_Port <= Port_6) {
-		switch (Test_Port) {
+		switch (Test_Port) {															// Switch the required ports Write pin low
 		case Port_1:
 			HAL_GPIO_WritePin(MUX_WRodd1_GPIO_Port, MUX_WRodd1_Pin, GPIO_PIN_RESET);
 			break;
@@ -240,27 +241,27 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 			HAL_GPIO_WritePin(MUX_WReven3_GPIO_Port, MUX_WReven3_Pin, GPIO_PIN_RESET);
 			break;
 		}
-		delay_us(5);
-		switch (Test) {
+		delay_us(5);																	// 5us delay for the multiplexer to switch
+		switch (Test) {																	// Switch the required test to the right port
 		case SDI_TWELVE:
-			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET); //MUX Address = 1
+			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET); 			// MUX Address = 1
 			HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
 			break;
 		case THREE_VOLT:
-			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET); //MUX Address = 2
+			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET); 				// MUX Address = 2
 			HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_RESET);
 			break;
 		case TWENTY_AMP:
-			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET); //MUX Address = 3
+			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET); 			// MUX Address = 3
 			HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_SET);
 			break;
 		case ASYNC_PULSE:
-			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET); //MUX Address = 4
+			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET); 				// MUX Address = 4
 			HAL_GPIO_WritePin(MUX_A1_GPIO_Port, MUX_A1_Pin, GPIO_PIN_SET);
 			break;
 		}
-		delay_us(5);
-		switch (Test_Port) {
+		delay_us(5);																	// 5us delay for the multiplexer to switch
+		switch (Test_Port) {															// Return the WR to its default state
 		case Port_1:
 			HAL_GPIO_WritePin(MUX_WRodd1_GPIO_Port, MUX_WRodd1_Pin, GPIO_PIN_SET);
 			break;
@@ -280,7 +281,7 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 			HAL_GPIO_WritePin(MUX_WReven3_GPIO_Port, MUX_WReven3_Pin, GPIO_PIN_SET);
 			break;
 		}
-		if (MuxState)
+		if (MuxState)																	// Reenable/Disable MUX_A0 depending on the state that it was previously in
 			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_SET);
 		else
 			HAL_GPIO_WritePin(MUX_A0_GPIO_Port, MUX_A0_Pin, GPIO_PIN_RESET);
@@ -288,145 +289,34 @@ void MUX_Sel(uint8 Test_Port, uint8 Test) {
 
 }
 
-void reset_ALL_MUX() {
+void reset_ALL_MUX() {																	// Changes all multiplexers to the Async channel, in the reset state, ensure no voltage is applied to the outputs once testing is complete
 	for (uint8 i = Port_1; i <= Port_9; i++) {
 		HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
 		MUX_Sel(i, ASYNC_PULSE);
 	}
 }
-//	=================================================================================//
+//	====================================================================================//
 
-//	=================================================================================//
-void ADC_MUXsel(uint8 ADCport) {
-	switch (ADCport) {
+//	====================================================================================//
+void ADC_MUXsel(uint8 ADCport) {													   	// Multiplexer to switch the ADC signal to the mcu, requires only 2 pins to test the latching of all boards with various latch tests
+	switch (ADCport) {																	//	Latch ADC is transparent so no
 	case Port_1:
-		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_RESET);			// MUX Address 1
 		HAL_GPIO_WritePin(ADC_MUX_B_GPIO_Port, ADC_MUX_B_Pin, GPIO_PIN_RESET);
 		break;
 	case Port_2:
-		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_SET);			// MUX Address 2
 		HAL_GPIO_WritePin(ADC_MUX_B_GPIO_Port, ADC_MUX_B_Pin, GPIO_PIN_RESET);
 		break;
 	case Port_3:
-		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_RESET);			// MUX Address 3
 		HAL_GPIO_WritePin(ADC_MUX_B_GPIO_Port, ADC_MUX_B_Pin, GPIO_PIN_SET);
 		break;
 	case Port_4:
-		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(ADC_MUX_A_GPIO_Port, ADC_MUX_A_Pin, GPIO_PIN_SET);			// MUX Address 4
 		HAL_GPIO_WritePin(ADC_MUX_B_GPIO_Port, ADC_MUX_B_Pin, GPIO_PIN_SET);
 		break;
 	}
-}
-//	=================================================================================//
-
-//	============================    Print Results    ================================//
-void PrintLatchResults() {
-	float LatchCurrent1;
-	float LatchCurrent2;
-	printT((uns_ch*) "\n\n=======================             Latch Test             =======================\n\n");
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port A Latch time:   High: %d        Low: %d       ==============\n",
-			LatchPortA.HighPulseWidth, LatchPortA.LowPulseWidth);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port A Voltage:      High: %.3f    Low: %.3f    ==============\n",
-			LatchPortA.highVoltage, LatchPortA.lowVoltage);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	//Port B Latch Time
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port B Latch time:   High: %d        Low: %d       ==============\n",
-			LatchPortB.HighPulseWidth, LatchPortB.LowPulseWidth);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Port B Voltage:      High: %.3f    Low: %.3f    ==============\n\n",
-			LatchPortB.highVoltage, LatchPortB.lowVoltage);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Vin Voltage:         AVG: %.3f     Min: %.3f   ==============\n", Vin.average,
-			Vin.lowVoltage);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   Fuse Voltage:        AVG: %.3f     Min: %.3f   ==============\n", Vfuse.average,
-			Vfuse.lowVoltage);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   MOSFET 1 Voltage:    High: %.3f     Low: %.3f    ==============\n",
-			MOSFETvoltageA.highVoltage, MOSFETvoltageA.lowVoltage);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	sprintf((char*) &debugTransmitBuffer,
-			"\n==============   MOSFET 2 Voltage:    High: %.3f     Low: %.3f    ==============\n",
-			MOSFETvoltageB.highVoltage, MOSFETvoltageB.lowVoltage);
-	printT((uns_ch*) &debugTransmitBuffer);
-
-	LatchCurrent2 = LatchPortB.highVoltage - LatchPortA.lowVoltage;
-	LatchCurrent1 = LatchPortA.highVoltage - LatchPortB.lowVoltage;
-	LatchCurrent1 /= ADC_Rcurrent;
-	LatchCurrent2 /= ADC_Rcurrent;
-
-	sprintf((char*) &debugTransmitBuffer[0],
-			"\n==============   Lactch Current:      P1: %.3f       P2: %.3f     ==============\n", LatchCurrent1,
-			LatchCurrent2);
-	printT((uns_ch*) &debugTransmitBuffer);
-}
-
-void normaliseLatchResults() {
-	//Port A Voltage
-	LatchPortA.highVoltage = LatchPortA.HighPulseWidth > 0 ? LatchPortA.highVoltage / LatchPortA.HighPulseWidth : 0;
-	LatchPortA.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION); //Previous value was 16.17 when resistor is set to 150
-	LatchPortA.lowVoltage /= LatchPortA.LowPulseWidth;
-	LatchPortA.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
-
-	//Port B Voltage
-	LatchPortB.highVoltage = LatchPortB.HighPulseWidth > 0 ? LatchPortB.highVoltage / LatchPortB.HighPulseWidth : 0;
-	LatchPortB.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
-	LatchPortB.lowVoltage /= LatchPortB.LowPulseWidth;
-	LatchPortB.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
-
-	//Vin Voltage
-	Vin.lowVoltage *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
-	Vin.average *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
-	//Fuse Voltage
-	Vfuse.lowVoltage *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
-	Vfuse.average *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
-	//MOSFET Voltage
-	MOSFETvoltageA.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
-	MOSFETvoltageA.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
-	MOSFETvoltageB.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
-	MOSFETvoltageB.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
-
-	//Store Values
-	LatchRes.tOn =
-			(LatchPortA.HighPulseWidth >= LatchPortB.LowPulseWidth) ?
-					LatchPortA.HighPulseWidth : LatchPortB.LowPulseWidth;
-	LatchRes.tOff =
-			(LatchPortB.HighPulseWidth >= LatchPortA.LowPulseWidth) ?
-					LatchPortB.HighPulseWidth : LatchPortA.LowPulseWidth;
-
-}
-
-void TransmitResults(TboardConfig *Board) {
-	sprintf(SDcard.FILEname, "TEST_RESULTS/%lu_%x/%lu_LATCH_%d.CSV", Board->SerialNumber, Board->BoardType,
-			Board->SerialNumber, Board->GlobalTestNum + 1);
-	Create_File(&SDcard);
-	if (TestRigMode == VerboseMode)
-		printT((uns_ch*) "==============   ADC Average Results   ==============");
-	sprintf((char*) &debugTransmitBuffer, "t(ms),PortA,PortB,Vin\n");
-	Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);
-	for (int i = 0; i < LatchCountTimer; i++) {
-		sprintf((char*) &debugTransmitBuffer[0], "%.1f,%.3f,%.3f,%.3f\n", i * 0.5,
-				(LatchPortA.avg_Buffer[i] * 15.25 / 4096), (LatchPortB.avg_Buffer[i] * 15.25 / 4096),
-				(Vfuse.avg_Buffer[i] * 15.25 / 4096));
-//		printT((uns_ch*) &debugTransmitBuffer);
-		Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);
-	}
-	Close_File(&SDcard);
 }
 //	=================================================================================//
 //	=================================================================================//

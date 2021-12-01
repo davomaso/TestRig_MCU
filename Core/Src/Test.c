@@ -53,7 +53,7 @@ void ConfigInit() {
 	//Async Test Assignment
 	asyncFilteredTest.Code = ASYNC_PULSE;
 	asyncFilteredTest.Channels = 1;
-	asyncFilteredTest.Options = 0xA0;
+	asyncFilteredTest.Options = 0xA0;	// second bit of top byte enables filter
 	asyncFilteredTest.GateTime = 0;
 
 	//Async Test for Digital Only Ports
@@ -69,8 +69,8 @@ void ConfigInit() {
 	sdi12Test.GateTime = 0;
 
 	//RS485 Test
-	rs485Test.Code = AQUASPY;		// 1200, 8, 1 , None
-	rs485Test.Channels = 9;
+	rs485Test.Code = AQUASPY;		// 1200, 8, 1 , None	// RS485 requires 60 bytes of data for target board to acknowledge a valid sensor
+	rs485Test.Channels = 9;			// 9 channels of data to test the rs485 effectively
 	rs485Test.Options = 0x00;
 	rs485Test.GateTime = 0;
 	//No Test
@@ -85,22 +85,23 @@ void ConfigInit() {
 void TestConfig935x(TboardConfig *Board) {
 	// Port Test Array
 	TportConfig *tempTestARR[30] = {	//	Tests to be run
-			&latchTest, &asyncFilteredTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 			//
+					&latchTest, &asyncFilteredTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 	//
 					&noTest, &sdi12Test, &TwovoltTest, &asyncFilteredTest, &asyncFilteredTest,						//
 					&noTest, &asyncFilteredTest, &sdi12Test, &asyncFilteredTest, &asyncFilteredTest, 				//
 					&noTest, &TwovoltTest, &asyncUnfilteredTest, &asyncFilteredTest, &asyncFilteredTest, 			//
 					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest, 					//
-					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest		 			//
+					&noTest, &currentTest, &currentTest, &asyncFilteredTest, &asyncFilteredTest		 				//
 			};
 	memcpy(&Board->TestArray, tempTestARR, sizeof(tempTestARR));
 	Board->ArrayPtr = 0;
 	// Port Code Array
-	uint8 tempPcARR[20] = { 0x80, 0x81, 0x82, 0x83,	//
-			0xC0, 0xC1, 0xC2, 0xC3,	//
-			0xD0, 0xD1, 0xD2, 0xD3,	//
-			0xE0, 0xE1, 0xE2, 0x00,	//
-			0xF0, 0xF1, 0xF2, 0x00,	//
-			};
+	uint8 tempPcARR[20] = {
+							0x80, 0x81, 0x82, 0x83,	//
+							0xC0, 0xC1, 0xC2, 0xC3,	//
+							0xD0, 0xD1, 0xD2, 0xD3,	//
+							0xE0, 0xE1, 0xE2, 0x00,	//
+							0xF0, 0xF1, 0xF2, 0x00,	//
+				};
 	memcpy(&Board->PortCodes, &tempPcARR, sizeof(tempPcARR));
 
 	Board->BoardType = b935x;
@@ -282,7 +283,7 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 	Board->ChCount = 0; //Acount for battery voltage
 	for (uint8 PortCount = 0; PortCount <= TotalPort; PortCount++) {
 		Set_Test(Board, PortCount, TotalPort);	//Increment This test to the next testarray variable
-		if ((Board->ThisTest->Code) && *PCptr) {	//
+		if ((Board->ThisTest->Code) && *PCptr) {	// Check if test has a test code and
 			*Para = *PCptr++;
 			(*Count)++;
 			Para++;
@@ -333,30 +334,30 @@ void SetTestParam(TboardConfig *Board, uint8 TestCount, uns_ch *Para, uint8 *Cou
 			Board->ChCount += 2;
 
 		if (Board->ThisTest->Code == SDI_TWELVE) {
-			SDIenabled = true;
-			USART6->CR1 &= ~(USART_CR1_UE);
+			SDIenabled = true;							// Enable SDI-12 flag
+			USART6->CR1 &= ~(USART_CR1_UE);				//Disable UART6 to allow for changes
 			USART6->CR1 |= (USART_CR1_RXNEIE);			// Enable receivable data on UART6
-			USART6->CR1 &= ~UART_PARITY_ODD;
-			USART6->CR1 |= UART_PARITY_EVEN;	// Set Parity to even
-			USART6->CR1 |= (USART_CR1_UE);
+			USART6->CR1 &= ~UART_PARITY_ODD;			// Disable both parity bits to allow for change
+			USART6->CR1 |= UART_PARITY_EVEN;			// Set Parity to even
+			USART6->CR1 |= (USART_CR1_UE);				// Renable UART6
 		}
 		if (Board->ThisTest->Code == AQUASPY) {
 			RS485enabled = true;						// Enable RS485
-			USART6->CR1 &= ~(USART_CR1_UE);
+			USART6->CR1 &= ~(USART_CR1_UE);				// Disable UART6 to allow for changes
 			USART6->CR1 |= (USART_CR1_RXNEIE);			// Enable receivable data on UART6
-			USART6->CR1 &= ~UART_PARITY_ODD;
-			USART6->CR1 |= UART_PARITY_NONE;	// Set Parity to none
-			USART6->CR1 |= (USART_CR1_UE);
+			USART6->CR1 &= ~UART_PARITY_ODD;			// Disable both parity bits to allow for change
+			USART6->CR1 |= UART_PARITY_NONE;			// Set Parity to none
+			USART6->CR1 |= (USART_CR1_UE);				// Renable UART6
 		}
 		if (Board->ThisTest->Code == ASYNC_PULSE) {
-			if ((Board->BoardType == b935x) && (PortCount > 2))
+			if ((Board->BoardType == b935x) && (PortCount > 2))		// Ensure that the supplementary inputs come from async circuitry 7 & 8
 				Port[PortCount + 3].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 			else
 				Port[PortCount - (Board->latchPortCount)].Async.FilterEnabled = ((Board->ThisTest->Options) & 0x20);
 		}
 	}
-	if (Board->BoardType == b402x) {
-		*Para++ = 0xE8;
+	if (Board->BoardType == b402x) {					// If board is 4020 & final test enable Relay test	TODO: Add additional ADC channel on pcb so the output power can be tested for further testing of output test.
+		*Para++ = 0xE8;									// TODO: Create a struct for Output test
 		*Para++ = 0x01;
 		if (Board->GlobalTestNum == 5)
 			RelayPort_Enabled = true;
@@ -378,41 +379,43 @@ _Bool CheckTestNumber(TboardConfig *Board) {
 	uint8 maxTest = Board->testNum;
 	SDIenabled = false;
 	RS485enabled = false;
-	if (Test == maxTest) {	// compare max test to the test currently run, if max test is reached determine if the testing passed or failed
+	if (Test == maxTest) {											// compare max test to the test currently run, if max test is reached determine if the testing passed or failed
 		sprintf((char*) &debugTransmitBuffer, "\n ========== Maximum Test Number Reached: %d ==========\n", Test);
 		printT((uns_ch*) &debugTransmitBuffer);
-		reset_ALL_MUX();		// Reset all MUX and DAC to zero
+		reset_ALL_MUX();											// Reset all MUX and DAC to zero
 		reset_ALL_DAC();
 
-		LCD_ClearLine(3);	// clear the bottom 2 lines of LCD screen
+		LCD_ClearLine(3);											// clear the bottom 2 lines of LCD screen
 		LCD_ClearLine(4);
 		LCD_printf((uns_ch*) "    Test Results    ", 2, 0);
-		uint8 spacing = (20 - (Test) - (Test - 1));			// Set the spacing for the amount of tests run on the board
+		uint8 spacing = (20 - (Test) - (Test - 1));					// Set the spacing for the amount of tests run on the board
 		spacing = (spacing & 1) ? spacing + 1 : spacing;
 		spacing /= 2;
 		LCD_setCursor(3, spacing);
-		for (uint8 i = 0; i < maxTest; i++) {	// print the results of each individual test
+		for (uint8 i = 0; i < maxTest; i++) {						// print the results of each individual test
 			if (Board->TPR & (1 << i)) {
 				sprintf((char*) &debugTransmitBuffer[0], "X ");
 				LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
-				CLEAR_BIT(Board->BSR, BOARD_TEST_PASSED);	// clear test passed if test failed
+				CLEAR_BIT(Board->BSR, BOARD_TEST_PASSED);			// clear test passed if test failed
 			} else {
 				sprintf((char*) &debugTransmitBuffer[0], ". ");
 				LCD_displayString((uns_ch*) &debugTransmitBuffer[0], strlen((char*) debugTransmitBuffer));
 			}
 		}
-		GetBatteryLevel(Board);		// Get the average battery voltage of the board
-		CheckPowerRegisters(Board);	// set the power registers
+		GetBatteryLevel(Board);										// Get the average battery voltage of the board
+		CheckPowerRegisters(Board);									// set the power registers
 
-		if ((READ_REG(Board->TPR) == 0) && (READ_REG(Board->BSR == 0x1E)))
-			SET_BIT(Board->BSR, BOARD_TEST_PASSED);		// Set the test passed flag if test was successful
-		return false;	// return false if no further tests are required.
+		if ((READ_REG(Board->TPR) == 0) && (READ_REG(Board->BSR == 0x1E)))	// if test passed status LED will be set following initialisation of board
+			SET_BIT(Board->BSR, BOARD_TEST_PASSED);					// Set the test passed flag if test was successful
+		return false;												// return false if no further tests are required.
 	}
-	return true;
+	return true;													// return true if max test has not been met, allow for more tests to occur
 }
 
+/*
+ * Routine sets the various sample voltage factors to determine the target boards ability to accurately produce the sample voltages
+ */
 void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
-
 	if (Board->BoardType == b427x) {
 //		uns_ch tempBuffer[SMLBUFFER] = {
 //				0x81,	//
@@ -422,7 +425,7 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 //				};
 //		memcpy(Para, &tempBuffer[0], sizeof(&tempBuffer[0]) );
 //		Para += sizeof(tempBuffer);
-//		*Count += sizeof(tempBuffer);
+//		*Count += sizeof(tempBuffer);	TODO: Change all routines in this section to memcpy
 
 		*Para = 0x81;
 		(*Count)++;
@@ -491,12 +494,12 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 		*Para = 0x83;
 		(*Count)++;
 		Para++;
-		if (Board->GlobalTestNum == V_105 || Board->GlobalTestNum == V_trim)
+		if (Board->GlobalTestNum == V_105 || Board->GlobalTestNum == V_trim)	// Apply the same voltage for trim & 10.5V  tests
 			*Para = TEN_VOLT_SAMPLE_THRESHOLD * 10;	// 0x69 is 10.5
 		else if (Board->GlobalTestNum == V_12)
-			*Para = TWELVE_VOLT_SAMPLE_VALUE * 10;
+			*Para = TWELVE_VOLT_SAMPLE_VALUE * 10;		// 12v sample voltage test
 		else if (Board->GlobalTestNum == V_3)
-			*Para = THREE_VOLT_SAMPLE_VALUE * 10;
+			*Para = THREE_VOLT_SAMPLE_VALUE * 10;		// 3v sample voltage test
 		else
 			*Para = 0x00;
 		(*Count)++;
@@ -504,7 +507,7 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 		*Para = 0x84;
 		(*Count)++;
 		Para++; // Set trim to get as close to Vuser
-		if (BoardConnected.GlobalTestNum == V_trim) {
+		if (BoardConnected.GlobalTestNum == V_trim) {		// Apply trim voltage to get the voltage closer to 10.5
 			uint8 trim = round((10.5 - Board->VoltageBuffer[V_105]) * 333.333);
 			*Para = trim;
 		} else
@@ -560,7 +563,7 @@ void SetVoltageParameters(TboardConfig *Board, uns_ch *Para, uint8 *Count) {
 		(*Count)++;
 		*Para++ = 0xA1;
 		(*Count)++;			// Voltage Selection Command
-		if (Board->GlobalTestNum == V_12 || Board->GlobalTestNum > V_3)
+		if (Board->GlobalTestNum == V_12 || Board->GlobalTestNum > V_3)	//TODO: Add 0v check to the system to check when no sample voltage is applied
 			*Para++ = 0x00;		// Driven off menu rather than sample
 		else if (Board->GlobalTestNum == V_3)
 			*Para++ = 0x01;

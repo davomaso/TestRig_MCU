@@ -2,6 +2,7 @@
 #include "Global_Variables.h"
 #include "strings.h"
 #include "UART_Routine.h"
+#include "File_Handling.h"
 #include "LatchTest.h"
 
 enum LatchStates {
@@ -196,4 +197,115 @@ void LatchTestInit() {
 	LatchCountTimer = 0;
 	Latch_states = EInitial_Stability_Check;
 //	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
+}
+
+
+//	============================    Print Results    ================================//
+void PrintLatchResults() {		// Print the results of the latch test to the terminal
+	float LatchCurrent1;		// local variables to calculate the current of each pulse
+	float LatchCurrent2;
+	printT((uns_ch*) "\n\n=======================             Latch Test             =======================\n\n");
+		// Port A pulse voltages
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port A Latch time:   High: %d        Low: %d       ==============\n",
+			LatchPortA.HighPulseWidth, LatchPortA.LowPulseWidth);
+	printT((uns_ch*) &debugTransmitBuffer);
+		// Port A Pulse width
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port A Voltage:      High: %.3f    Low: %.3f    ==============\n",
+			LatchPortA.highVoltage, LatchPortA.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
+		// Port B Pulse width
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port B Latch time:   High: %d        Low: %d       ==============\n",
+			LatchPortB.HighPulseWidth, LatchPortB.LowPulseWidth);
+	printT((uns_ch*) &debugTransmitBuffer);
+		// Port B Pulse voltages
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Port B Voltage:      High: %.3f    Low: %.3f    ==============\n\n",
+			LatchPortB.highVoltage, LatchPortB.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
+		// Vin Voltages
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Vin Voltage:         AVG: %.3f     Min: %.3f   ==============\n", Vin.average,
+			Vin.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
+		// Vfuse Voltages
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   Fuse Voltage:        AVG: %.3f     Min: %.3f   ==============\n", Vfuse.average,
+			Vfuse.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
+		// MOSFET voltage A
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   MOSFET 1 Voltage:    High: %.3f     Low: %.3f    ==============\n",
+			MOSFETvoltageA.highVoltage, MOSFETvoltageA.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
+		// MOSFET voltage B
+	sprintf((char*) &debugTransmitBuffer,
+			"\n==============   MOSFET 2 Voltage:    High: %.3f     Low: %.3f    ==============\n",
+			MOSFETvoltageB.highVoltage, MOSFETvoltageB.lowVoltage);
+	printT((uns_ch*) &debugTransmitBuffer);
+
+		// Calculate the current through the latches
+	LatchCurrent2 = LatchPortB.highVoltage - LatchPortA.lowVoltage;
+	LatchCurrent1 = LatchPortA.highVoltage - LatchPortB.lowVoltage;
+	LatchCurrent1 /= ADC_Rcurrent;
+	LatchCurrent2 /= ADC_Rcurrent;
+		// Latch Current for both pulses
+	sprintf((char*) &debugTransmitBuffer[0],
+			"\n==============   Lactch Current:      P1: %.3f       P2: %.3f     ==============\n", LatchCurrent1,
+			LatchCurrent2);
+	printT((uns_ch*) &debugTransmitBuffer);
+}
+
+void normaliseLatchResults() {
+		// Port A Voltage
+	LatchPortA.highVoltage = LatchPortA.HighPulseWidth > 0 ? (LatchPortA.highVoltage / LatchPortA.HighPulseWidth) : 0;
+	LatchPortA.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+	LatchPortA.lowVoltage /= LatchPortA.LowPulseWidth;
+	LatchPortA.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+
+		// Port B Voltage
+	LatchPortB.highVoltage = LatchPortB.HighPulseWidth > 0 ? LatchPortB.highVoltage / LatchPortB.HighPulseWidth : 0;
+	LatchPortB.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+	LatchPortB.lowVoltage /= LatchPortB.LowPulseWidth;
+	LatchPortB.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+
+		// Vin Voltage
+	Vin.lowVoltage *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
+	Vin.average *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
+		// Fuse Voltage
+	Vfuse.lowVoltage *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
+	Vfuse.average *= (MAX_SOURCE_VALUE / ADC_RESOLUTION);
+		// MOSFET Voltage
+	MOSFETvoltageA.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+	MOSFETvoltageA.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+	MOSFETvoltageB.lowVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+	MOSFETvoltageB.highVoltage *= (ADC_MAX_INPUT_VOLTAGE / ADC_RESOLUTION);
+
+		// Store Values
+	LatchRes.tOn = (LatchPortA.HighPulseWidth >= LatchPortB.LowPulseWidth) ?
+					LatchPortA.HighPulseWidth : LatchPortB.LowPulseWidth;
+	LatchRes.tOff =
+			(LatchPortB.HighPulseWidth >= LatchPortA.LowPulseWidth) ?
+					LatchPortB.HighPulseWidth : LatchPortA.LowPulseWidth;
+
+}
+	// Routine to transmit the latch results to the SD card storing the results as "serialNumber_LATCH_testNumber.csv"
+void TransmitResults(TboardConfig *Board) {
+	sprintf(SDcard.FILEname, "TEST_RESULTS/%lu_%x/%lu_LATCH_%d.CSV", Board->SerialNumber, Board->BoardType,
+			Board->SerialNumber, Board->GlobalTestNum + 1);	// Create the latch results file string
+	Create_File(&SDcard);	// Create the file on the SDcard
+	if (TestRigMode == VerboseMode)
+		printT((uns_ch*) "==============   ADC Average Results   ==============");
+	sprintf((char*) &debugTransmitBuffer, "t(ms),PortA,PortB,Vin\n");
+	Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);	// Write the header to the file
+	for (int i = 0; i < LatchCountTimer; i++) {	//TODO: remove this to occur during the polling of the adc to remove the large overhead here, check how long writing to the SDcard takes then move where it occurs
+		sprintf((char*) &debugTransmitBuffer[0], "%.1f,%.3f,%.3f,%.3f\n", i * 0.5,
+				(LatchPortA.avg_Buffer[i] * 15.25 / 4096), (LatchPortB.avg_Buffer[i] * 15.25 / 4096),
+				(Vfuse.avg_Buffer[i] * 15.25 / 4096));	// covert the units to voltage and store in string
+//		printT((uns_ch*) &debugTransmitBuffer);
+		Write_File(&SDcard, (TCHAR*) &SDcard.FILEname, (char*) &debugTransmitBuffer[0]);	// append the results to the file
+	}
+	Close_File(&SDcard);	// close file after the results have been written
 }

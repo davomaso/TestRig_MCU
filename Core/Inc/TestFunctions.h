@@ -17,12 +17,9 @@ float setCurrentTestDAC(uint8 );
 float setVoltageTestDAC(uint8 , uint8 );
 float setAsyncPulseCount(TboardConfig *, uint8 );
 float setSDItwelveValue(uint8 );
+void setRS485values(float *);
 void MUX_Sel(uint8 , uint8 );
 void reset_ALL_MUX(void);
 void ADC_MUXsel(uint8 );
-void PrintLatchResults(void);
-void normaliseLatchResults(void);
-void TransmitResults(TboardConfig*);
-void setRS485values(float *);
 
 #endif /* INC_TESTFUNCTIONS_H_ */
