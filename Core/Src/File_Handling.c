@@ -143,10 +143,10 @@ _Bool Find_File(TfileConfig *FAT, char *path) {
 	return 0;	// Function Failed!
 }
 
+/*
+ * Routine checks whether file exists, if it does then writes to file
+ */
 FRESULT Write_File(TfileConfig *file, TCHAR *name, char *data) {
-	/*
-	 * Routine checks whether file exists, if it does the
-	 */
 	/**** check whether the file exists or not ****/
 	/* Create a file with read write access and open it */
 	//Check if FA_OPEN_EXISTING is required below

@@ -93,10 +93,10 @@ void HandleLatchSample() {
 	case ELatch_On:
 		if (SetLatchValue(&LatchPortA, &LatchPortB, &MOSFETvoltageA, &MOSFETvoltageB)) {
 			if (BoardCommsReceiveState == RxGOOD) {
-				if (Data_Buffer[0] == 0x27) {
+				if (Data_Buffer[0] == 0x27) {										// Wait for latch command to be returned
 					Latch_states = E_Middle_Stability_Check;
 					stableVoltageCount = 50;
-					ConvertResultsToBase_ms(&LatchPortA, &LatchPortB, &MOSFETvoltageA, &MOSFETvoltageB);
+					ConvertResultsToBase_ms(&LatchPortA, &LatchPortB, &MOSFETvoltageA, &MOSFETvoltageB); // Convert results to ms base
 				}
 			}
 		}
@@ -111,10 +111,10 @@ void HandleLatchSample() {
 	case ELatch_Off:
 		if (SetLatchValue(&LatchPortB, &LatchPortA, &MOSFETvoltageB, &MOSFETvoltageA)) {
 			if (BoardCommsReceiveState == RxGOOD) {
-				if (Data_Buffer[0] == 0x27) {
+				if (Data_Buffer[0] == 0x27) {										// Wait for latch command to be returned
 					Latch_states = EFinal_Stability_Check;
 					stableVoltageCount = 50;
-					ConvertResultsToBase_ms(&LatchPortB, &LatchPortA, &MOSFETvoltageB, &MOSFETvoltageA);
+					ConvertResultsToBase_ms(&LatchPortB, &LatchPortA, &MOSFETvoltageB, &MOSFETvoltageA); // Convert results to ms base
 				}
 			}
 		}
@@ -142,9 +142,9 @@ void HandleLatchSample() {
 }
 
 uint8 runLatchTest(TboardConfig *Board, uint8 Test_Port) {
-	ADC_MUXsel(Test_Port);
-	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);
-	HAL_TIM_Base_Start_IT(&htim10);
+	ADC_MUXsel(Test_Port);									// Select the multiplexer depending on which latch is being tested
+	SET_BIT(LatchTestStatusRegister, LATCH_SAMPLING);		// Enable latch sampling
+	HAL_TIM_Base_Start_IT(&htim10);							// Begin interrupt timer
 	return Test_Port;
 }
 

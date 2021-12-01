@@ -66,7 +66,7 @@ SPI_HandleTypeDef DAC_SPI;
 #define EEPROM_R_ADDRESS 0x51 //EEPROM I2C Read Address
 #define LCD_ADR 0x3C	//LCD I2C Address
 
-#define FIRMWARE_VERSION 1.22
+#define FIRMWARE_VERSION 1.23
 
 //==============	 CURRENT BOARD VERSIONS 	==============//
 #define CURRENT_VERSION_935x 0x52

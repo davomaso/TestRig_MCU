@@ -192,7 +192,7 @@ void keypadInit() {	// Routine to set all the ports and pins for the keypad and 
 	KP[star].RowPin = KP[0].RowPin = KP[hash].RowPin = KP_R4_Pin;
 }
 
-void DebounceArrayInit() {	// Array for the async pulses to generate random noise when pulsing TODO: Wider pulse widths can be implemented when all boards filtration resistor is changed to 240k
+void DebounceArrayInit() {	// Array for the async pulses to generate random noise when pulsing TODO: Wider pulse widths can be implemented when all boards filtration resistor is changed to 240k, following next 9370 batch
 	for (uint8 i = Port_1; i <= Port_9;i++) {
 		Port[i].Async.scount = 0;
 		Port[i].Async.fcount = 0;
