@@ -165,7 +165,7 @@ int main(void)
   MX_TIM11_Init();
   MX_RNG_Init();
   MX_TIM1_Init();
-  /* USER CODE BEGIN 2 */
+  /* USER CODE BEGIN 2 */					// TODO: Implement watchdog timer to ensure the system resets if the system gets halted
 //  HAL_Delay(2000);
 	HAL_I2C_Init(&hi2c1);
 	LCD_init();

@@ -216,22 +216,22 @@ void TIM1_UP_TIM10_IRQHandler(void) {
 	 * the current on all ports.
 	 * In the event of a failure set the ProcessState to psFailed to halt process
 	 */
-	if ((CurrentState == csCalibrating) && (ProcessState == psWaiting)) {
-		if (CalibratingTimer < CALIBRATION_TIMEOUT) {
-			if (BoardConnected.BoardType == b401x)	// Change channel depending on the board connected
+	if ((CurrentState == csCalibrating) && (ProcessState == psWaiting)) {							// only check if system is in the calibration state
+		if (CalibratingTimer < CALIBRATION_TIMEOUT) {												// Ensure the calibration is occuring during a valid timeframe
+			if (BoardConnected.BoardType == b401x)													// Change channel depending on the board connected
 				ADC_Ch5sel();
 			else if (BoardConnected.BoardType == b402x)
 				ADC_Ch3sel();
 			else
 				ADC_Ch0sel();
 
-			HAL_ADC_Start(&hadc1);									// Start ADC
-			HAL_ADC_PollForConversion(&hadc1, 10);					// Poll ADC
-			calibrateADCval.average = HAL_ADC_GetValue(&hadc1);		// Get sample
-			HAL_ADC_Stop(&hadc1);									// Stop ADC
+			HAL_ADC_Start(&hadc1);																	// Start ADC
+			HAL_ADC_PollForConversion(&hadc1, 10);													// Poll ADC
+			calibrateADCval.average = HAL_ADC_GetValue(&hadc1);										// Get sample
+			HAL_ADC_Stop(&hadc1);																	// Stop ADC
 //			sprintf(debugTransmitBuffer, "%d\n", calibrateADCval.average);
 //			printT(&debugTransmitBuffer);
-			if (BoardConnected.BoardType == b401x || BoardConnected.BoardType == b402x) {
+			if (BoardConnected.BoardType == b401x || BoardConnected.BoardType == b402x) {		// TODO: Change calibration references to defines opposed to hard codes
 				if ( (BoardConnected.BoardType == b401x) && (calibrateADCval.average >= 3000) ) {	// 4010 only board with a high pulse to switch to current calibration
 					if (!(--CalibrationCountdown) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
 						TargetBoardCalibration_Current(&BoardConnected);
@@ -242,13 +242,13 @@ void TIM1_UP_TIM10_IRQHandler(void) {
 					}
 				} else
 					CalibrationCountdown = 50;
-			} else if ((calibrateADCval.average <= 500)) {
-				if ((CalibrationCountdown == 0) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {
+			} else if ((calibrateADCval.average <= 500)) {											// See if the calibration port has been pulled to ground
+				if ((CalibrationCountdown == 0) && !READ_BIT(CalibrationStatusRegister, CALIBRATE_CURRENT_SET)) {	// If calibration count is zero then set the current calibration
 					TargetBoardCalibration_Current(&BoardConnected);
 				}
-				CalibrationCountdown--;
+				CalibrationCountdown--;																// decrement calibration countdown
 			} else
-				CalibrationCountdown = 5;
+				CalibrationCountdown = 5;															// Reset the calibration countdown if condition is not met
 		}
 	}
 
@@ -260,8 +260,7 @@ void TIM1_UP_TIM10_IRQHandler(void) {
 	 *	From this other factors can be determined such as current through the latch, and MOSFET voltages.
 	 */
 	if (READ_BIT(LatchTestStatusRegister, LATCH_SAMPLING)) {
-		//Poll ADC every 500us to take average across 1ms to get more accurate reading
-		if (!LatchADCflag) {
+		if (!LatchADCflag) {			//Poll ADC every 500us to take average across 1ms to get more accurate reading
 				// Latchport A
 			ADC_Ch0sel();
 			HAL_ADC_Start(&hadc1);
@@ -305,19 +304,19 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void) {
 	/* USER CODE BEGIN TIM1_TRG_COM_TIM11_IRQn 0 */
 	// 1ms Interrupt timer
 	if (!SolarChargerStable && SolarChargerTimer) {
-		ADC_Ch2sel();											// select the Vin adc channel
-		HAL_ADC_Start(&hadc1);									// Start ADC
-		HAL_ADC_PollForConversion(&hadc1, 10);					// Poll ADC for conversion
-		Vin.currentValue = HAL_ADC_GetValue(&hadc1);			// Get the ADC sample
-		HAL_ADC_Stop(&hadc1);									// Stop the ADC
-		if (Vin.currentValue >= 3200) {							// Check if it is above threshold 		// TODO: Set the Threshold as a define, remove hard code definition
-			Vin.total += Vin.currentValue;						// TODO: Change to rolling average for voltage calculation
-			SolarChargerCounter++;								// Increment counter
-			if (SolarChargerCounter > 1000) {					// Check counter
-				SolarChargerStable = true;						// Set stable flag to true
-				float tempVal = Vin.total / SolarChargerCounter;	// get average value
+		ADC_Ch2sel();													// select the Vin adc channel
+		HAL_ADC_Start(&hadc1);											// Start ADC
+		HAL_ADC_PollForConversion(&hadc1, 10);							// Poll ADC for conversion
+		Vin.currentValue = HAL_ADC_GetValue(&hadc1);					// Get the ADC sample
+		HAL_ADC_Stop(&hadc1);											// Stop the ADC
+		if (Vin.currentValue >= 3200) {									// Check if it is above threshold 		// TODO: Set the Threshold as a define, remove hard code definition
+			Vin.total += Vin.currentValue;								// TODO: Change to rolling average for voltage calculation
+			SolarChargerCounter++;										// Increment counter
+			if (SolarChargerCounter > 1000) {							// Check counter
+				SolarChargerStable = true;								// Set stable flag to true
+				float tempVal = Vin.total / SolarChargerCounter;		// get average value
 				BoardConnected.VoltageBuffer[V_SOLAR] = tempVal * (15.25 / 4096);		// Pass the average to the voltage buffer
-				Vin.total = SolarChargerCounter = 0;			// reinitialise the counter and total
+				Vin.total = SolarChargerCounter = 0;					// reinitialise the counter and total
 			}
 		}
 		SolarChargerTimer--;
@@ -352,10 +351,10 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void) {
  * the 0x18 Command to fetch results
  * Set the processState to complete so that the next step can begin
  */
-	if (samplesUploading) {
-		if (sampleCount >= sampleTime) {
-			samplesUploading = false;
-			samplesUploaded = true;
+	if (samplesUploading) {										// Check to see if samples are uploading
+		if (sampleCount >= sampleTime) {						// Ensure samples are occuring during a valid time frame
+			samplesUploading = false;							// Set uploading to false to stop sampling
+			samplesUploaded = true;								// Set samples uploaded to complete to move states
 		} else {
 			sampleCount++;
 		}
@@ -364,11 +363,11 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void) {
 /*
  * Timeout routine to be run during communications to targetboard, if count reaches zero, set state to psFailed
  */
-	if (timeOutEn) {
+	if (timeOutEn) {											// Only proceed if time out is enabled
 		if (timeOutCount) {
-			if ((--timeOutCount) == 0) {
+			if ((--timeOutCount) == 0) {						// if the countdown reaches 0 set the state to failed
 				timeOutEn = false;
-				ProcessState = psFailed;
+				ProcessState = psFailed;						// Board comms response was not received so move to failed state
 			}
 		}
 	}
@@ -377,20 +376,20 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void) {
 	 * General Timers for various board functionalities
 	 */
 // =========================================================== //
-	if (BoardCommsTimeout)		// Timeout for board comms, wait for wake transmission to finish
+	if (BoardCommsTimeout)										// Timeout for board comms, wait for wake transmission to finish
 		BoardCommsTimeout--;
 
-	if (BoardResetTimer)		// Timer for board to reset
+	if (BoardResetTimer)										// Timer for board to reset
 		BoardResetTimer--;
 
-	if (ProgrammingTimeOut)		// Timeout for programming
+	if (ProgrammingTimeOut)										// Timeout for programming
 		ProgrammingTimeOut--;
 
 /*
  * Loom Select Timer
  * Timer every 250ms check the loom to determine whether a different loom has been
  */
-	if (CheckLoomTimer)			// Timeout for loom scanning
+	if (CheckLoomTimer)											// Timeout for loom scanning
 		CheckLoomTimer--;
 // =========================================================== //
 
@@ -399,10 +398,10 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void) {
  * if the timeout is complete the ProcessState is set
  * to Failed as a response or event did not occur as expected
  */
-	if (terminalTimeOutEn) {
-		if (terminalTimeOutCount) {
+	if (terminalTimeOutEn) {									// Timeout for the terminal, given CDC transmit does not fill a buffer but poll until it is ready, timeout created to determine whether comms are ready
+		if (terminalTimeOutCount) {								// Check if timeoutcount still populated
 			if ((--terminalTimeOutCount) == 0) {
-				terminalTimeOutEn = false;
+				terminalTimeOutEn = false;						// Disable timeout
 			}
 		}
 	}
@@ -519,7 +518,7 @@ void USART2_IRQHandler(void) {
 		}
 	}
 	if (READ_BIT(USART2->SR, USART_SR_TC) && UART2_TXcount == 0) {					// Check if transmission complete TODO: Remove the dependancy on count equal to zero
-		USART2->CR1 &= ~(USART_CR1_TCIE);											//// Disable Transmission complete interrupt
+		USART2->CR1 &= ~(USART_CR1_TCIE);											// Disable Transmission complete interrupt
 		USART2->CR1 &= ~(USART_CR1_TXEIE);											// Disable Transmission interrupt enable
 		USART2->CR1 |= (USART_CR1_RE);												// Enable Receive
 		CLEAR_BIT(USART2->SR, USART_SR_TC);											// Clear the transmission complete flag in the status register
@@ -536,27 +535,26 @@ void USART2_IRQHandler(void) {
 /**
  * @brief This function handles USART3 global interrupt.
  */
+/*
+ * Barcode Scanner Receive Interrupt
+ * Interrupt rountine to receive data from the barcode scanner.
+ * Check the data for a carridge return while false and data received,1
+ */
 void USART3_IRQHandler(void) {
 	/* USER CODE BEGIN USART3_IRQn 0 */
-	if (USART3->SR & USART_SR_RXNE) {
-		/*
-		 * Barcode Scanner Receive Interrupt
-		 * Interrupt rountine to receive data from the barcode scanner.
-		 * Check the data for a carridge return while false and data received,1
-		 */
+	if (USART3->SR & USART_SR_RXNE) {												// Check if receive data register is populated
 		uns_ch data;
-		data = USART3->DR;
-		if (((data >= 0x30) && (data <= 0x39)) || (data == 0x0D)) {
-			if ((data == 0x0D) && (BarcodeCount > 0)) {
-				BarcodeScanned = true;
-				USART3->CR1 &= ~(USART_CR1_RXNEIE);
+		data = USART3->DR;															// get the data from the register
+		if (((data >= 0x30) && (data <= 0x39)) || (data == 0x0D)) {					// check if it is a valid ascii number, or carridge return
+			if ((data == 0x0D) && (BarcodeCount > 0)) {								// Check if carridge return and barcode count exists
+				BarcodeScanned = true;												// Set scanned flag to true
+				USART3->CR1 &= ~(USART_CR1_RXNEIE);									// Disable receive interrupt
 			} else {
-				if (BarcodeCount >= 0x09) {	//Check for overrun of scan
-					memmove(&BarcodeBuffer[0], &BarcodeBuffer[1], 8);
+				if (BarcodeCount >= 0x09) {											// Check for overrun of scan
+					memmove(&BarcodeBuffer[0], &BarcodeBuffer[1], 8);				// Move the buffer down a position
 					BarcodeCount--;
 				}
-				BarcodeBuffer[BarcodeCount++] = data;
-
+				BarcodeBuffer[BarcodeCount++] = data;								// Populate the barcode buffer
 			}
 		}
 	}
@@ -581,11 +579,11 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void) {
 	/* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
 	HAL_TIM_IRQHandler(&htim14);
 	/* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 1 */
-	for (uint8 i = Port_1; i <= Port_9; i++) {	// Scan ports 1-9 to check if active and what kind of testing is required
+	for (uint8 i = Port_1; i <= Port_9; i++) {										// Scan ports 1-9 to check if active and what kind of testing is required
 		if (Port[i].Async.Active) {
-			if (Port[i].Async.FilterEnabled) {		// Filter Enabled async test
+			if (Port[i].Async.FilterEnabled) {										// Filter Enabled async test
 				if (Port[i].Async.scount == 0) {
-					if (--Port[i].Async.fcount == 0) {	// check if noise length is depleted then toggle the gpio
+					if (--Port[i].Async.fcount == 0) {								// check if noise length is depleted then toggle the gpio
 						Port[i].Async.fcount =
 								AsyncDebounceBuffer[(Port[i].Async.PulseCount + i) % 5][Port[i].Async.FilteredCount++];	// next noise value
 						HAL_GPIO_TogglePin(Port[i].Async.Port, Port[i].Async.Pin);	// toggle pin
@@ -600,25 +598,25 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void) {
 							--Port[i].Async.PulseCount;								// decrement pulse count
 							HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_SET);	// pulse high
 						} else {
-							Port[i].Async.Active = Port[i].Async.PulseCount;						// if pulse count async active, zero pulse count async deactivated
+							Port[i].Async.Active = Port[i].Async.PulseCount;		// if pulse count async active, zero pulse count async deactivated
 							HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);	// reset the pin state
 						}
-						Port[i].Async.PulseState ^= 1;													// invert the pinstate
+						Port[i].Async.PulseState ^= 1;								// invert the pinstate
 					}
 				}
-			} else if (++Port[i].Async.UnfilteredClkDiv == 16) {							// Unfiltered async test, clk dividing required to get slower pulses
+			} else if (++Port[i].Async.UnfilteredClkDiv == 16) {					// Unfiltered async test, clk dividing required to get slower pulses
 				if (Port[i].Async.fcount > 0) {
 					if (HAL_GPIO_ReadPin(Port[i].Async.Port, Port[i].Async.Pin)) {
-						if (!(--Port[i].Async.fcount)) {									// When fcount depletes populate scount
+						if (!(--Port[i].Async.fcount)) {							// When fcount depletes populate scount
 							Port[i].Async.scount = 10;
-							Port[i].Async.PulseState ^= 1;									// flip pin state
+							Port[i].Async.PulseState ^= 1;							// flip pin state
 						}
 						HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);	// reset pin
 					} else
 						HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_SET);		// set pin
-				} else if (Port[i].Async.PulseState) {												// Pulse state high
-					if (!(--Port[i].Async.scount)) {												// Decrement scount and check for depletion
-						Port[i].Async.fcount = 5;													// Set the fcount
+				} else if (Port[i].Async.PulseState) {								// Pulse state high
+					if (!(--Port[i].Async.scount)) {								// Decrement scount and check for depletion
+						Port[i].Async.fcount = 5;									// Set the fcount
 						HAL_GPIO_WritePin(Port[i].Async.Port, Port[i].Async.Pin, GPIO_PIN_RESET);
 						Port[i].Async.Active = --Port[i].Async.PulseCount;
 					}
@@ -638,7 +636,7 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void) {
 	}
 	if (!Port[Port_1].Async.Active && !Port[Port_2].Async.Active && !Port[Port_3].Async.Active
 			&& !Port[Port_4].Async.Active && !Port[Port_5].Async.Active && !Port[Port_6].Async.Active
-			&& !Port[Port_7].Async.Active && !Port[Port_8].Async.Active && !Port[Port_9].Async.Active) //
+			&& !Port[Port_7].Async.Active && !Port[Port_8].Async.Active && !Port[Port_9].Async.Active) // Check if any of the async ports are still active
 		AsyncComplete = true;
 	/* USER CODE END TIM8_TRG_COM_TIM14_IRQn 1 */
 }
@@ -649,13 +647,13 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void) {
 void TIM6_IRQHandler(void) {
 	/* USER CODE BEGIN TIM6_IRQn 0 */
 		// Flash LED to signify board operating correctly
-	if (LEDcounter++ > 110) {
-		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	if (LEDcounter++ > 110) {														// Check LED count for long off timer
+		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);					// Set LED to on, set flag, reset counter
 		LED1active = true;
 		LEDcounter = 0;
-	} else if (LED1active && (LEDcounter > 10)) {
-		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-		LED1active = false;
+	} else if (LED1active && (LEDcounter > 10)) {									// Check LED counter and active state
+		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);				// Turn LED off
+		LED1active = false;															// disable LED flag
 	}
 	/* USER CODE END TIM6_IRQn 0 */
 	HAL_TIM_IRQHandler(&htim6);
@@ -667,13 +665,12 @@ void TIM6_IRQHandler(void) {
 /**
  * @brief This function handles TIM7 global interrupt.
  */
+/*
+ //       ======      KEYPAD Scan Interupt      ======      //
+  *		 1ms timer to scan keypad
+ */
 void TIM7_IRQHandler(void) {
 	/* USER CODE BEGIN TIM7_IRQn 0 */
-	/*
-	 //       ======      KEYPAD Scan Interupt      ======      //
-	 */
-
-	// 1ms timer to scan keypad
 	/* USER CODE END TIM7_IRQn 0 */
 	HAL_TIM_IRQHandler(&htim7);
 	/* USER CODE BEGIN TIM7_IRQn 1 */
@@ -681,8 +678,7 @@ void TIM7_IRQHandler(void) {
 	 * Timer to check which key presses have been made. A simple matrix scan functionality is run, with counters
 	 * incremented to eliminate switch bounce and be assured the user actually pressed the button
 	 */
-
-	for (uint8 currentScan = 0; currentScan < 12; currentScan++) {		// Scan keypad
+	for (uint8 currentScan = 0; currentScan < 12; currentScan++) {					// Scan keypad
 		HAL_GPIO_WritePin(KP_R1_GPIO_Port, KP_R1_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(KP_R2_GPIO_Port, KP_R2_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(KP_R3_GPIO_Port, KP_R3_Pin, GPIO_PIN_SET);
@@ -693,16 +689,16 @@ void TIM7_IRQHandler(void) {
 		if (HAL_GPIO_ReadPin(KP[currentScan].ColPort, KP[currentScan].ColPin))
 			(KP[currentScan].debounceCount)--;
 		else
-			(KP[currentScan].debounceCount)++;						// Increment counter, if ground is established
+			(KP[currentScan].debounceCount)++;										// Increment counter, if ground is established
 
 		if ((KP[currentScan].debounceCount >= 50)) {
-			KP[currentScan].debounceCount = 50;						// Set pressed to true, if counter exceeds 50
+			KP[currentScan].debounceCount = 50;										// Set pressed to true, if counter exceeds 50
 			KP[currentScan].State = true;
-		} else if ((KP[currentScan].debounceCount <= 5)) {			// hysteresis for pin so it can decrease and be set to false
+		} else if ((KP[currentScan].debounceCount <= 5)) {							// hysteresis for pin so it can decrease and be set to false
 			KP[currentScan].debounceCount = 5;
 			KP[currentScan].State = false;
 		}
-		if (KP[currentScan].State != KP[currentScan].PreviousState) // change state if state does not match previous state
+		if (KP[currentScan].State != KP[currentScan].PreviousState) 				// change state if state does not match previous state
 			KP[currentScan].Pressed = KP[currentScan].State;
 	}
 	/* USER CODE END TIM7_IRQn 1 */
