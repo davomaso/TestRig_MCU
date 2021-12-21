@@ -101,6 +101,7 @@ void HardFault_Handler(void) {
 	/* USER CODE BEGIN HardFault_IRQn 0 */
 	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
 	printT((uns_ch*) "\n\n\nHard Fault Reset Device!!!!...\n");
+	NVIC_SystemReset();
 	/* USER CODE END HardFault_IRQn 0 */
 	while (1) {
 		/* USER CODE BEGIN W1_HardFault_IRQn 0 */
@@ -332,7 +333,7 @@ void TIM1_TRG_COM_TIM11_IRQHandler(void) {
 			HAL_ADC_Stop(&hadc1);										// Stop the ADC
 			if (Vin.currentValue >= 3000) {								// If current value is larger than xxxx increase counter
 //				Vin.average = (Vin.currentValue - Vin.average) / InputVoltageCounter++; // TODO: Change this to consistant average calculation
-				Vin.total += Vin.average;
+				Vin.total += Vin.currentValue;
 				InputVoltageCounter++;
 			}
 			InputVoltageTimer--;										// Decrease input voltage timer

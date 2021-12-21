@@ -136,7 +136,7 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+  /* USER CO DE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
@@ -273,7 +273,6 @@ int main(void)
 			ProcessState = psInitalisation;
 		}
 //=========================================================================================================//
-
 	}
 //=========================================================================================================//
 

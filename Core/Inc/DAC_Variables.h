@@ -10,19 +10,19 @@
 
 #include "math.h"
 	//DAC Constants
-#define DAC_RESOLUTION 4096.0	//DAC resolution
-#define DAC_MAX_OUT 2.048		//MAX DAC Voltage
+#define DAC_RESOLUTION 4096.0		// DAC resolution
+#define DAC_MAX_OUT 2.048			// MAX DAC Voltage
 
 	//Voltage Calculations
-#define V_R1 15.0				// Voltage amplifier resistor R1
-#define V_Rf 20.0				// Feedback resistance
-#define VOLTAGE_GAIN (1.0+V_R1/V_Rf)
+#define V_R1 20.0					// Voltage amplifier resistor R1
+#define V_Rf 15.0					// Feedback resistance
+#define VOLTAGE_GAIN (1.0+V_Rf/V_R1)
 #define DAC_MAX_VOLTAGE (DAC_MAX_OUT * VOLTAGE_GAIN)	//MAX Voltage possible at V out
 
 	//Current Calculations
-#define I_R1 10000.0	// Current Pump R1
-#define I_R2 20000.0	// Current Pump R2
-#define I_Rp 180.0		// Current Pump Rp
+#define I_R1 10000.0				// Current Pump R1
+#define I_R2 20000.0				// Current Pump R2
+#define I_Rp 180.0					// Current Pump Rp
 
 #define CURRENT_GAIN ((I_R2+I_Rp) / I_R1)
 #define DAC_MAX_CURRENT ( (DAC_MAX_OUT * CURRENT_GAIN) / I_Rp * 1000) //Maximum DAC output multiplied by the current gain of the pump, divided by the pump resistance times 1000 to get in mA base

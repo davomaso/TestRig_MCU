@@ -4,13 +4,14 @@
  *  Created on: 30 Jun 2021
  *      Author: mason
  */
+#include <utility_functions.h>
 #include "main.h"
-#include "v1.h"
 #include "Global_Variables.h"
 #include "Communication.h"
 #include "LCD.h"
 #include "UART_Routine.h"
 #include "string.h"
+#include "TestVectors.h"
 
 void clearTestStatusLED() {
 	HAL_GPIO_WritePin(FAIL_GPIO_Port, FAIL_Pin, GPIO_PIN_RESET);					// Clear all status LEDs, turn LED to off completely
@@ -21,7 +22,7 @@ void clearTestStatusLED() {
 void testInputVoltage() {															// Routine to test the input voltage
 	Vin.total = InputVoltageCounter = 0;											// Set the total and input voltage counter to zero
 	HAL_GPIO_WritePin(PIN2EN_GPIO_Port, PIN2EN_Pin, GPIO_PIN_SET);					// Enable the power on two pin port
-	BoardResetTimer = 125;															// Board reset timer to allow the power to stablise
+	BoardResetTimer = 250;															// Board reset timer to allow the power to stablise
 	InputVoltageStable = false;														// Ensure that stable flag is not set
 	LCD_printf((uns_ch*) "Board Power Test", 2, 0);									// Print current state of system to LCD
 }

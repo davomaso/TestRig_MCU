@@ -5,8 +5,8 @@
  *      Author: mason
  */
 
-#ifndef INC_V1_H_
-#define INC_V1_H_
+#ifndef INC_UTILITY_FUNCTIONS_H_
+#define INC_UTILITY_FUNCTIONS_H_
 
 /*
  * v1.c
@@ -34,4 +34,4 @@ void sampleTargetBoard(TboardConfig * );
 void uploadSamplesTargetBoard(TboardConfig *);
 void calibrateTargetBoard(TboardConfig *);
 
-#endif /* INC_V1_H_ */
+#endif /* INC_UTILITY_FUNCTIONS_H_ */
